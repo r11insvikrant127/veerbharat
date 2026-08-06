@@ -1,0 +1,215 @@
+import { Schema, model, models } from "mongoose";
+
+const EventSchema = new Schema(
+  {
+    eventId: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+      trim: true,
+    },
+
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+      index: true,
+    },
+
+    nativeName: {
+      type: String,
+      trim: true,
+    },
+
+    eventDate: {
+      type: Date,
+      default: null,
+      index: true,
+    },
+
+    eventDateAccuracy: {
+      type: String,
+      enum: [
+        "Exact",
+        "Approximate",
+        "Unknown",
+      ],
+      default: "Unknown",
+    },
+
+    locationId: {
+      type: Schema.Types.ObjectId,
+      ref: "Place",
+      index: true,
+    },
+
+    heroIds: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Hero",
+      },
+    ],
+
+    historicalPeriodId: {
+      type: Schema.Types.ObjectId,
+      ref: "HistoricalPeriod",
+      index: true,
+    },
+
+    type: {
+      type: String,
+      required: true,
+      enum: [
+        "Coronation",
+        "Birth",
+        "Death",
+        "Treaty",
+        "Victory",
+        "Defeat",
+        "Hiding",
+        "Prophecy",
+        "Battle",
+      ],
+      index: true,
+    },
+
+    isOnThisDayEligible: {
+      type: Boolean,
+      required: true,
+      default: false,
+      index: true,
+    },
+
+    description: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    significance: {
+      type: String,
+      trim: true,
+    },
+
+    imageIds: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Image",
+      },
+    ],
+
+    sourceIds: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Source",
+        required: true,
+      },
+    ],
+
+    tags: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
+
+    crossReferences: {
+      relatedHeroes: [
+        {
+          type: Schema.Types.ObjectId,
+          ref: "Hero",
+        },
+      ],
+
+      relatedPlaces: [
+        {
+          type: Schema.Types.ObjectId,
+          ref: "Place",
+        },
+      ],
+
+      relatedBattles: [
+        {
+          type: Schema.Types.ObjectId,
+          ref: "Battle",
+        },
+      ],
+
+      relatedBooks: [
+        {
+          type: Schema.Types.ObjectId,
+          ref: "Book",
+        },
+      ],
+    },
+
+    searchFields: {
+      keywords: [
+        {
+          type: String,
+          trim: true,
+        },
+      ],
+
+      nativeSpellings: [
+        {
+          type: String,
+          trim: true,
+        },
+      ],
+
+      alternateSpellings: [
+        {
+          type: String,
+          trim: true,
+        },
+      ],
+
+      aliases: [
+        {
+          type: String,
+          trim: true,
+        },
+      ],
+    },
+
+    metadata: {
+      createdBy: {
+        type: String,
+        trim: true,
+      },
+
+      verifiedBy: {
+        type: String,
+        trim: true,
+      },
+
+      version: {
+        type: Number,
+        default: 1,
+      },
+    },
+
+    status: {
+      type: String,
+      required: true,
+      enum: ["Draft", "Verified", "Published", "Needs Review"],
+      default: "Draft",
+      index: true,
+    },
+  },
+  {
+    timestamps: true,
+    versionKey: false,
+  }
+);
+
+EventSchema.index({
+  name: "text",
+  nativeName: "text",
+  description: "text",
+  tags: "text",
+});
+
+export default models.Event || model("Event", EventSchema);
