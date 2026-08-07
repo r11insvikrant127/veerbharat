@@ -3,6 +3,10 @@
 import HistoricalPeriod from "@/models/historicalPeriod";
 import ApiError from "@/lib/ApiError";
 import BaseService from "./base.service";
+import { getSearchRegex } from "@/helpers/search";
+import { getPagination } from "@/helpers/pagination";
+import { getSort } from "@/helpers/sorting";
+import { escapeRegex } from "@/helpers/search";
 
 import {
   CreateHistoricalPeriodInput,
@@ -22,9 +26,10 @@ class HistoricalPeriodService extends BaseService {
 
     // Check for duplicate name (case-insensitive)
     const existingPeriod = await HistoricalPeriod.findOne({
-        name: {
-        $regex: new RegExp(`^${data.name}$`, "i"),
-        },
+    name: new RegExp(
+        `^${escapeRegex(data.name)}$`,
+        "i"
+    ),
     });
 
     if (existingPeriod) {
@@ -63,11 +68,10 @@ class HistoricalPeriodService extends BaseService {
     const filter: Record<string, unknown> = {};
 
     // Search by name
-    if (search) {
-        filter.name = {
-        $regex: search,
-        $options: "i",
-        };
+    const regex = getSearchRegex(search);
+
+    if (regex) {
+    filter.name = regex;
     }
 
     // Filter by status
@@ -75,13 +79,19 @@ class HistoricalPeriodService extends BaseService {
         filter.status = status;
     }
 
-    const skip = (page - 1) * limit;
+    const {
+    page: currentPage,
+    limit: currentLimit,
+    skip,
+    } = getPagination(page, limit);
+
+    const sortOption = getSort(sort);
 
     const [periods, total] = await Promise.all([
         HistoricalPeriod.find(filter)
-        .sort(sort)
+        .sort(sortOption)
         .skip(skip)
-        .limit(limit),
+        .limit(currentLimit),
 
         HistoricalPeriod.countDocuments(filter),
     ]);
@@ -89,10 +99,10 @@ class HistoricalPeriodService extends BaseService {
     return {
         data: periods,
         pagination: {
-        page,
-        limit,
+        page: currentPage,
+        limit: currentLimit,
         total,
-        totalPages: Math.ceil(total / limit),
+        totalPages: Math.ceil(total / currentLimit),
         },
     };
     }
