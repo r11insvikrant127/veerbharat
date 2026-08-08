@@ -1,67 +1,190 @@
-// src/validations/dynasty.ts
-
 import { z } from "zod";
 
-const objectId = z
-  .string()
-  .regex(/^[a-f\d]{24}$/i, "Invalid ObjectId");
+import {
+  objectId,
+  objectIdArray,
+  stringArray,
+  statusEnum,
+  paginationSchema,
+} from "@/validations/common";
+
+/* =====================================================
+   CREATE
+===================================================== */
 
 export const createDynastySchema = z.object({
-  name: z.string().trim().min(2).max(150),
+  /* BASIC */
 
-  nativeName: z
-    .string()
+  name: z.string()
+    .trim()
+    .min(2)
+    .max(150),
+
+  nativeName: z.string()
     .trim()
     .optional()
     .default(""),
 
-  alternativeNames: z
-    .array(z.string().trim().min(1))
-    .optional()
-    .default([]),
+  alternativeNames: stringArray,
 
-  origin: z
-    .string()
+  origin: z.string()
     .trim()
     .optional()
     .default(""),
+
+  /* RELATIONSHIPS */
 
   founderId: objectId.optional(),
 
   kingdomId: objectId.optional(),
 
-  description: z
-    .string()
-    .trim()
-    .min(10),
+  famousRulers: objectIdArray,
 
   historicalPeriodId: objectId.optional(),
 
-  sourceIds: z
-    .array(objectId)
-    .min(1, "At least one source is required"),
+  /* CONTENT */
 
-  tags: z
-    .array(z.string().trim().min(1))
+  description: z.string()
+    .trim()
+    .min(10),
+
+  imageIds: objectIdArray,
+
+  sourceIds: objectIdArray,
+
+  tags: stringArray,
+
+  /* ===================================================
+     CROSS REFERENCES
+  =================================================== */
+
+  crossReferences: z
+    .object({
+      relatedHeroes: objectIdArray,
+
+      relatedKingdoms: objectIdArray,
+    })
     .optional()
-    .default([]),
+    .default({
+      relatedHeroes: [],
+      relatedKingdoms: [],
+    }),
 
-  status: z
-    .enum([
-      "Draft",
-      "Verified",
-      "Published",
-      "Needs Review",
-    ])
+  /* ===================================================
+     SEARCH
+  =================================================== */
+
+  searchFields: z
+    .object({
+      keywords: stringArray,
+
+      nativeSpellings: stringArray,
+
+      alternateSpellings: stringArray,
+
+      aliases: stringArray,
+    })
+    .optional()
+    .default({
+      keywords: [],
+      nativeSpellings: [],
+      alternateSpellings: [],
+      aliases: [],
+    }),
+
+  /* ===================================================
+     METADATA
+  =================================================== */
+
+  metadata: z
+    .object({
+      createdBy: z.string()
+        .trim()
+        .optional()
+        .default(""),
+
+      verifiedBy: z.string()
+        .trim()
+        .optional()
+        .default(""),
+
+      version: z.number()
+        .int()
+        .positive()
+        .default(1),
+    })
+    .optional()
+    .default({
+      createdBy: "",
+      verifiedBy: "",
+      version: 1,
+    }),
+
+  /* ===================================================
+     STATUS
+  =================================================== */
+
+  status: statusEnum
     .optional()
     .default("Draft"),
 });
 
+/* =====================================================
+   UPDATE
+===================================================== */
+
 export const updateDynastySchema =
   createDynastySchema.partial();
+
+/* =====================================================
+   QUERY
+===================================================== */
+
+export const dynastyQuerySchema =
+  paginationSchema.extend({
+    search: z.string()
+      .trim()
+      .optional(),
+
+    status: statusEnum.optional(),
+
+    kingdomId: objectId.optional(),
+
+    founderId: objectId.optional(),
+
+    historicalPeriodId:
+      objectId.optional(),
+
+    sort: z.enum([
+      "name",
+      "-name",
+      "createdAt",
+      "-createdAt",
+    ]).default("name"),
+  });
+
+/* =====================================================
+   ID
+===================================================== */
+
+export const dynastyIdSchema = z.object({
+  id: z.string()
+    .trim()
+    .min(1),
+});
+
+/* =====================================================
+   TYPES
+===================================================== */
 
 export type CreateDynastyInput =
   z.infer<typeof createDynastySchema>;
 
 export type UpdateDynastyInput =
   z.infer<typeof updateDynastySchema>;
+
+export type DynastyQuery =
+  z.infer<typeof dynastyQuerySchema>;
+
+export type DynastyId =
+  z.infer<typeof dynastyIdSchema>;

@@ -1,80 +1,262 @@
-// src/validations/weapon.ts
-
 import { z } from "zod";
 
-const objectId = z
-  .string()
-  .regex(/^[a-f\d]{24}$/i, "Invalid ObjectId");
+import {
+  objectId,
+  objectIdArray,
+  stringArray,
+  statusEnum,
+  paginationSchema,
+} from "@/validations/common";
+
+/* =====================================================
+   WEAPON CATEGORY
+===================================================== */
+
+export const weaponCategoryEnum = z.enum([
+  "Sword",
+  "Spear",
+  "Shield",
+  "Bow",
+  "Arrow",
+  "Armour",
+  "Firearm",
+]);
+
+/* =====================================================
+   CREATE
+===================================================== */
 
 export const createWeaponSchema = z.object({
-  name: z.string().trim().min(2).max(100),
+  /* BASIC */
 
-  nativeName: z.string().trim().optional().default(""),
+  name: z.string()
+    .trim()
+    .min(2)
+    .max(200),
 
-  category: z.enum([
-    "Sword",
-    "Spear",
-    "Shield",
-    "Bow",
-    "Arrow",
-    "Armour",
-    "Firearm",
-  ]),
+  nativeName: z.string()
+    .trim()
+    .optional()
+    .default(""),
 
-  subCategory: z.string().trim().optional().default(""),
+  category: weaponCategoryEnum,
 
-  material: z.string().trim().optional().default(""),
+  subCategory: z.string()
+    .trim()
+    .optional()
+    .default(""),
 
-  weight: z.string().trim().optional().default(""),
+  /* PHYSICAL DETAILS */
 
-  length: z.string().trim().optional().default(""),
+  material: z.string()
+    .trim()
+    .optional()
+    .default(""),
 
-  origin: z.string().trim().optional().default(""),
+  weight: z.string()
+    .trim()
+    .optional()
+    .default(""),
 
-  effectiveRange: z.string().trim().optional().default(""),
+  length: z.string()
+    .trim()
+    .optional()
+    .default(""),
 
-  manufacturingMethod: z
-    .string()
+  origin: z.string()
+    .trim()
+    .optional()
+    .default(""),
+
+  effectiveRange: z.string()
+    .trim()
+    .optional()
+    .default(""),
+
+  manufacturingMethod: z.string()
     .trim()
     .optional()
     .default(""),
 
   eraUsed: objectId.optional(),
 
-  replicaExists: z.boolean().optional().default(false),
-
-  specialFeatures: z
-    .array(z.string().trim().min(1))
+  replicaExists: z.boolean()
     .optional()
-    .default([]),
+    .default(false),
 
-  description: z.string().trim().min(10),
+  /* RELATIONSHIPS */
 
-  sourceIds: z
-    .array(objectId)
-    .min(1, "At least one source is required"),
+  museumAvailability:
+    objectIdArray,
 
-  tags: z
-    .array(z.string().trim().min(1))
+  associatedHeroes:
+    objectIdArray,
+
+  associatedKingdoms:
+    objectIdArray,
+
+  usedInBattles:
+    objectIdArray,
+
+  specialFeatures:
+    stringArray,
+
+  /* CONTENT */
+
+  description: z.string()
+    .trim()
+    .min(10),
+
+  imageIds: objectIdArray,
+
+  sourceIds: objectIdArray,
+
+  tags: stringArray,
+
+  /* ===================================================
+     CROSS REFERENCES
+  =================================================== */
+
+  crossReferences: z
+    .object({
+      relatedHeroes: objectIdArray,
+
+      relatedKingdoms: objectIdArray,
+
+      relatedBattles: objectIdArray,
+
+      relatedSources: objectIdArray,
+
+      relatedImages: objectIdArray,
+    })
     .optional()
-    .default([]),
+    .default({
+      relatedHeroes: [],
+      relatedKingdoms: [],
+      relatedBattles: [],
+      relatedSources: [],
+      relatedImages: [],
+    }),
 
-  status: z
-    .enum([
-      "Draft",
-      "Verified",
-      "Published",
-      "Needs Review",
-    ])
+  /* ===================================================
+     SEARCH
+  =================================================== */
+
+  searchFields: z
+    .object({
+      keywords: stringArray,
+
+      nativeSpellings: stringArray,
+
+      alternateSpellings: stringArray,
+
+      aliases: stringArray,
+    })
+    .optional()
+    .default({
+      keywords: [],
+      nativeSpellings: [],
+      alternateSpellings: [],
+      aliases: [],
+    }),
+
+  /* ===================================================
+     METADATA
+  =================================================== */
+
+  metadata: z
+    .object({
+      createdBy: z.string()
+        .trim()
+        .optional()
+        .default(""),
+
+      verifiedBy: z.string()
+        .trim()
+        .optional()
+        .default(""),
+
+      version: z.number()
+        .int()
+        .positive()
+        .default(1),
+    })
+    .optional()
+    .default({
+      createdBy: "",
+      verifiedBy: "",
+      version: 1,
+    }),
+
+  /* ===================================================
+     STATUS
+  =================================================== */
+
+  status: statusEnum
     .optional()
     .default("Draft"),
 });
 
+/* =====================================================
+   UPDATE
+===================================================== */
+
 export const updateWeaponSchema =
   createWeaponSchema.partial();
+
+/* =====================================================
+   QUERY
+===================================================== */
+
+export const weaponQuerySchema =
+  paginationSchema.extend({
+    search: z.string()
+      .trim()
+      .optional(),
+
+    status: statusEnum.optional(),
+
+    category:
+      weaponCategoryEnum.optional(),
+
+    eraUsed:
+      objectId.optional(),
+
+    replicaExists:
+      z.coerce.boolean().optional(),
+
+    sort: z.enum([
+      "name",
+      "-name",
+      "category",
+      "-category",
+      "createdAt",
+      "-createdAt",
+    ]).default("name"),
+  });
+
+/* =====================================================
+   ID
+===================================================== */
+
+export const weaponIdSchema = z.object({
+  id: z.string()
+    .trim()
+    .min(1),
+});
+
+/* =====================================================
+   TYPES
+===================================================== */
 
 export type CreateWeaponInput =
   z.infer<typeof createWeaponSchema>;
 
 export type UpdateWeaponInput =
   z.infer<typeof updateWeaponSchema>;
+
+export type WeaponQuery =
+  z.infer<typeof weaponQuerySchema>;
+
+export type WeaponId =
+  z.infer<typeof weaponIdSchema>;

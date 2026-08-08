@@ -1,88 +1,235 @@
-// src/validations/event.ts
-
 import { z } from "zod";
 
-const objectId = z
-  .string()
-  .regex(/^[a-f\d]{24}$/i, "Invalid ObjectId");
+import {
+  objectId,
+  objectIdArray,
+  stringArray,
+  statusEnum,
+  accuracyEnum,
+  paginationSchema,
+} from "@/validations/common";
+
+/* =====================================================
+   EVENT TYPE
+===================================================== */
+
+export const eventTypeEnum = z.enum([
+  "Coronation",
+  "Birth",
+  "Death",
+  "Treaty",
+  "Victory",
+  "Defeat",
+  "Hiding",
+  "Prophecy",
+  "Battle",
+]);
+
+/* =====================================================
+   CREATE
+===================================================== */
 
 export const createEventSchema = z.object({
-  name: z.string().trim().min(2).max(150),
+  /* BASIC */
 
-  nativeName: z
-    .string()
+  name: z.string()
+    .trim()
+    .min(2)
+    .max(200),
+
+  nativeName: z.string()
     .trim()
     .optional()
     .default(""),
 
-  eventDate: z.coerce.date().optional(),
+  eventDate: z.coerce
+    .date()
+    .nullable()
+    .optional(),
 
-  eventDateAccuracy: z
-    .enum([
-      "Exact",
-      "Approximate",
-      "Unknown",
-    ])
+  eventDateAccuracy: accuracyEnum
     .optional()
     .default("Unknown"),
 
+  /* RELATIONSHIPS */
+
   locationId: objectId.optional(),
+
+  heroIds: objectIdArray,
 
   historicalPeriodId: objectId.optional(),
 
-  type: z.enum([
-    "Coronation",
-    "Birth",
-    "Death",
-    "Treaty",
-    "Victory",
-    "Defeat",
-    "Hiding",
-    "Prophecy",
-    "Battle",
-  ]),
+  /* CLASSIFICATION */
 
-  isOnThisDayEligible: z
-    .boolean()
+  type: eventTypeEnum,
+
+  isOnThisDayEligible: z.boolean()
     .optional()
     .default(false),
 
-  description: z
-    .string()
+  /* CONTENT */
+
+  description: z.string()
     .trim()
     .min(10),
 
-  significance: z
-    .string()
+  significance: z.string()
     .trim()
     .optional()
     .default(""),
 
-  sourceIds: z
-    .array(objectId)
-    .min(1, "At least one source is required"),
+  imageIds: objectIdArray,
 
-  tags: z
-    .array(z.string().trim().min(1))
+  sourceIds: objectIdArray,
+
+  tags: stringArray,
+
+  /* ===================================================
+     CROSS REFERENCES
+  =================================================== */
+
+  crossReferences: z
+    .object({
+      relatedHeroes: objectIdArray,
+
+      relatedPlaces: objectIdArray,
+
+      relatedBattles: objectIdArray,
+
+      relatedBooks: objectIdArray,
+    })
     .optional()
-    .default([]),
+    .default({
+      relatedHeroes: [],
+      relatedPlaces: [],
+      relatedBattles: [],
+      relatedBooks: [],
+    }),
 
-  status: z
-    .enum([
-      "Draft",
-      "Verified",
-      "Published",
-      "Needs Review",
-    ])
+  /* ===================================================
+     SEARCH
+  =================================================== */
+
+  searchFields: z
+    .object({
+      keywords: stringArray,
+
+      nativeSpellings: stringArray,
+
+      alternateSpellings: stringArray,
+
+      aliases: stringArray,
+    })
+    .optional()
+    .default({
+      keywords: [],
+      nativeSpellings: [],
+      alternateSpellings: [],
+      aliases: [],
+    }),
+
+  /* ===================================================
+     METADATA
+  =================================================== */
+
+  metadata: z
+    .object({
+      createdBy: z.string()
+        .trim()
+        .optional()
+        .default(""),
+
+      verifiedBy: z.string()
+        .trim()
+        .optional()
+        .default(""),
+
+      version: z.number()
+        .int()
+        .positive()
+        .default(1),
+    })
+    .optional()
+    .default({
+      createdBy: "",
+      verifiedBy: "",
+      version: 1,
+    }),
+
+  /* ===================================================
+     STATUS
+  =================================================== */
+
+  status: statusEnum
     .optional()
     .default("Draft"),
 });
 
+/* =====================================================
+   UPDATE
+===================================================== */
+
 export const updateEventSchema =
   createEventSchema.partial();
+
+/* =====================================================
+   QUERY
+===================================================== */
+
+export const eventQuerySchema =
+  paginationSchema.extend({
+    search: z.string()
+      .trim()
+      .optional(),
+
+    status: statusEnum.optional(),
+
+    type: eventTypeEnum.optional(),
+
+    historicalPeriodId:
+      objectId.optional(),
+
+    locationId:
+      objectId.optional(),
+
+    heroId:
+      objectId.optional(),
+
+    isOnThisDayEligible:
+      z.coerce.boolean().optional(),
+
+    sort: z.enum([
+      "name",
+      "-name",
+      "eventDate",
+      "-eventDate",
+      "createdAt",
+      "-createdAt",
+    ]).default("eventDate"),
+  });
+
+/* =====================================================
+   ID
+===================================================== */
+
+export const eventIdSchema = z.object({
+  id: z.string()
+    .trim()
+    .min(1),
+});
+
+/* =====================================================
+   TYPES
+===================================================== */
 
 export type CreateEventInput =
   z.infer<typeof createEventSchema>;
 
 export type UpdateEventInput =
   z.infer<typeof updateEventSchema>;
+
+export type EventQuery =
+  z.infer<typeof eventQuerySchema>;
+
+export type EventId =
+  z.infer<typeof eventIdSchema>;

@@ -2,9 +2,15 @@
 
 import { z } from "zod";
 
-const objectId = z
-  .string()
-  .regex(/^[a-f\d]{24}$/i, "Invalid ObjectId");
+import {
+  objectId,
+  objectIdArray,
+  stringArray,
+  statusEnum,
+  genderEnum,
+  accuracyEnum,
+  paginationSchema,
+} from "@/validations/common";
 
 export const createHeroSchema = z.object({
   /* BASIC */
@@ -13,40 +19,23 @@ export const createHeroSchema = z.object({
 
   nativeName: z.string().trim().optional().default(""),
 
-  alternativeNames: z
-    .array(z.string().trim().min(1))
-    .optional()
-    .default([]),
+  alternativeNames: stringArray,
 
   title: z.string().trim().optional().default(""),
 
-  gender: z.enum([
-    "Male",
-    "Female",
-    "Other",
-  ]),
+  gender: genderEnum,
 
-  birthDate: z.coerce.date().optional(),
+  birthDate: z.coerce.date().nullable().optional(),
 
-  birthDateAccuracy: z
-    .enum([
-      "Exact",
-      "Approximate",
-      "Unknown",
-    ])
-    .optional()
-    .default("Unknown"),
+  birthDateAccuracy: accuracyEnum
+  .optional()
+  .default("Unknown"),
 
-  deathDate: z.coerce.date().optional(),
+  deathDate: z.coerce.date().nullable().optional(),
 
-  deathDateAccuracy: z
-    .enum([
-      "Exact",
-      "Approximate",
-      "Unknown",
-    ])
-    .optional()
-    .default("Unknown"),
+  deathDateAccuracy: accuracyEnum
+  .optional()
+  .default("Unknown"),
 
   birthPlaceId: objectId.optional(),
 
@@ -56,16 +45,14 @@ export const createHeroSchema = z.object({
 
   nickname: z.string().trim().optional().default(""),
 
-  personalityTraits: z
-    .array(z.string().trim().min(1))
-    .optional()
-    .default([]),
+  personalityTraits: stringArray,
 
   legacy: z.string().trim().optional().default(""),
 
   historicalAssessments: z
     .record(z.string(), z.string())
-    .optional(),
+    .optional()
+    .default({}),
 
   biography: z.string().trim().min(10),
 
@@ -75,31 +62,19 @@ export const createHeroSchema = z.object({
     .optional()
     .default(""),
 
-  knownFor: z
-    .array(z.string().trim().min(1))
-    .optional()
-    .default([]),
+  knownFor: stringArray,
 
-  occupation: z
-    .array(z.string().trim().min(1))
-    .optional()
-    .default([]),
+  occupation: stringArray,
 
-  roles: z
-    .array(z.string().trim().min(1))
-    .optional()
-    .default([]),
+  roles: stringArray,
 
-  languagesKnown: z
-    .array(z.string().trim().min(1))
-    .optional()
-    .default([]),
+  languagesKnown: stringArray,
 
   education: z.string().trim().optional().default(""),
 
   religion: z.string().trim().optional().default(""),
 
-  coronationDate: z.coerce.date().optional(),
+  coronationDate: z.coerce.date().optional().nullable(),
 
   predecessorId: objectId.optional(),
 
@@ -107,38 +82,46 @@ export const createHeroSchema = z.object({
 
   officialSeal: z.string().trim().optional().default(""),
 
-  coins: z
-    .array(z.string().trim().min(1))
-    .optional()
-    .default([]),
+  coins: stringArray,
 
-  administrativeReforms: z
-    .array(z.string().trim().min(1))
-    .optional()
-    .default([]),
+  administrativeReforms: stringArray,
 
-  economicReforms: z
-    .array(z.string().trim().min(1))
-    .optional()
-    .default([]),
+  economicReforms: stringArray,
 
   dynastyId: objectId.optional(),
 
   clan: z.string().trim().optional().default(""),
+  /* FAMILY */
+
+  fatherId: objectId.optional(),
+
+  motherId: objectId.optional(),
+
+  brothers: objectIdArray,
+
+  sisters: objectIdArray,
+
+  spouseIds: objectIdArray,
+
+  childrenIds: objectIdArray,
 
   /* MILITARY */
 
+  primaryWeaponIds: objectIdArray,
+
+  preferredWeapons: objectIdArray,
+
+  warAnimalId: objectId.optional(),
+
   armySize: z.number().int().positive().optional(),
 
-  militaryTactics: z
-    .array(z.string().trim().min(1))
-    .optional()
-    .default([]),
+  commanderOf: objectIdArray,
 
-  notableFeats: z
-    .array(z.string().trim().min(1))
-    .optional()
-    .default([]),
+  warStrategyIds: objectIdArray,
+
+  militaryTactics: stringArray,
+
+  notableFeats: stringArray,
 
   rank: z.string().trim().optional().default(""),
 
@@ -148,43 +131,142 @@ export const createHeroSchema = z.object({
 
   capitalId: objectId.optional(),
 
-  reignPeriod: z.string().trim().optional().default(""),
+  reignPeriod: z
+    .string()
+    .trim()
+    .optional()
+    .default(""),
+
+  territoryControlled: objectIdArray,
+
+  territoriesLost: objectIdArray,
+
+  territoriesRecaptured: objectIdArray,
 
   historicalPeriodId: objectId.optional(),
 
+  /* CROSS REFERENCES */
+
+  relatedHeroes: objectIdArray,
+
+  relatedBattles: objectIdArray,
+
+  relatedPlaces: objectIdArray,
+
+  relatedBooks: objectIdArray,
+
+  relatedSources: objectIdArray,
+
+  relatedImages: objectIdArray,
+
   /* CONTENT */
 
-  achievements: z
-    .array(z.string().trim().min(1))
-    .optional()
-    .default([]),
+  achievements: stringArray,
 
-  sourceIds: z
-    .array(objectId)
-    .optional()
-    .default([]),
+  quoteIds: objectIdArray,
 
-  tags: z
-    .array(z.string().trim().min(1))
-    .optional()
-    .default([]),
+  imageIds: objectIdArray,
 
-  status: z
-    .enum([
-      "Draft",
-      "Verified",
-      "Published",
-      "Needs Review",
-    ])
+  museumId: objectId.optional(),
+
+  exhibitionIds: objectIdArray,
+
+  memorialId: objectId.optional(),
+
+  bookIds: objectIdArray,
+
+  sourceIds: objectIdArray,
+
+  tags: stringArray,
+
+  /* SEARCH */
+
+  searchFields: z
+    .object({
+      keywords: stringArray,
+
+      nativeSpellings: stringArray,
+
+      alternateSpellings: stringArray,
+
+      aliases: stringArray,
+    })
     .optional()
-    .default("Draft"),
+    .default({
+      keywords: [],
+      nativeSpellings: [],
+      alternateSpellings: [],
+      aliases: [],
+    }),
+
+    /* METADATA */
+
+  metadata: z
+    .object({
+      createdBy: z
+        .string()
+        .trim()
+        .optional()
+        .default(""),
+
+      verifiedBy: z
+        .string()
+        .trim()
+        .optional()
+        .default(""),
+
+      version: z
+        .number()
+        .int()
+        .positive()
+        .default(1),
+    })
+    .optional()
+    .default({
+      createdBy: "",
+      verifiedBy: "",
+      version: 1,
+    }),
+
+  status: statusEnum
+  .optional()
+  .default("Draft"),
 });
 
 export const updateHeroSchema =
   createHeroSchema.partial();
 
-export type CreateHeroInput =
-  z.infer<typeof createHeroSchema>;
+export const heroQuerySchema =
+  paginationSchema.extend({
+    search: z.string().trim().optional(),
 
-export type UpdateHeroInput =
-  z.infer<typeof updateHeroSchema>;
+    status: statusEnum.optional(),
+
+    kingdomId: objectId.optional(),
+
+    historicalPeriodId: objectId.optional(),
+
+    gender: genderEnum.optional(),
+
+    sort: z
+      .enum([
+        "name",
+        "-name",
+        "createdAt",
+        "-createdAt",
+        "birthDate",
+        "-birthDate",
+      ])
+      .default("name"),
+  });
+
+
+export type CreateHeroInput = z.infer<typeof createHeroSchema>;
+
+export type UpdateHeroInput = z.infer<typeof updateHeroSchema>;
+
+export type HeroQuery = z.infer<typeof heroQuerySchema>;
+
+export const heroIdSchema = z.object({id: z.string().trim().min(1),});
+
+export type HeroId = z.infer<typeof heroIdSchema>;

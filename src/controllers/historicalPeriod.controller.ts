@@ -1,6 +1,6 @@
 // src/controllers/historicalPeriod.controller.ts
 
-import { NextRequest } from "next/server";
+import { NextRequest,NextResponse } from "next/server";
 
 import historicalPeriodService
 from "@/services/historicalPeriod.service";
@@ -23,8 +23,10 @@ export default class HistoricalPeriodController {
     const data =
       createHistoricalPeriodSchema.parse(body);
 
-    return historicalPeriodService
-      .createHistoricalPeriod(data);
+    const historicalPeriod =
+    await historicalPeriodService.createHistoricalPeriod(data);
+
+    return NextResponse.json(historicalPeriod);
 
   }
 
@@ -40,8 +42,10 @@ export default class HistoricalPeriodController {
     const validatedQuery =
       historicalPeriodQuerySchema.parse(query);
 
-    return historicalPeriodService
-      .getHistoricalPeriods(validatedQuery);
+    const historicalPeriods =
+    await historicalPeriodService.getHistoricalPeriods(validatedQuery);
+
+    return NextResponse.json(historicalPeriods);
 
   }
 
@@ -52,8 +56,10 @@ export default class HistoricalPeriodController {
     const validated =
         historicalPeriodIdSchema.parse(params);
 
-    return historicalPeriodService
-        .getHistoricalPeriodById(validated.id);
+    const historicalPeriod =
+    await historicalPeriodService.getHistoricalPeriodById(validated.id);
+
+    return NextResponse.json(historicalPeriod);
     }
 
     static async update(
@@ -68,10 +74,13 @@ export default class HistoricalPeriodController {
     const validatedBody =
         updateHistoricalPeriodSchema.parse(body);
 
-    return historicalPeriodService.updateHistoricalPeriod(
-        validatedId.id,
-        validatedBody
+    const historicalPeriod =
+    await historicalPeriodService.updateHistoricalPeriod(
+      validatedId.id,
+      validatedBody
     );
+
+    return NextResponse.json(historicalPeriod);
     }
 
     static async delete(
@@ -81,9 +90,12 @@ export default class HistoricalPeriodController {
     const validated =
         historicalPeriodIdSchema.parse(params);
 
-    return historicalPeriodService.deleteHistoricalPeriod(
-        validated.id
+    const result =
+    await historicalPeriodService.deleteHistoricalPeriod(
+      validated.id
     );
+
+    return NextResponse.json(result);
     }
 
 }

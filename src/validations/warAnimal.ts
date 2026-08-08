@@ -1,70 +1,247 @@
-// src/validations/warAnimal.ts
-
 import { z } from "zod";
 
-const objectId = z
-  .string()
-  .regex(/^[a-f\d]{24}$/i, "Invalid ObjectId");
+import {
+  objectId,
+  objectIdArray,
+  stringArray,
+  statusEnum,
+  paginationSchema,
+} from "@/validations/common";
+
+/* =====================================================
+   WAR ANIMAL TYPE
+===================================================== */
+
+export const warAnimalTypeEnum = z.enum([
+  "Horse",
+  "Elephant",
+  "Camel",
+  "Dog",
+]);
+
+/* =====================================================
+   CREATE
+===================================================== */
 
 export const createWarAnimalSchema = z.object({
-  name: z.string().trim().min(2).max(100),
+  /* BASIC */
 
-  type: z.enum([
-    "Horse",
-    "Elephant",
-    "Camel",
-    "Dog",
-  ]),
+  name: z.string()
+    .trim()
+    .min(2)
+    .max(200),
 
-  breedSpecies: z.string().trim().optional().default(""),
+  type: warAnimalTypeEnum,
+
+  breedSpecies: z.string()
+    .trim()
+    .optional()
+    .default(""),
+
+  /* OWNERSHIP */
 
   ownerId: objectId,
 
   kingdomId: objectId.optional(),
 
-  specialAbilities: z
-    .array(z.string().trim().min(1))
-    .optional()
-    .default([]),
+  /* DETAILS */
+
+  specialAbilities: stringArray,
 
   disguiseDetails: z
-  .object({
-    disguise: z.string().trim().optional().default(""),
-    purpose: z.string().trim().optional().default(""),
-  })
-  .optional(),
+    .object({
+      disguise: z.string()
+        .trim()
+        .optional()
+        .default(""),
+
+      purpose: z.string()
+        .trim()
+        .optional()
+        .default(""),
+    })
+    .optional()
+    .default({
+      disguise: "",
+      purpose: "",
+    }),
+
+  notableBattles: objectIdArray,
 
   armourId: objectId.optional(),
 
-  fate: z.string().trim().optional().default(""),
-
-  description: z.string().trim().min(10),
-
-  sourceIds: z
-    .array(objectId)
-    .min(1, "At least one source is required"),
-
-  tags: z
-    .array(z.string().trim().min(1))
+  fate: z.string()
+    .trim()
     .optional()
-    .default([]),
+    .default(""),
 
-  status: z
-    .enum([
-      "Draft",
-      "Verified",
-      "Published",
-      "Needs Review",
-    ])
+  memorialId: objectId.optional(),
+
+  /* CONTENT */
+
+  description: z.string()
+    .trim()
+    .min(10),
+
+  imageIds: objectIdArray,
+
+  sourceIds: objectIdArray,
+
+  tags: stringArray,
+
+  /* ===================================================
+     CROSS REFERENCES
+  =================================================== */
+
+  crossReferences: z
+    .object({
+      relatedHeroes: objectIdArray,
+
+      relatedKingdoms: objectIdArray,
+
+      relatedBattles: objectIdArray,
+
+      relatedMemorials: objectIdArray,
+
+      relatedSources: objectIdArray,
+
+      relatedImages: objectIdArray,
+    })
+    .optional()
+    .default({
+      relatedHeroes: [],
+      relatedKingdoms: [],
+      relatedBattles: [],
+      relatedMemorials: [],
+      relatedSources: [],
+      relatedImages: [],
+    }),
+
+  /* ===================================================
+     SEARCH
+  =================================================== */
+
+  searchFields: z
+    .object({
+      keywords: stringArray,
+
+      nativeSpellings: stringArray,
+
+      alternateSpellings: stringArray,
+
+      aliases: stringArray,
+    })
+    .optional()
+    .default({
+      keywords: [],
+      nativeSpellings: [],
+      alternateSpellings: [],
+      aliases: [],
+    }),
+
+  /* ===================================================
+     METADATA
+  =================================================== */
+
+  metadata: z
+    .object({
+      createdBy: z.string()
+        .trim()
+        .optional()
+        .default(""),
+
+      verifiedBy: z.string()
+        .trim()
+        .optional()
+        .default(""),
+
+      version: z.number()
+        .int()
+        .positive()
+        .default(1),
+    })
+    .optional()
+    .default({
+      createdBy: "",
+      verifiedBy: "",
+      version: 1,
+    }),
+
+  /* ===================================================
+     STATUS
+  =================================================== */
+
+  status: statusEnum
     .optional()
     .default("Draft"),
 });
 
+/* =====================================================
+   UPDATE
+===================================================== */
+
 export const updateWarAnimalSchema =
   createWarAnimalSchema.partial();
+
+/* =====================================================
+   QUERY
+===================================================== */
+
+export const warAnimalQuerySchema =
+  paginationSchema.extend({
+    search: z.string()
+      .trim()
+      .optional(),
+
+    status: statusEnum.optional(),
+
+    type:
+      warAnimalTypeEnum.optional(),
+
+    ownerId:
+      objectId.optional(),
+
+    kingdomId:
+      objectId.optional(),
+
+    armourId:
+      objectId.optional(),
+
+    memorialId:
+      objectId.optional(),
+
+    sort: z.enum([
+      "name",
+      "-name",
+      "type",
+      "-type",
+      "createdAt",
+      "-createdAt",
+    ]).default("name"),
+  });
+
+/* =====================================================
+   ID
+===================================================== */
+
+export const warAnimalIdSchema = z.object({
+  id: z.string()
+    .trim()
+    .min(1),
+});
+
+/* =====================================================
+   TYPES
+===================================================== */
 
 export type CreateWarAnimalInput =
   z.infer<typeof createWarAnimalSchema>;
 
 export type UpdateWarAnimalInput =
   z.infer<typeof updateWarAnimalSchema>;
+
+export type WarAnimalQuery =
+  z.infer<typeof warAnimalQuerySchema>;
+
+export type WarAnimalId =
+  z.infer<typeof warAnimalIdSchema>;

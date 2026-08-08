@@ -1,107 +1,210 @@
-// src/validations/battle.ts
-
 import { z } from "zod";
 
-const objectId = z
-  .string()
-  .regex(/^[a-f\d]{24}$/i, "Invalid ObjectId");
+import {
+  objectId,
+  objectIdArray,
+  stringArray,
+  statusEnum,
+  accuracyEnum,
+  paginationSchema,
+} from "@/validations/common";
+
+/* =====================================================
+   CREATE
+===================================================== */
 
 export const createBattleSchema = z.object({
+  /* BASIC */
+
   name: z.string().trim().min(2).max(150),
 
-  nativeName: z
-    .string()
-    .trim()
-    .optional()
-    .default(""),
+  nativeName: z.string().trim().optional().default(""),
 
-  alternativeNames: z
-    .array(z.string().trim().min(1))
-    .optional()
-    .default([]),
+  alternativeNames: stringArray,
 
-  battleDate: z.coerce.date().optional(),
+  battleDate: z.coerce.date().nullable().optional(),
 
-  battleDateAccuracy: z
-    .enum([
-      "Exact",
-      "Approximate",
-      "Unknown",
-    ])
+  battleDateAccuracy: accuracyEnum
     .optional()
     .default("Unknown"),
+
+  /* LOCATION */
 
   locationId: objectId,
 
   historicalPeriodId: objectId.optional(),
 
-  kingdomIds: z
-    .array(objectId)
-    .min(1, "At least one kingdom is required"),
+  /* PARTICIPANTS */
 
-  commanderIds: z
-    .array(objectId)
-    .min(1, "At least one commander is required"),
+  kingdomIds: objectIdArray,
 
-  casualties: z
-    .number()
-    .int()
-    .nonnegative()
+  commanderIds: objectIdArray,
+
+  opposingCommanderIds: objectIdArray,
+
+  victorId: objectId.optional(),
+
+  victorModel: z
+    .enum(["Hero", "Kingdom"])
     .optional(),
+
+  /* MILITARY */
+
+  casualties: z.number().int().min(0).optional(),
 
   armySizes: z
-    .record(z.string(), z.number().nonnegative())
-    .optional(),
+    .record(z.string(), z.number())
+    .optional()
+    .default({}),
+
+  weaponsUsed: objectIdArray,
+
+  warAnimalIds: objectIdArray,
 
   strategyId: objectId.optional(),
 
-  keyEvents: z
-    .array(z.string().trim().min(1))
+  keyEvents: stringArray,
+
+  /* CONTENT */
+
+  significance: z.string().trim().optional().default(""),
+
+  description: z.string().trim().min(10),
+
+  aftermath: z.string().trim().optional().default(""),
+
+  imageIds: objectIdArray,
+
+  sourceIds: objectIdArray,
+
+  tags: stringArray,
+
+  /* CROSS REFERENCES */
+
+  crossReferences: z
+    .object({
+      relatedHeroes: objectIdArray,
+
+      relatedKingdoms: objectIdArray,
+
+      relatedWeapons: objectIdArray,
+
+      relatedPlaces: objectIdArray,
+
+      relatedEvents: objectIdArray,
+
+      relatedBooks: objectIdArray,
+
+      relatedSources: objectIdArray,
+
+      relatedImages: objectIdArray,
+    })
     .optional()
-    .default([]),
+    .default({
+      relatedHeroes: [],
+      relatedKingdoms: [],
+      relatedWeapons: [],
+      relatedPlaces: [],
+      relatedEvents: [],
+      relatedBooks: [],
+      relatedSources: [],
+      relatedImages: [],
+    }),
 
-  significance: z
-    .string()
-    .trim()
+  /* SEARCH */
+
+  searchFields: z
+    .object({
+      keywords: stringArray,
+
+      nativeSpellings: stringArray,
+
+      alternateSpellings: stringArray,
+
+      aliases: stringArray,
+    })
     .optional()
-    .default(""),
+    .default({
+      keywords: [],
+      nativeSpellings: [],
+      alternateSpellings: [],
+      aliases: [],
+    }),
 
-  description: z
-    .string()
-    .trim()
-    .min(10),
+  /* METADATA */
 
-  aftermath: z
-    .string()
-    .trim()
+  metadata: z
+    .object({
+      createdBy: z.string().trim().optional().default(""),
+
+      verifiedBy: z.string().trim().optional().default(""),
+
+      version: z.number().int().positive().default(1),
+    })
     .optional()
-    .default(""),
+    .default({
+      createdBy: "",
+      verifiedBy: "",
+      version: 1,
+    }),
 
-  sourceIds: z
-    .array(objectId)
-    .min(1, "At least one source is required"),
-
-  tags: z
-    .array(z.string().trim().min(1))
-    .optional()
-    .default([]),
-
-  status: z
-    .enum([
-      "Draft",
-      "Verified",
-      "Published",
-      "Needs Review",
-    ])
-    .optional()
-    .default("Draft"),
+  status: statusEnum.optional().default("Draft"),
 });
+
+/* =====================================================
+   UPDATE
+===================================================== */
 
 export const updateBattleSchema =
   createBattleSchema.partial();
+
+/* =====================================================
+   QUERY
+===================================================== */
+
+export const battleQuerySchema =
+  paginationSchema.extend({
+    search: z.string().trim().optional(),
+
+    status: statusEnum.optional(),
+
+    historicalPeriodId: objectId.optional(),
+
+    locationId: objectId.optional(),
+
+    sort: z
+      .enum([
+        "name",
+        "-name",
+        "createdAt",
+        "-createdAt",
+        "battleDate",
+        "-battleDate",
+      ])
+      .default("name"),
+  });
+
+/* =====================================================
+   ID
+===================================================== */
+
+export const battleIdSchema =
+  z.object({
+    id: z.string().trim().min(1),
+  });
+
+/* =====================================================
+   TYPES
+===================================================== */
 
 export type CreateBattleInput =
   z.infer<typeof createBattleSchema>;
 
 export type UpdateBattleInput =
   z.infer<typeof updateBattleSchema>;
+
+export type BattleQuery =
+  z.infer<typeof battleQuerySchema>;
+
+export type BattleId =
+  z.infer<typeof battleIdSchema>;

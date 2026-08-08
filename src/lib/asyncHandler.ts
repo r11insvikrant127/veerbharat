@@ -1,12 +1,10 @@
-// src/lib/asyncHandler.ts
-
 import { NextRequest, NextResponse } from "next/server";
 import ApiError from "./ApiError";
 
 type RouteHandler<T = unknown> = (
   request: NextRequest,
   context: T
-) => Promise<NextResponse>;
+) => Promise<Response>;
 
 export function asyncHandler<T = unknown>(
   handler: RouteHandler<T>
@@ -14,7 +12,7 @@ export function asyncHandler<T = unknown>(
   return async (
     request: NextRequest,
     context: T
-  ): Promise<NextResponse> => {
+  ): Promise<Response> => {
     try {
       return await handler(request, context);
     } catch (error) {
@@ -45,3 +43,5 @@ export function asyncHandler<T = unknown>(
     }
   };
 }
+
+export default asyncHandler;

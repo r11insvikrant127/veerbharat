@@ -10,7 +10,6 @@ const HeroSchema = new Schema(
       type: String,
       required: true,
       unique: true,
-      index: true,
       trim: true,
     },
 
@@ -18,7 +17,6 @@ const HeroSchema = new Schema(
       type: String,
       required: true,
       trim: true,
-      index: true,
     },
 
     nativeName: {
@@ -170,8 +168,13 @@ const HeroSchema = new Schema(
     },
 
     education: {
-      type: String,
-      default: "",
+      type: [
+        {
+          type: String,
+          trim: true,
+        },
+      ],
+      default: [],
     },
 
     religion: {
@@ -332,12 +335,22 @@ const HeroSchema = new Schema(
     },
 
     militaryTactics: {
-      type: [String],
+      type: [
+      {
+      type: String,
+      trim: true,
+      },
+      ],
       default: [],
     },
 
     notableFeats: {
-      type: [String],
+      type: [
+      {
+      type: String,
+      trim: true,
+      },
+      ],
       default: [],
     },
 
@@ -427,7 +440,12 @@ const HeroSchema = new Schema(
     =========================== */
 
     achievements: {
-      type: [String],
+      type: [
+      {
+      type: String,
+      trim: true,
+      },
+      ],
       default: [],
     },
 
@@ -469,7 +487,12 @@ const HeroSchema = new Schema(
     },
 
     tags: {
-      type: [String],
+      type: [
+      {
+      type: String,
+      trim: true,
+      },
+      ],
       default: [],
     },
 
@@ -479,22 +502,42 @@ const HeroSchema = new Schema(
 
     searchFields: {
       keywords: {
-        type: [String],
+        type: [
+        {
+        type: String,
+        trim: true,
+        },
+        ],
         default: [],
       },
 
       nativeSpellings: {
-        type: [String],
+        type: [
+        {
+        type: String,
+        trim: true,
+        },
+        ],
         default: [],
       },
 
       alternateSpellings: {
-        type: [String],
+        type: [
+        {
+        type: String,
+        trim: true,
+        },
+        ],
         default: [],
       },
 
       aliases: {
-        type: [String],
+        type: [
+        {
+        type: String,
+        trim: true,
+        },
+        ],
         default: [],
       },
     },

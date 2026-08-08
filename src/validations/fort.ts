@@ -1,84 +1,239 @@
-// src/validations/fort.ts
-
 import { z } from "zod";
 
-const objectId = z
-  .string()
-  .regex(/^[a-f\d]{24}$/i, "Invalid ObjectId");
+import {
+  objectId,
+  objectIdArray,
+  stringArray,
+  statusEnum,
+  accuracyEnum,
+  paginationSchema,
+} from "@/validations/common";
+
+/* =====================================================
+   FORT STATUS
+===================================================== */
+
+export const fortStatusEnum = z.enum([
+  "Active",
+  "Ruins",
+  "Restored",
+]);
+
+/* =====================================================
+   CREATE
+===================================================== */
 
 export const createFortSchema = z.object({
-  name: z.string().trim().min(2).max(150),
+  /* BASIC */
 
-  nativeName: z.string().trim().optional().default(""),
+  name: z.string()
+    .trim()
+    .min(2)
+    .max(200),
 
-  alternativeNames: z
-    .array(z.string().trim().min(1))
+  nativeName: z.string()
+    .trim()
     .optional()
-    .default([]),
+    .default(""),
+
+  alternativeNames: stringArray,
+
+  /* LOCATION */
 
   locationId: objectId,
 
-  constructionDate: z.coerce.date().optional(),
+  /* HISTORY */
 
-  constructionDateAccuracy: z
-    .enum([
-      "Exact",
-      "Approximate",
-      "Unknown",
-    ])
-    .optional()
-    .default("Unknown"),
+  constructionDate: z.coerce
+    .date()
+    .nullable()
+    .optional(),
+
+  constructionDateAccuracy:
+    accuracyEnum
+      .optional()
+      .default("Unknown"),
 
   builderId: objectId.optional(),
 
   kingdomId: objectId.optional(),
 
-  architectureStyle: z
-    .string()
+  /* FORT DETAILS */
+
+  architectureStyle: z.string()
     .trim()
     .optional()
     .default(""),
 
-  features: z
-    .array(z.string().trim().min(1))
+  features: stringArray,
+
+  battles: objectIdArray,
+
+  fortStatus:
+    fortStatusEnum.optional(),
+
+  /* CONTENT */
+
+  description: z.string()
+    .trim()
+    .min(10),
+
+  imageIds: objectIdArray,
+
+  sourceIds: objectIdArray,
+
+  tags: stringArray,
+
+  /* ===================================================
+     CROSS REFERENCES
+  =================================================== */
+
+  crossReferences: z
+    .object({
+      relatedHeroes: objectIdArray,
+
+      relatedKingdoms: objectIdArray,
+
+      relatedBattles: objectIdArray,
+
+      relatedPlaces: objectIdArray,
+
+      relatedSources: objectIdArray,
+
+      relatedImages: objectIdArray,
+    })
     .optional()
-    .default([]),
+    .default({
+      relatedHeroes: [],
+      relatedKingdoms: [],
+      relatedBattles: [],
+      relatedPlaces: [],
+      relatedSources: [],
+      relatedImages: [],
+    }),
 
-  fortStatus: z
-    .enum([
-      "Active",
-      "Ruins",
-      "Restored",
-    ])
-    .optional(),
+  /* ===================================================
+     SEARCH
+  =================================================== */
 
-  description: z.string().trim().min(10),
+  searchFields: z
+    .object({
+      keywords: stringArray,
 
-  sourceIds: z
-    .array(objectId)
-    .min(1, "At least one source is required"),
+      nativeSpellings: stringArray,
 
-  tags: z
-    .array(z.string().trim().min(1))
+      alternateSpellings: stringArray,
+
+      aliases: stringArray,
+    })
     .optional()
-    .default([]),
+    .default({
+      keywords: [],
+      nativeSpellings: [],
+      alternateSpellings: [],
+      aliases: [],
+    }),
 
-  status: z
-    .enum([
-      "Draft",
-      "Verified",
-      "Published",
-      "Needs Review",
-    ])
+  /* ===================================================
+     METADATA
+  =================================================== */
+
+  metadata: z
+    .object({
+      createdBy: z.string()
+        .trim()
+        .optional()
+        .default(""),
+
+      verifiedBy: z.string()
+        .trim()
+        .optional()
+        .default(""),
+
+      version: z.number()
+        .int()
+        .positive()
+        .default(1),
+    })
+    .optional()
+    .default({
+      createdBy: "",
+      verifiedBy: "",
+      version: 1,
+    }),
+
+  /* ===================================================
+     STATUS
+  =================================================== */
+
+  status: statusEnum
     .optional()
     .default("Draft"),
 });
 
+/* =====================================================
+   UPDATE
+===================================================== */
+
 export const updateFortSchema =
   createFortSchema.partial();
+
+/* =====================================================
+   QUERY
+===================================================== */
+
+export const fortQuerySchema =
+  paginationSchema.extend({
+    search: z.string()
+      .trim()
+      .optional(),
+
+    status: statusEnum.optional(),
+
+    fortStatus:
+      fortStatusEnum.optional(),
+
+    locationId:
+      objectId.optional(),
+
+    builderId:
+      objectId.optional(),
+
+    kingdomId:
+      objectId.optional(),
+
+    sort: z.enum([
+      "name",
+      "-name",
+      "constructionDate",
+      "-constructionDate",
+      "createdAt",
+      "-createdAt",
+    ]).default("name"),
+  });
+
+/* =====================================================
+   ID
+===================================================== */
+
+export const fortIdSchema = z.object({
+  id: z.string()
+    .trim()
+    .min(1),
+});
+
+/* =====================================================
+   TYPES
+===================================================== */
 
 export type CreateFortInput =
   z.infer<typeof createFortSchema>;
 
 export type UpdateFortInput =
   z.infer<typeof updateFortSchema>;
+
+export type FortQuery =
+  z.infer<typeof fortQuerySchema>;
+
+export type FortId =
+  z.infer<typeof fortIdSchema>;

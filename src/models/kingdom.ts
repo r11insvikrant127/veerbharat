@@ -349,8 +349,6 @@ const KingdomSchema = new Schema(
    INDEXES
 =========================== */
 
-KingdomSchema.index({ kingdomId: 1 });
-KingdomSchema.index({ name: 1 });
 KingdomSchema.index({ dynastyId: 1 });
 KingdomSchema.index({ founderId: 1 });
 KingdomSchema.index({ historicalPeriodId: 1 });

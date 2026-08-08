@@ -5,12 +5,12 @@ export const ID_PREFIXES = {
   PER: "PER",
   KGD: "KGD",
   BAT: "BAT",
-  BOOK: "BOOK",
+  BOK: "BOK",
   SRC: "SRC",
   IMG: "IMG",
   DYN: "DYN",
   EVT: "EVT",
-  FORT: "FORT",
+  FRT: "FRT",
   PLC: "PLC",
   QTE: "QTE",
   MUS: "MUS",
@@ -22,6 +22,10 @@ export const ID_PREFIXES = {
   WST: "WST",
   ALL: "ALL",
   WPN: "WPN",
+  KNG: "KNG",
+  BTL: "BTL",
+  ANL: "ANL",
+  MCO: "MCO",
 } as const;
 
 export type IdPrefix = (typeof ID_PREFIXES)[keyof typeof ID_PREFIXES];

@@ -1,13 +1,18 @@
 // src/validations/historicalPeriod.ts
 
 import { z } from "zod";
+import {
+  stringArray,
+  statusEnum,
+  paginationSchema,
+} from "@/validations/common";
 
 export const createHistoricalPeriodSchema = z.object({
   name: z.string().trim().min(2).max(100),
 
   nativeName: z.string().trim().optional().default(""),
 
-  alternativeNames: z.array(z.string().trim()).optional().default([]),
+  alternativeNames: stringArray,
 
   startYear: z.string().trim().min(1),
 
@@ -19,57 +24,33 @@ export const createHistoricalPeriodSchema = z.object({
 
   significance: z.string().trim().optional().default(""),
 
-  keyCharacteristics: z
-    .array(z.string().trim())
-    .optional()
-    .default([]),
+  keyCharacteristics: stringArray,
 
-  tags: z
-    .array(z.string().trim())
-    .optional()
-    .default([]),
+  tags: stringArray,
 
-  status: z
-    .enum([
-      "Draft",
-      "Verified",
-      "Published",
-      "Needs Review",
-    ])
-    .optional()
-    .default("Draft"),
+  status: statusEnum
+  .optional()
+  .default("Draft"),
 });
 
 export const updateHistoricalPeriodSchema =
   createHistoricalPeriodSchema.partial();
 
-export const historicalPeriodQuerySchema = z.object({
-  page: z.coerce.number().int().min(1).default(1),
+export const historicalPeriodQuerySchema =
+  paginationSchema.extend({
+    search: z.string().trim().optional(),
 
-  limit: z.coerce.number().int().min(1).max(100).default(10),
+    status: statusEnum.optional(),
 
-  search: z.string().trim().optional(),
-
-  status: z
-    .enum([
-      "Draft",
-      "Verified",
-      "Published",
-      "Needs Review",
-    ])
-    .optional(),
-
-  sort: z
-    .enum([
+    sort: z.enum([
       "name",
       "-name",
       "createdAt",
       "-createdAt",
       "startYear",
       "-startYear",
-    ])
-    .default("name"),
-});
+    ]).default("name"),
+  });
 
 export type HistoricalPeriodQuery =
   z.infer<typeof historicalPeriodQuerySchema>;

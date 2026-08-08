@@ -1,56 +1,198 @@
-// src/validations/warStrategy.ts
-
 import { z } from "zod";
 
-const objectId = z
-  .string()
-  .regex(/^[a-f\d]{24}$/i, "Invalid ObjectId");
+import {
+  objectIdArray,
+  stringArray,
+  statusEnum,
+  paginationSchema,
+} from "@/validations/common";
+
+/* =====================================================
+   WAR STRATEGY TYPE
+===================================================== */
+
+export const warStrategyTypeEnum = z.enum([
+  "Guerrilla",
+  "Conventional",
+  "Terrain-based",
+  "Deception",
+  "Psychological",
+]);
+
+/* =====================================================
+   CREATE
+===================================================== */
 
 export const createWarStrategySchema = z.object({
-  name: z.string().trim().min(2).max(100),
+  /* BASIC */
 
-  nativeName: z.string().trim().optional().default(""),
+  name: z.string()
+    .trim()
+    .min(2)
+    .max(200),
 
-  type: z.enum([
-    "Guerrilla",
-    "Conventional",
-    "Terrain-based",
-    "Deception",
-    "Psychological",
-  ]),
-
-  keyPrinciples: z
-    .array(z.string().trim().min(1))
+  nativeName: z.string()
+    .trim()
     .optional()
-    .default([]),
+    .default(""),
 
-  description: z.string().trim().min(10),
+  type: warStrategyTypeEnum,
 
-  sourceIds: z
-    .array(objectId)
-    .min(1, "At least one source is required"),
+  /* DETAILS */
 
-  tags: z
-    .array(z.string().trim().min(1))
+  keyPrinciples: stringArray,
+
+  usedBy: objectIdArray,
+
+  usedInBattles: objectIdArray,
+
+  /* CONTENT */
+
+  description: z.string()
+    .trim()
+    .min(10),
+
+  imageIds: objectIdArray,
+
+  sourceIds: objectIdArray,
+
+  tags: stringArray,
+
+  /* ===================================================
+     CROSS REFERENCES
+  =================================================== */
+
+  crossReferences: z
+    .object({
+      relatedHeroes: objectIdArray,
+
+      relatedBattles: objectIdArray,
+
+      relatedSources: objectIdArray,
+
+      relatedImages: objectIdArray,
+    })
     .optional()
-    .default([]),
+    .default({
+      relatedHeroes: [],
+      relatedBattles: [],
+      relatedSources: [],
+      relatedImages: [],
+    }),
 
-  status: z
-    .enum([
-      "Draft",
-      "Verified",
-      "Published",
-      "Needs Review",
-    ])
+  /* ===================================================
+     SEARCH
+  =================================================== */
+
+  searchFields: z
+    .object({
+      keywords: stringArray,
+
+      nativeSpellings: stringArray,
+
+      alternateSpellings: stringArray,
+
+      aliases: stringArray,
+    })
+    .optional()
+    .default({
+      keywords: [],
+      nativeSpellings: [],
+      alternateSpellings: [],
+      aliases: [],
+    }),
+
+  /* ===================================================
+     METADATA
+  =================================================== */
+
+  metadata: z
+    .object({
+      createdBy: z.string()
+        .trim()
+        .optional()
+        .default(""),
+
+      verifiedBy: z.string()
+        .trim()
+        .optional()
+        .default(""),
+
+      version: z.number()
+        .int()
+        .positive()
+        .default(1),
+    })
+    .optional()
+    .default({
+      createdBy: "",
+      verifiedBy: "",
+      version: 1,
+    }),
+
+  /* ===================================================
+     STATUS
+  =================================================== */
+
+  status: statusEnum
     .optional()
     .default("Draft"),
 });
 
+/* =====================================================
+   UPDATE
+===================================================== */
+
 export const updateWarStrategySchema =
   createWarStrategySchema.partial();
+
+/* =====================================================
+   QUERY
+===================================================== */
+
+export const warStrategyQuerySchema =
+  paginationSchema.extend({
+    search: z.string()
+      .trim()
+      .optional(),
+
+    status: statusEnum.optional(),
+
+    type:
+      warStrategyTypeEnum.optional(),
+
+    sort: z.enum([
+      "name",
+      "-name",
+      "type",
+      "-type",
+      "createdAt",
+      "-createdAt",
+    ]).default("name"),
+  });
+
+/* =====================================================
+   ID
+===================================================== */
+
+export const warStrategyIdSchema = z.object({
+  id: z.string()
+    .trim()
+    .min(1),
+});
+
+/* =====================================================
+   TYPES
+===================================================== */
 
 export type CreateWarStrategyInput =
   z.infer<typeof createWarStrategySchema>;
 
 export type UpdateWarStrategyInput =
   z.infer<typeof updateWarStrategySchema>;
+
+export type WarStrategyQuery =
+  z.infer<typeof warStrategyQuerySchema>;
+
+export type WarStrategyId =
+  z.infer<typeof warStrategyIdSchema>;
