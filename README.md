@@ -1,36 +1,97 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🇮🇳 VeerBharat
 
-## Getting Started
+An interactive web platform dedicated to showcasing the lives, stories, achievements, and contributions of Indian heroes.
 
-First, run the development server:
+## 🚧 Project Status
+
+**In Progress**
+
+VeerBharat is currently under active development. The project is being built with a focus on a clean, responsive, and engaging user experience for exploring the stories of Indian heroes.
+
+## ✨ Features
+
+* 🏛️ Hero showcase and profiles
+* 📖 Hero biographies and stories
+* 🕰️ Historical timelines
+* 📚 Featured books related to Indian heroes
+* 🎨 Responsive and modern user interface
+* 🧩 Reusable component-based architecture
+
+## 🛠️ Tech Stack
+
+* **Next.js**
+* **React**
+* **TypeScript**
+* **Tailwind CSS**
+* **Framer Motion**
+* **Lucide React**
+
+## 📂 Project Structure
+
+```text
+veerbharat/
+├── public/
+├── src/
+│   ├── components/
+│   │   ├── common/
+│   │   ├── home/
+│   │   ├── layout/
+│   │   ├── sections/
+│   │   └── ui/
+│   ├── data/
+│   ├── hooks/
+│   ├── styles/
+│   ├── types/
+│   └── utils/
+├── package.json
+├── tsconfig.json
+├── next.config.ts
+└── README.md
+```
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+Make sure you have **Node.js** and **npm** installed.
+
+### Installation
+
+Clone the repository:
+
+```bash
+git clone https://github.com/r11insvikrant127/veerbharat.git
+```
+
+Navigate into the project:
+
+```bash
+cd veerbharat
+```
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Start the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open **http://localhost:3000** in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🎯 Future Improvements
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+* Add more Indian heroes and detailed profiles
+* Improve search and navigation
+* Add more historical events and timelines
+* Improve animations and interactions
+* Add additional book recommendations
+* Further enhance responsive design
 
-## Learn More
+## 📌 Note
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project is being developed as a personal web development project and is currently a work in progress.
