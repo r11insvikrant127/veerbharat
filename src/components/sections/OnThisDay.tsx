@@ -1,7 +1,7 @@
 // src/components/sections/OnThisDay.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Calendar, Flag, ArrowRight } from 'lucide-react';
@@ -33,7 +33,7 @@ export function OnThisDay() {
 
   const [loading, setLoading] = useState(true);
 
-  const today = new Date();
+  const today = useMemo(() => new Date(), []);
 
   const todayStr =
     `${today.getDate()} ${today.toLocaleString(
@@ -110,7 +110,7 @@ export function OnThisDay() {
     }
 
     fetchTodayEvent();
-  }, []);
+  }, [today]);
 
   if (loading) {
     return (
@@ -185,3 +185,7 @@ export function OnThisDay() {
     </section>
   );
 }
+
+
+
+

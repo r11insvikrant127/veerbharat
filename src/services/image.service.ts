@@ -243,4 +243,6 @@ class ImageService extends BaseService {
   }
 }
 
-export default new ImageService();
+const ImageServiceInstance = new ImageService();
+
+export default ImageServiceInstance;

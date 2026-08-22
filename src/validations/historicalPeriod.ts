@@ -1,7 +1,10 @@
 // src/validations/historicalPeriod.ts
 
 import { z } from "zod";
+
 import {
+  objectId,
+  objectIdArray,
   stringArray,
   statusEnum,
   paginationSchema,
@@ -20,17 +23,33 @@ export const createHistoricalPeriodSchema = z.object({
 
   duration: z.string().trim().optional().default(""),
 
+  precededBy: objectId.optional(),
+
+  succeededBy: objectId.optional(),
+
+  majorDynasties: objectIdArray,
+
+  majorKingdoms: objectIdArray,
+
+  majorHeroes: objectIdArray,
+
+  majorEvents: objectIdArray,
+
   description: z.string().trim().min(10),
 
   significance: z.string().trim().optional().default(""),
 
   keyCharacteristics: stringArray,
 
+  imageIds: objectIdArray,
+
+  sourceIds: objectIdArray,
+
   tags: stringArray,
 
   status: statusEnum
-  .optional()
-  .default("Draft"),
+    .optional()
+    .default("Draft"),
 });
 
 export const updateHistoricalPeriodSchema =

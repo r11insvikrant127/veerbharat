@@ -14,7 +14,6 @@ const MONGODB_URI = process.env.MONGODB_URI!;
 
 declare global {
   // Prevent multiple connections during development (Next.js hot reload)
-  // eslint-disable-next-line no-var
   var mongooseCache:
     | {
         conn: typeof mongoose | null;

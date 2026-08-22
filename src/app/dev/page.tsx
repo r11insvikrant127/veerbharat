@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 export default function DevPage() {
-  const [response, setResponse] = useState<any>(null);
+  const [response, setResponse] = useState<unknown>(null);
   const [loading, setLoading] = useState(false);
 
   const [periodId, setPeriodId] = useState("PER0001");

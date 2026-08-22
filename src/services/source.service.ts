@@ -246,4 +246,6 @@ class SourceService extends BaseService {
   }
 }
 
-export default new SourceService();
+const SourceServiceInstance = new SourceService();
+
+export default SourceServiceInstance;

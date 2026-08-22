@@ -1,7 +1,12 @@
 // src/components/sections/InteractiveMap.tsx
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+} from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import {
@@ -12,12 +17,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
-  MapPin,
   Sword,
   Crown,
-  Castle,
-  GraduationCap,
-  Church,
   BookOpen,
 } from "lucide-react";
 
@@ -32,24 +33,6 @@ import { PlacesApiResponse } from "@/types/place";
 import {
   placesToMapLocations,
 } from "@/utils/placeMapAdapter";
-
-// Icon mapping for location types
-const iconMap = {
-  fort: Castle,
-  battle: Sword,
-  temple: Church,
-  capital: Crown,
-  university: GraduationCap,
-  port: MapPin,
-};
-
-// Function to get icon for location
-const getLocationIcon = (type: string) => {
-  return (
-    iconMap[type as keyof typeof iconMap] ||
-    MapPin
-  );
-};
 
 export function InteractiveMap() {
   // API locations
@@ -96,10 +79,13 @@ export function InteractiveMap() {
     1. Existing static historical locations
     2. Real locations fetched from MongoDB
   */
-  const allMapLocations = [
-    ...staticMapLocations,
-    ...apiLocations,
-  ];
+  const allMapLocations = useMemo(
+    () => [
+      ...staticMapLocations,
+      ...apiLocations,
+    ],
+    [apiLocations]
+  );
 
   /*
     Fetch published places from backend
@@ -180,63 +166,67 @@ export function InteractiveMap() {
       }
     };
   }, [isAutoPlaying]);
-
   /*
     Update visible locations
     based on selected era
   */
   useEffect(() => {
-    const era =
-      mapEras[currentEraIndex];
+    const era = mapEras[currentEraIndex];
 
-    const filtered =
-      allMapLocations
-        .filter(
-          (loc) =>
-            loc.era === era.id
-        )
-        .map(
-          (loc) => loc.id
-        );
-
-    setVisibleLocations([]);
+    const filtered = allMapLocations
+      .filter((loc) => loc.era === era.id)
+      .map((loc) => loc.id);
 
     let index = 0;
+    let interval: ReturnType<typeof setInterval> | null = null;
 
-    const interval = setInterval(() => {
-      if (index < filtered.length) {
-        setVisibleLocations(
-          (prev) => [
+    const timeout = setTimeout(() => {
+      setVisibleLocations([]);
+
+      interval = setInterval(() => {
+        if (index < filtered.length) {
+          setVisibleLocations((prev) => [
             ...prev,
             filtered[index],
-          ]
-        );
+          ]);
 
-        index++;
-      } else {
+          index++;
+        } else if (interval) {
+          clearInterval(interval);
+          interval = null;
+        }
+      }, 150);
+    }, 0);
+
+    return () => {
+      clearTimeout(timeout);
+
+      if (interval) {
         clearInterval(interval);
       }
-    }, 150);
-
-    return () =>
-      clearInterval(interval);
+    };
   }, [
     currentEraIndex,
-    apiLocations,
+    allMapLocations,
   ]);
+
 
   /*
     Reset fog when era changes
   */
   useEffect(() => {
-    setFogOpacity(0.3);
+    const startTimer = setTimeout(() => {
+      setFogOpacity(0.3);
+    }, 0);
 
     const timer = setTimeout(() => {
       setFogOpacity(0);
     }, 1000);
 
-    return () =>
+    return () => {
+      clearTimeout(startTimer);
       clearTimeout(timer);
+    };
   }, [currentEraIndex]);
 
   /*
@@ -268,8 +258,6 @@ export function InteractiveMap() {
     index: number
   ) => {
     setCurrentEraIndex(index);
-
-    setVisibleLocations([]);
   };
 
   /*
@@ -637,11 +625,6 @@ export function InteractiveMap() {
                     const isSelected =
                       selectedLocation?.id ===
                       location.id;
-
-                    const Icon =
-                      getLocationIcon(
-                        location.icon
-                      );
 
                     return (
                       <g
@@ -1178,3 +1161,8 @@ export function InteractiveMap() {
     </section>
   );
 }
+
+
+
+
+

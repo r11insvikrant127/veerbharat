@@ -242,4 +242,6 @@ class EventService extends BaseService {
   }
 }
 
-export default new EventService();
+const EventServiceInstance = new EventService();
+
+export default EventServiceInstance;

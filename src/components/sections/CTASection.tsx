@@ -17,11 +17,11 @@ export function CTASection() {
           className="max-w-3xl mx-auto text-center"
         >
           <h2 className="text-3xl md:text-4xl font-serif font-bold text-gold-gradient mb-4">
-            Ready to Explore India's <br />
+            Ready to Explore India&apos;s <br />
             <span className="text-[#D4AF37]">Heroic Legacy</span>?
           </h2>
           <p className="text-[#D7C9A5] mb-8">
-            Start your journey through the lives of India's greatest warriors, 
+            Start your journey through the lives of India&apos;s greatest warriors, 
             kings, and freedom fighters.
           </p>
           <div className="flex flex-wrap gap-4 justify-center">

@@ -232,4 +232,6 @@ class MemorialService extends BaseService {
   }
 }
 
-export default new MemorialService();
+const MemorialServiceInstance = new MemorialService();
+
+export default MemorialServiceInstance;

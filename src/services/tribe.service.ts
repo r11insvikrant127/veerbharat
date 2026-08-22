@@ -215,4 +215,6 @@ class TribeService extends BaseService {
   }
 }
 
-export default new TribeService();
+const TribeServiceInstance = new TribeService();
+
+export default TribeServiceInstance;

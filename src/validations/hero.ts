@@ -70,7 +70,7 @@ export const createHeroSchema = z.object({
 
   languagesKnown: stringArray,
 
-  education: z.string().trim().optional().default(""),
+  education: stringArray,
 
   religion: z.string().trim().optional().default(""),
 

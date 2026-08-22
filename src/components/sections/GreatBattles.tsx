@@ -98,7 +98,7 @@ export function GreatBattles() {
           </h2>
 
           <p className="text-[#D7C9A5]">
-            The turning points that shaped India's history.
+            The turning points that shaped India&apos;s history.
           </p>
         </motion.div>
 

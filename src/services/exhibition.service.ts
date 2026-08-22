@@ -220,4 +220,6 @@ class ExhibitionService extends BaseService {
   }
 }
 
-export default new ExhibitionService();
+const ExhibitionServiceInstance = new ExhibitionService();
+
+export default ExhibitionServiceInstance;

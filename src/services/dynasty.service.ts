@@ -228,4 +228,6 @@ class DynastyService extends BaseService {
   }
 }
 
-export default new DynastyService();
+const DynastyServiceInstance = new DynastyService();
+
+export default DynastyServiceInstance;

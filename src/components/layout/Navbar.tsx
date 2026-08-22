@@ -90,7 +90,7 @@ export function Navbar() {
               </div>
               
               <p className="text-[#D7C9A5] leading-relaxed mb-8 text-base md:text-lg font-light">
-                To preserve and celebrate the stories of India's forgotten bravehearts, 
+                To preserve and celebrate the stories of India&apos;s forgotten bravehearts, 
                 kingdoms, battles, forts, and civilizations through a freely accessible 
                 digital museum, inspiring future generations to reconnect with their heritage.
               </p>
@@ -236,7 +236,7 @@ export function Navbar() {
               >
                 <span className="text-base group-hover:scale-110 transition-transform duration-300">📜</span>
                 <span className="border-b border-transparent group-hover:border-[#D4AF37]/30 transition-all duration-300">
-                  Preserving India's Legacy
+                  Preserving India&apos;s Legacy
                 </span>
               </button>
 
@@ -297,7 +297,7 @@ export function Navbar() {
                     className="px-4 py-3 text-xs text-[#D4AF37]/40 hover:text-[#D4AF37]/80 flex items-center gap-2 transition-colors duration-300 w-full text-left hover:bg-[#D4AF37]/10 rounded-lg"
                   >
                     <span>📜</span>
-                    <span>Preserving India's Legacy</span>
+                    <span>Preserving India&apos;s Legacy</span>
                   </button>
                   <Link href="/heroes" onClick={() => setIsMenuOpen(false)}>
                     <button className="w-full px-4 py-3 bg-[#D4AF37] text-[#0F0F0F] rounded-lg hover:bg-[#C46A00] transition-colors flex items-center justify-center gap-2 font-medium">

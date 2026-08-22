@@ -234,4 +234,6 @@ class WarAnimalService extends BaseService {
   }
 }
 
-export default new WarAnimalService();
+const WarAnimalServiceInstance = new WarAnimalService();
+
+export default WarAnimalServiceInstance;

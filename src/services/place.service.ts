@@ -229,4 +229,6 @@ class PlaceService extends BaseService {
   }
 }
 
-export default new PlaceService();
+const PlaceServiceInstance = new PlaceService();
+
+export default PlaceServiceInstance;

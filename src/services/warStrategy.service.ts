@@ -217,4 +217,6 @@ class WarStrategyService extends BaseService {
   }
 }
 
-export default new WarStrategyService();
+const WarStrategyServiceInstance = new WarStrategyService();
+
+export default WarStrategyServiceInstance;

@@ -247,4 +247,6 @@ class KingdomService extends BaseService {
   }
 }
 
-export default new KingdomService();
+const KingdomServiceInstance = new KingdomService();
+
+export default KingdomServiceInstance;

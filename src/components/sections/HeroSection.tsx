@@ -76,7 +76,7 @@ export function HeroSection() {
               </div>
               
               <p className="text-[#D7C9A5] leading-relaxed mb-8 text-base md:text-lg font-light">
-                To preserve and celebrate the stories of India's forgotten bravehearts, 
+                To preserve and celebrate the stories of India&apos;s forgotten bravehearts, 
                 kingdoms, battles, forts, and civilizations through a freely accessible 
                 digital museum, inspiring future generations to reconnect with their heritage.
               </p>
@@ -147,7 +147,7 @@ export function HeroSection() {
               >
                 {particles.map((particle) => {
                   // Randomly assign ember type: • or ✦
-                  const emberType = Math.random() > 0.6 ? '✦' : '•';
+                  const emberType = particle.id % 3 === 0 ? '✦' : '•';
                   const size = emberType === '✦' ? 'w-1.5 h-1.5' : 'w-1 h-1';
                   const opacity = emberType === '✦' ? 'opacity-60' : 'opacity-30';
                   
@@ -199,7 +199,7 @@ export function HeroSection() {
             >
               <Shield className="w-4 h-4 text-[#D4AF37]" />
               <span className="text-sm font-medium tracking-wider text-[#D7C9A5]">
-                INDIA'S DIGITAL MUSEUM
+                INDIA&apos;S DIGITAL MUSEUM
               </span>
             </motion.div>
 
@@ -220,8 +220,8 @@ export function HeroSection() {
               transition={{ delay: 0.4, duration: 0.8 }}
               className="text-xl md:text-2xl text-[#D7C9A5] max-w-2xl mx-auto mb-5 font-light leading-relaxed"
             >
-              "Every stone remembers, every sword has a story,<br />
-              every hero deserves to be remembered."
+              &quot;Every stone remembers, every sword has a story,<br />
+              every hero deserves to be remembered.&quot;
             </motion.p>
 
             {/* Search Bar */}
@@ -291,3 +291,5 @@ export function HeroSection() {
     </>
   );
 }
+
+

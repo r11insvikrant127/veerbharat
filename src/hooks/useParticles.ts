@@ -1,5 +1,5 @@
 // src/hooks/useParticles.ts
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 interface Particle {
   id: number;
@@ -10,22 +10,19 @@ interface Particle {
 }
 
 export function useParticles(count: number = 20) {
-  const [particles, setParticles] = useState<Particle[]>([]);
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-    if (typeof window !== 'undefined') {
-      const newParticles = [...Array(count)].map((_, i) => ({
-        id: i,
-        x: Math.random() * window.innerWidth,
-        y: Math.random() * window.innerHeight,
-        duration: 3 + Math.random() * 4,
-        delay: Math.random() * 2,
-      }));
-      setParticles(newParticles);
+  const [particles] = useState<Particle[]>(() => {
+    if (typeof window === 'undefined') {
+      return [];
     }
-  }, [count]);
 
-  return { particles, isMounted };
+    return Array.from({ length: count }, (_, i) => ({
+      id: i,
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
+      duration: 3 + Math.random() * 4,
+      delay: Math.random() * 2,
+    }));
+  });
+
+  return { particles, isMounted: true };
 }

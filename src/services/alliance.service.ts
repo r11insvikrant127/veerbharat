@@ -220,4 +220,6 @@ class AllianceService extends BaseService {
   }
 }
 
-export default new AllianceService();
+const AllianceServiceInstance = new AllianceService();
+
+export default AllianceServiceInstance;

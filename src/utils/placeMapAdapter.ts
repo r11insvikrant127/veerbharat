@@ -88,9 +88,7 @@ function getMapSymbol(
   }
 }
 
-function getPlaceEra(
-  place: ApiPlace
-): string {
+function getPlaceEra(): string {
   /*
     Currently, historicalPeriodId stores
     a MongoDB ObjectId.
@@ -146,7 +144,7 @@ export function placeToMapLocation(
 
     y,
 
-    era: getPlaceEra(place),
+    era: getPlaceEra(),
 
     hero:
       place.significance ||

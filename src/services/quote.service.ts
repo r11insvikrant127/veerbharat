@@ -229,4 +229,6 @@ class QuoteService extends BaseService {
   }
 }
 
-export default new QuoteService();
+const QuoteServiceInstance = new QuoteService();
+
+export default QuoteServiceInstance;

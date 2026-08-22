@@ -228,4 +228,6 @@ class WeaponService extends BaseService {
   }
 }
 
-export default new WeaponService();
+const WeaponServiceInstance = new WeaponService();
+
+export default WeaponServiceInstance;

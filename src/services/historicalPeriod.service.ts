@@ -169,4 +169,6 @@ class HistoricalPeriodService extends BaseService {
     }
 }
 
-export default new HistoricalPeriodService();
+const HistoricalPeriodServiceInstance = new HistoricalPeriodService();
+
+export default HistoricalPeriodServiceInstance;

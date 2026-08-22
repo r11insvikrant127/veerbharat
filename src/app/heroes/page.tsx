@@ -181,7 +181,7 @@ export default function HeroesPage() {
                 onClick={clearSearch}
                 className="text-sm text-[#D4AF37]/70 hover:text-[#D4AF37] transition-colors"
               >
-                Clear search for "{search}"
+                Clear search for &quot;{search}&quot;
               </button>
             </div>
           )}

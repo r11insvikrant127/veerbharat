@@ -240,4 +240,6 @@ class BookService extends BaseService {
   }
 }
 
-export default new BookService();
+const BookServiceInstance = new BookService();
+
+export default BookServiceInstance;

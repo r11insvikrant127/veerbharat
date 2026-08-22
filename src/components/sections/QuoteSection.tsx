@@ -89,10 +89,10 @@ export function QuoteSection() {
             transition={{ duration: 0.5 }}
           >
             <blockquote className="text-2xl md:text-3xl font-serif font-light leading-relaxed mb-6 text-[#F8F5F0]">
-              "
+              &quot;
               {currentQuote.translation ||
                 currentQuote.text}
-              "
+              &quot;
             </blockquote>
 
             {currentQuote.heroId && (
@@ -106,3 +106,4 @@ export function QuoteSection() {
     </section>
   );
 }
+

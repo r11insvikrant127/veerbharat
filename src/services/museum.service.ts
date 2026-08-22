@@ -222,4 +222,6 @@ class MuseumService extends BaseService {
   }
 }
 
-export default new MuseumService();
+const MuseumServiceInstance = new MuseumService();
+
+export default MuseumServiceInstance;

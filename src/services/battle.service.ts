@@ -222,4 +222,6 @@ class BattleService extends BaseService {
   }
 }
 
-export default new BattleService();
+const BattleServiceInstance = new BattleService();
+
+export default BattleServiceInstance;

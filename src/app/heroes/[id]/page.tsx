@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Shield, Calendar, MapPin } from "lucide-react";
+import { ArrowLeft, Shield, Calendar } from "lucide-react";
 
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";

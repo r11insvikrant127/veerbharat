@@ -222,4 +222,6 @@ class MilitaryCommanderService extends BaseService {
   }
 }
 
-export default new MilitaryCommanderService();
+const MilitaryCommanderServiceInstance = new MilitaryCommanderService();
+
+export default MilitaryCommanderServiceInstance;

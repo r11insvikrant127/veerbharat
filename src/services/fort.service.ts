@@ -231,4 +231,6 @@ class FortService extends BaseService {
   }
 }
 
-export default new FortService();
+const FortServiceInstance = new FortService();
+
+export default FortServiceInstance;

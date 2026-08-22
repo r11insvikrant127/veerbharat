@@ -38,8 +38,8 @@ class HeroService extends BaseService {
     );
     }
 
-    // Generate unique period ID
-    const heroId = await generateNextId(ID_PREFIXES.PER);
+    // Generate unique hero ID
+    const heroId = await generateNextId(ID_PREFIXES.HERO);
 
     // Create the document
     const hero =
@@ -167,4 +167,8 @@ class HeroService extends BaseService {
     }
 }
 
-export default new HeroService();
+const HeroServiceInstance = new HeroService();
+
+export default HeroServiceInstance;
+
+

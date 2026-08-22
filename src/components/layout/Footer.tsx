@@ -37,7 +37,7 @@ export function Footer() {
               </h3>
             </div>
             <p className="text-[#D7C9A5] text-sm max-w-md leading-relaxed">
-              Honouring the brave hearts of India's glorious past through 
+              Honouring the brave hearts of India&apos;s glorious past through 
               curated stories, historical accuracy, and immersive experiences.
             </p>
             
@@ -94,7 +94,7 @@ export function Footer() {
         <div className="border-t border-[#D4AF37]/10 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-[#A09682]">
           <p>© {new Date().getFullYear()} Veer Bharat. All rights reserved.</p>
           <p className="flex items-center gap-1">
-            Made with <Heart className="w-4 h-4 text-red-500 fill-red-500" /> for India's heritage
+            Made with <Heart className="w-4 h-4 text-red-500 fill-red-500" /> for India&apos;s heritage
           </p>
         </div>
       </div>

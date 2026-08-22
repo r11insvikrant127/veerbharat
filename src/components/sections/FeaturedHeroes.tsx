@@ -78,7 +78,7 @@ export function FeaturedHeroes() {
 
           <p className="text-gray-600">
             Meet some of the legendary figures who shaped
-            India's history through their courage and
+            India&apos;s history through their courage and
             leadership.
           </p>
         </motion.div>
