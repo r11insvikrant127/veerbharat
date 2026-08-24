@@ -1,10 +1,20 @@
-// src/components/sections/OnThisDay.tsx
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Calendar, Flag, ArrowRight } from 'lucide-react';
+import {
+  Calendar,
+  Flag,
+  ArrowRight,
+} from 'lucide-react';
+
+
+interface EventHero {
+  _id: string;
+  heroId: string;
+  name: string;
+}
 
 interface HistoricalEvent {
   _id: string;
@@ -15,6 +25,7 @@ interface HistoricalEvent {
   description: string;
   significance?: string;
   isOnThisDayEligible: boolean;
+  heroIds: EventHero[];
 }
 
 interface EventsResponse {
@@ -28,28 +39,32 @@ interface EventsResponse {
 }
 
 export function OnThisDay() {
-  const [event, setEvent] =
-    useState<HistoricalEvent | null>(null);
+  const [events, setEvents] =
+    useState<HistoricalEvent[]>([]);
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] =
+    useState(true);
 
-  const today = useMemo(() => new Date(), []);
+  const today = useMemo(
+    () => new Date(),
+    []
+  );
 
   const todayStr =
     `${today.getDate()} ${today.toLocaleString(
       'default',
-      { month: 'long' }
+      {
+        month: 'long',
+      }
     )}`;
 
   useEffect(() => {
-    async function fetchTodayEvent() {
+    async function fetchTodayEvents() {
       try {
         setLoading(true);
 
-        // Fetch all available events.
-        // No backend changes required.
         const response = await fetch(
-          '/api/events?page=1&limit=50'
+          '/api/events?page=1&limit=100&status=Published'
         );
 
         if (!response.ok) {
@@ -61,10 +76,8 @@ export function OnThisDay() {
         const result: EventsResponse =
           await response.json();
 
-        // Priority 1:
-        // Find an event matching today's day and month.
-        const eventForToday =
-          result.data.find((item) => {
+        const eventsForToday =
+          result.data.filter((item) => {
             if (!item.eventDate) {
               return false;
             }
@@ -80,28 +93,11 @@ export function OnThisDay() {
             );
           });
 
-        // Priority 2:
-        // Find an event marked as eligible for On This Day.
-        const eligibleEvent =
-          result.data.find(
-            (item) =>
-              item.isOnThisDayEligible === true
-          );
+        setEvents(eventsForToday);
 
-        // Priority 3:
-        // Use the first available event as a fallback.
-        const fallbackEvent =
-          result.data[0];
-
-        setEvent(
-          eventForToday ??
-          eligibleEvent ??
-          fallbackEvent ??
-          null
-        );
       } catch (error) {
         console.error(
-          'Failed to load On This Day event:',
+          'Failed to load On This Day events:',
           error
         );
       } finally {
@@ -109,7 +105,7 @@ export function OnThisDay() {
       }
     }
 
-    fetchTodayEvent();
+    fetchTodayEvents();
   }, [today]);
 
   if (loading) {
@@ -124,13 +120,14 @@ export function OnThisDay() {
     );
   }
 
-  if (!event) {
+  if (events.length === 0) {
     return null;
   }
 
   return (
     <section className="py-16 bg-[#1C1410] border-y border-[#D4AF37]/10">
       <div className="container mx-auto px-4">
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -138,7 +135,8 @@ export function OnThisDay() {
           transition={{ duration: 0.6 }}
           className="max-w-4xl mx-auto"
         >
-          <div className="flex items-center gap-4 mb-6">
+
+          <div className="flex items-center gap-4 mb-8">
             <div className="p-3 bg-[#D4AF37]/20 rounded-xl border border-[#D4AF37]/20">
               <Calendar className="w-6 h-6 text-[#D4AF37]" />
             </div>
@@ -154,38 +152,84 @@ export function OnThisDay() {
             </div>
           </div>
 
-          <div className="bg-[#2B221C] rounded-2xl shadow-md p-6 md:p-8 border border-[#D4AF37]/10 hover:border-[#D4AF37]/30 transition-all duration-300">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-[#D4AF37]/10 rounded-full flex items-center justify-center flex-shrink-0 border border-[#D4AF37]/20">
-                <Flag className="w-6 h-6 text-[#D4AF37]" />
-              </div>
+          <div className="space-y-5">
 
-              <div>
-                <h3 className="text-xl font-semibold text-[#F8F5F0] mb-2">
-                  {event.name}
-                </h3>
+            {events.map((event, index) => {
 
-                <p className="text-[#D7C9A5]">
-                  {event.description}
-                </p>
+              const relatedHero =
+                event.heroIds?.[0];
 
-                <Link
-                  href={`/events/${event.eventId}`}
-                  className="mt-4 text-[#D4AF37] font-medium hover:text-[#C46A00] flex items-center gap-1 transition-colors"
+              const destination =
+                relatedHero
+                  ? `/heroes/${relatedHero.heroId}`
+                  : `/events/${event.eventId}`;
+
+              const linkText =
+                relatedHero
+                  ? `Discover ${relatedHero.name}`
+                  : 'Explore this event';
+
+              return (
+                <motion.div
+                  key={event.eventId}
+                  initial={{ opacity: 0, y: 15 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{
+                    delay: index * 0.1,
+                  }}
                 >
-                  Learn more
 
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
-            </div>
+                  <div className="bg-[#2B221C] rounded-2xl shadow-md p-6 border border-[#D4AF37]/10 hover:border-[#D4AF37]/30 transition-all duration-300">
+
+                    <div className="flex items-start gap-4">
+
+                      <div className="w-12 h-12 bg-[#D4AF37]/10 rounded-full flex items-center justify-center flex-shrink-0 border border-[#D4AF37]/20">
+                        <Flag className="w-6 h-6 text-[#D4AF37]" />
+                      </div>
+
+                      <div className="flex-1">
+
+                        {event.eventDate && (
+                          <p className="text-[#D4AF37] text-sm font-medium mb-1">
+                            {new Date(
+                              event.eventDate
+                            ).getFullYear()}
+                          </p>
+                        )}
+
+                        <h3 className="text-xl font-semibold text-[#F8F5F0] mb-2">
+                          {event.name}
+                        </h3>
+
+                        <p className="text-[#D7C9A5] leading-relaxed">
+                          {event.description}
+                        </p>
+
+                        <Link
+                          href={destination}
+                          className="mt-4 inline-flex text-[#D4AF37] font-medium hover:text-[#C46A00] items-center gap-1 transition-colors"
+                        >
+                          {linkText}
+
+                          <ArrowRight className="w-4 h-4" />
+                        </Link>
+
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                </motion.div>
+              );
+            })}
+
           </div>
+
         </motion.div>
+
       </div>
     </section>
   );
 }
-
-
-
-

@@ -2,10 +2,20 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowLeft, Shield, Calendar } from "lucide-react";
 
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+
+interface HeroImage {
+  _id: string;
+  imageId: string;
+  title: string;
+  url: string;
+  altText: string;
+  imageType: string;
+}
 
 interface Hero {
   _id: string;
@@ -15,6 +25,7 @@ interface Hero {
   alternativeNames: string[];
   title: string;
   gender: string;
+  imageIds?: HeroImage[];
 
   birthDate: string | null;
   birthDateAccuracy: string;
@@ -240,48 +251,148 @@ export default function HeroDetailPage({
             Back to Bravehearts
           </Link>
 
-          <div className="max-w-5xl mx-auto text-center">
-            <div className="flex justify-center mb-7">
-              <div className="w-20 h-20 rounded-full border border-[#D4AF37]/30 bg-[#D4AF37]/5 flex items-center justify-center shadow-[0_0_50px_rgba(212,175,55,0.08)]">
-                <Shield className="w-10 h-10 text-[#D4AF37]" />
+          <div className="max-w-6xl mx-auto">
+
+            <div className="grid lg:grid-cols-[380px_1fr] gap-12 lg:gap-16 items-center">
+
+              {/* HERO PORTRAIT */}
+
+              <div className="flex justify-center">
+
+                {hero.imageIds?.[0] ? (
+
+                  <div className="relative w-full max-w-[380px]">
+
+                    {/* Outer decorative frame */}
+
+                    <div className="absolute -inset-3 rounded-[2rem] border border-[#D4AF37]/20" />
+
+                    <div className="absolute -inset-1 rounded-[1.7rem] bg-gradient-to-br from-[#D4AF37]/20 via-transparent to-[#C46A00]/20" />
+
+                    {/* Image frame */}
+
+                    <div className="group relative aspect-[3/4] overflow-hidden rounded-[1.5rem] border border-[#D4AF37]/40 bg-[#17130F] shadow-[0_25px_80px_rgba(0,0,0,0.55)]">
+
+                      <Image
+                        src={hero.imageIds[0].url}
+                        alt={
+                          hero.imageIds[0].altText ||
+                          hero.name
+                        }
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                        className="object-contain p-2 group-hover:scale-105 transition-transform duration-500"
+                      />
+
+                      {/* Bottom cinematic gradient */}
+
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0F0F0F]/70 via-transparent to-transparent pointer-events-none" />
+
+                    </div>
+
+                    {/* Decorative label */}
+
+                    <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap px-5 py-2 rounded-full border border-[#D4AF37]/30 bg-[#17130F] text-xs uppercase tracking-[0.25em] text-[#D4AF37] shadow-lg">
+
+                      Historical Portrait
+
+                    </div>
+
+                  </div>
+
+                ) : (
+
+                  <div className="w-full max-w-[380px] aspect-[3/4] rounded-[1.5rem] border border-[#D4AF37]/20 bg-[#17130F] flex items-center justify-center">
+
+                    <Shield className="w-20 h-20 text-[#D4AF37]/30" />
+
+                  </div>
+
+                )}
+
               </div>
+
+
+              {/* HERO INFORMATION */}
+
+              <div className="text-center lg:text-left pt-8 lg:pt-0">
+
+                <div className="flex justify-center lg:justify-start mb-7">
+
+                  <div className="w-20 h-20 rounded-full border border-[#D4AF37]/30 bg-[#D4AF37]/5 flex items-center justify-center shadow-[0_0_50px_rgba(212,175,55,0.08)]">
+
+                    <Shield className="w-10 h-10 text-[#D4AF37]" />
+
+                  </div>
+
+                </div>
+
+
+                <p className="text-xs uppercase tracking-[0.35em] text-[#D4AF37]/60 mb-4">
+
+                  {hero.heroId}
+
+                </p>
+
+
+                <h1 className="font-serif text-5xl md:text-7xl font-bold text-gold-gradient">
+
+                  {hero.name}
+
+                </h1>
+
+
+                {hero.nativeName && (
+
+                  <p className="mt-4 text-lg text-[#A09682]">
+
+                    {hero.nativeName}
+
+                  </p>
+
+                )}
+
+
+                {hero.title && (
+
+                  <p className="mt-5 text-lg md:text-xl text-[#D4AF37]">
+
+                    {hero.title}
+
+                  </p>
+
+                )}
+
+
+                <div className="flex items-center justify-center lg:justify-start gap-4 mt-7">
+
+                  <div className="h-px w-20 bg-gradient-to-r from-transparent to-[#D4AF37]/40" />
+
+                  <span className="text-[#D4AF37]/40">
+
+                    ✦ ✦ ✦
+
+                  </span>
+
+                  <div className="h-px w-20 bg-gradient-to-l from-transparent to-[#D4AF37]/40" />
+
+                </div>
+
+
+                {hero.shortDescription && (
+
+                  <p className="max-w-2xl mt-7 text-[#D7C9A5] leading-relaxed mx-auto lg:mx-0">
+
+                    {hero.shortDescription}
+
+                  </p>
+
+                )}
+
+              </div>
+
             </div>
 
-            <p className="text-xs uppercase tracking-[0.35em] text-[#D4AF37]/60 mb-4">
-              {hero.heroId}
-            </p>
-
-            <h1 className="font-serif text-5xl md:text-7xl font-bold text-gold-gradient">
-              {hero.name}
-            </h1>
-
-            {hero.nativeName && (
-              <p className="mt-4 text-lg text-[#A09682]">
-                {hero.nativeName}
-              </p>
-            )}
-
-            {hero.title && (
-              <p className="mt-5 text-lg md:text-xl text-[#D4AF37]">
-                {hero.title}
-              </p>
-            )}
-
-            <div className="flex items-center justify-center gap-4 mt-7">
-              <div className="h-px w-20 bg-gradient-to-r from-transparent to-[#D4AF37]/40" />
-
-              <span className="text-[#D4AF37]/40">
-                ✦ ✦ ✦
-              </span>
-
-              <div className="h-px w-20 bg-gradient-to-l from-transparent to-[#D4AF37]/40" />
-            </div>
-
-            {hero.shortDescription && (
-              <p className="max-w-2xl mx-auto mt-7 text-[#D7C9A5] leading-relaxed">
-                {hero.shortDescription}
-              </p>
-            )}
           </div>
         </div>
       </section>

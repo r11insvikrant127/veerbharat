@@ -3,6 +3,8 @@
 import Event from "@/models/event";
 import ApiError from "@/lib/ApiError";
 import BaseService from "./base.service";
+import Hero from "@/models/hero";
+import Image from "@/models/image";
 
 import {
   buildSearchFilter,
@@ -138,13 +140,30 @@ class EventService extends BaseService {
     const [events, total] =
       await Promise.all([
         Event.find(filter)
+        .populate({
+          path: "heroIds",
+          model: Hero,
+          select: `
+            heroId
+            name
+            nativeName
+            title
+            shortDescription
+            biography
+            status
+            imageIds
+          `,
+          populate: {
+            path: "imageIds",
+            model: Image,
+            select: "imageId title url altText imageType",
+          },
+        })
           .sort(sortOption)
           .skip(skip)
           .limit(currentLimit),
 
-        Event.countDocuments(
-          filter
-        ),
+        Event.countDocuments(filter),
       ]);
 
     return {
@@ -163,12 +182,37 @@ class EventService extends BaseService {
   ) {
     await this.connect();
 
-    return this.findByPublicIdOrThrow(
-      Event,
-      "eventId",
+    const event = await Event.findOne({
       eventId,
-      "Event"
-    );
+    })
+      .populate({
+        path: "heroIds",
+        model: Hero,
+        select: `
+          heroId
+          name
+          nativeName
+          title
+          shortDescription
+          biography
+          status
+          imageIds
+        `,
+        populate: {
+          path: "imageIds",
+          model: Image,
+          select: "imageId title url altText imageType",
+        },
+      });
+
+    if (!event) {
+      throw new ApiError(
+        404,
+        "Event not found."
+      );
+    }
+
+    return event;
   }
 
   async updateEvent(

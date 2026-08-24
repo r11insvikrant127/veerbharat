@@ -45,5 +45,10 @@ export async function connectDB(): Promise<typeof mongoose> {
   // Wait for the connection
   cached.conn = await cached.promise;
 
+  console.log("CONNECTED DATABASE:", mongoose.connection.name);
+  console.log(
+    "CONNECTED HOST:",
+    mongoose.connection.host
+  );
   return cached.conn;
 }

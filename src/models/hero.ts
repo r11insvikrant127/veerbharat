@@ -573,6 +573,7 @@ const HeroSchema = new Schema(
   {
     timestamps: true,
     versionKey: false,
+    collection: "heroes",
   }
 );
 

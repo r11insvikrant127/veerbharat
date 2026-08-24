@@ -88,6 +88,10 @@ class HeroService extends BaseService {
 
     const [heroes, total] = await Promise.all([
         Hero.find(filter)
+        .populate({
+            path: "imageIds",
+            select: "imageId title url altText imageType",
+        })
         .sort(sortOption)
         .skip(skip)
         .limit(currentLimit),
@@ -128,7 +132,14 @@ class HeroService extends BaseService {
     ) {
     await this.connect();
 
-    return this.findHeroOrThrow(heroId);
+    const hero = await this.findHeroOrThrow(
+        heroId
+    );
+
+    return hero.populate({
+        path: "imageIds",
+        select: "imageId title url altText imageType",
+    });
     }
    
     async updateHero(
