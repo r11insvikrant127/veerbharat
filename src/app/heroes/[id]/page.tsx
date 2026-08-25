@@ -317,24 +317,6 @@ export default function HeroDetailPage({
 
               <div className="text-center lg:text-left pt-8 lg:pt-0">
 
-                <div className="flex justify-center lg:justify-start mb-7">
-
-                  <div className="w-20 h-20 rounded-full border border-[#D4AF37]/30 bg-[#D4AF37]/5 flex items-center justify-center shadow-[0_0_50px_rgba(212,175,55,0.08)]">
-
-                    <Shield className="w-10 h-10 text-[#D4AF37]" />
-
-                  </div>
-
-                </div>
-
-
-                <p className="text-xs uppercase tracking-[0.35em] text-[#D4AF37]/60 mb-4">
-
-                  {hero.heroId}
-
-                </p>
-
-
                 <h1 className="font-serif text-5xl md:text-7xl font-bold text-gold-gradient">
 
                   {hero.name}
