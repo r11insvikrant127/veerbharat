@@ -14,15 +14,34 @@ import {
 ===================================================== */
 
 export const eventTypeEnum = z.enum([
-  "Coronation",
   "Birth",
   "Death",
-  "Treaty",
+  "Martyrdom",
+  "Coronation",
+  "Battle",
+  "War",
+  "Rebellion",
+  "Uprising",
+  "Massacre",
+  "Genocide",
   "Victory",
   "Defeat",
+  "Treaty",
+  "Proclamation",
+  "Declaration",
+  "Arrival",
+  "Expedition",
+  "Reform",
+  "Movement",
+  "Protest",
+  "Revolution",
+  "Establishment",
+  "Independence",
+  "Annexation",
+  "Siege",
   "Hiding",
   "Prophecy",
-  "Battle",
+  "Other",
 ]);
 
 /* =====================================================
@@ -72,6 +91,16 @@ export const createEventSchema = z.object({
   description: z.string()
     .trim()
     .min(10),
+
+  shortDescription: z.string()
+    .trim()
+    .optional()
+    .default(""),
+
+  details: z.string()
+    .trim()
+    .optional()
+    .default(""),
 
   significance: z.string()
     .trim()

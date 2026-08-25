@@ -7,6 +7,12 @@ import { ArrowLeft, Shield, Calendar } from "lucide-react";
 
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import {
+  BiographySection,
+} from "@/components/hero/BiographySection";
+import {
+  HistoricalArtifacts,
+} from "@/components/hero/HistoricalArtifacts";
 
 interface HeroImage {
   _id: string;
@@ -41,6 +47,26 @@ interface Hero {
   biography: string;
   shortDescription: string;
 
+  historicalArtifacts?: {
+    title: string;
+    type: string;
+    description: string;
+    year: string;
+    issuer: string;
+    denomination: string;
+
+    imageId: {
+      _id: string;
+      imageId: string;
+      title: string;
+      url: string;
+      altText: string;
+      imageType: string;
+    };
+
+    status: string;
+  }[];
+  
   knownFor: string[];
   occupation: string[];
   roles: string[];
@@ -476,20 +502,14 @@ export default function HeroDetailPage({
               </div>
             </div>
 
-            {/* BIOGRAPHY */}
-            <div className="section-card-hover p-8 md:p-10 mt-6">
-              <p className="text-xs uppercase tracking-[0.25em] text-[#D4AF37]/60 mb-3">
-                Chronicle
-              </p>
+            <BiographySection
+              biography={hero.biography}
+              heroName={hero.name}
+            />
 
-              <h2 className="font-serif text-3xl font-bold mb-6">
-                Biography
-              </h2>
-
-              <p className="text-[#D7C9A5] leading-8 whitespace-pre-line">
-                {hero.biography}
-              </p>
-            </div>
+            <HistoricalArtifacts
+              artifacts={hero.historicalArtifacts}
+            />
 
             {/* KNOWN FOR */}
             <div className="grid md:grid-cols-2 gap-6 mt-6">

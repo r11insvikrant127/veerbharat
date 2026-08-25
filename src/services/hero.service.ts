@@ -1,6 +1,7 @@
 // src/services/hero.service.ts
 
 import Hero from "@/models/hero";
+import "@/models/image";
 import ApiError from "@/lib/ApiError";
 import BaseService from "./base.service";
 import { getSearchRegex,escapeRegex,} from "@/helpers/search";
@@ -127,20 +128,30 @@ class HeroService extends BaseService {
     return hero;
     }
 
-    async getHeroById(
-    heroId: string
-    ) {
-    await this.connect();
+    async getHeroById(heroId: string) {
+        await this.connect();
 
-    const hero = await this.findHeroOrThrow(
-        heroId
-    );
+        const hero = await Hero.findOne({ heroId })
+            .populate({
+            path: "imageIds",
+            select:
+                "imageId title url altText imageType",
+            })
+            .populate({
+            path: "historicalArtifacts.imageId",
+            select:
+                "imageId title url altText imageType description",
+            });
 
-    return hero.populate({
-        path: "imageIds",
-        select: "imageId title url altText imageType",
-    });
-    }
+        if (!hero) {
+            throw new ApiError(
+            404,
+            "Hero not found."
+            );
+        }
+
+        return hero;
+        }
    
     async updateHero(
     heroId: string,

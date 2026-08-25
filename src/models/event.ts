@@ -61,15 +61,34 @@ const EventSchema = new Schema(
       type: String,
       required: true,
       enum: [
-        "Coronation",
         "Birth",
         "Death",
-        "Treaty",
+        "Martyrdom",
+        "Coronation",
+        "Battle",
+        "War",
+        "Rebellion",
+        "Uprising",
+        "Massacre",
+        "Genocide",
         "Victory",
         "Defeat",
+        "Treaty",
+        "Proclamation",
+        "Declaration",
+        "Arrival",
+        "Expedition",
+        "Reform",
+        "Movement",
+        "Protest",
+        "Revolution",
+        "Establishment",
+        "Independence",
+        "Annexation",
+        "Siege",
         "Hiding",
         "Prophecy",
-        "Battle",
+        "Other",
       ],
       index: true,
     },
@@ -85,6 +104,18 @@ const EventSchema = new Schema(
       type: String,
       required: true,
       trim: true,
+    },
+    
+    shortDescription: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    details: {
+      type: String,
+      trim: true,
+      default: "",
     },
 
     significance: {
@@ -208,7 +239,10 @@ const EventSchema = new Schema(
 EventSchema.index({
   name: "text",
   nativeName: "text",
+  shortDescription: "text",
   description: "text",
+  details: "text",
+  significance: "text",
   tags: "text",
 });
 

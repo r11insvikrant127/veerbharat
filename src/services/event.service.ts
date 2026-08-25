@@ -201,8 +201,27 @@ class EventService extends BaseService {
         populate: {
           path: "imageIds",
           model: Image,
-          select: "imageId title url altText imageType",
+          select: `
+            imageId
+            title
+            url
+            altText
+            imageType
+            description
+          `,
         },
+      })
+      .populate({
+        path: "imageIds",
+        model: Image,
+        select: `
+          imageId
+          title
+          url
+          altText
+          imageType
+          description
+        `,
       });
 
     if (!event) {

@@ -159,6 +159,52 @@ export const createHeroSchema = z.object({
 
   relatedImages: objectIdArray,
 
+  historicalArtifacts: z.array(
+    z.object({
+      title: z.string().trim().min(2),
+
+      type: z.string().trim().min(2),
+
+      description: z
+        .string()
+        .trim()
+        .optional()
+        .default(""),
+
+      year: z
+        .string()
+        .trim()
+        .optional()
+        .default(""),
+
+      issuer: z
+        .string()
+        .trim()
+        .optional()
+        .default(""),
+
+      denomination: z
+        .string()
+        .trim()
+        .optional()
+        .default(""),
+
+      imageId: objectId,
+
+      sourceId: objectId.optional(),
+
+      status: z
+        .enum([
+          "Verified",
+          "Published",
+          "Needs Review",
+        ])
+        .optional()
+        .default("Verified"),
+    })
+  ).optional()
+  .default([]),
+
   /* CONTENT */
 
   achievements: stringArray,

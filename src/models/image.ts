@@ -43,6 +43,7 @@ const ImageSchema = new Schema(
         "Inscription",
         "Fort",
         "Manuscript",
+        "Stamp",
       ],
       index: true,
     },

@@ -436,6 +436,76 @@ const HeroSchema = new Schema(
     },
 
     /* ===========================
+      HISTORICAL ARTIFACTS
+    =========================== */
+
+    historicalArtifacts: {
+      type: [
+        {
+          title: {
+            type: String,
+            required: true,
+            trim: true,
+          },
+
+          type: {
+            type: String,
+            required: true,
+            trim: true,
+          },
+
+          description: {
+            type: String,
+            default: "",
+            trim: true,
+          },
+
+          year: {
+            type: String,
+            default: "",
+            trim: true,
+          },
+
+          issuer: {
+            type: String,
+            default: "",
+            trim: true,
+          },
+
+          denomination: {
+            type: String,
+            default: "",
+            trim: true,
+          },
+
+          imageId: {
+            type: Schema.Types.ObjectId,
+            ref: "Image",
+            required: true,
+          },
+
+          sourceId: {
+            type: Schema.Types.ObjectId,
+            ref: "Source",
+            default: null,
+          },
+
+          status: {
+            type: String,
+            enum: [
+              "Verified",
+              "Published",
+              "Needs Review",
+            ],
+            default: "Verified",
+          },
+        },
+      ],
+
+      default: [],
+    },
+
+    /* ===========================
        CONTENT
     =========================== */
 
