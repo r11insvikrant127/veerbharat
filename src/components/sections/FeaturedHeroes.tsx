@@ -97,7 +97,11 @@ export function FeaturedHeroes() {
           ).values()
         );
 
-        setHeroes(uniqueHeroes);
+        const maxFeaturedHeroes = 4;
+
+        setHeroes(
+          uniqueHeroes.slice(0, maxFeaturedHeroes)
+        );
 
       } catch (error) {
         console.error(
@@ -161,12 +165,13 @@ export function FeaturedHeroes() {
 
         {!loading && heroes.length > 0 && (
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+          <div className="flex flex-wrap justify-center gap-6 max-w-6xl mx-auto">
 
             {heroes.map((hero, index) => (
 
               <motion.div
                 key={hero.heroId}
+                className="w-full sm:w-[280px] lg:w-[270px]"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -195,7 +200,7 @@ export function FeaturedHeroes() {
                         src={hero.imageIds[0].url}
                         alt={hero.imageIds[0].altText}
                         fill
-                        className="object-cover group-hover:scale-110 transition-transform duration-500"
+                        className="object-contain object-center p-2 group-hover:scale-105 transition-transform duration-500"
                       />
 
                     ) : (
