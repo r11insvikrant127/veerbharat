@@ -109,10 +109,76 @@ const HeroSchema = new Schema(
       trim: true,
     },
 
-    historicalAssessments: {
-      type: Map,
-      of: String,
-      default: {},
+    historicalNarratives: {
+      type: [
+        {
+          title: {
+            type: String,
+            required: true,
+            trim: true,
+          },
+
+          source: {
+            title: {
+              type: String,
+              default: "",
+              trim: true,
+            },
+
+            author: {
+              type: String,
+              default: "",
+              trim: true,
+            },
+
+            date: {
+              type: String,
+              default: "",
+              trim: true,
+            },
+
+            type: {
+              type: String,
+              default: "",
+              trim: true,
+            },
+          },
+
+          classification: {
+            type: String,
+            default: "",
+            trim: true,
+          },
+
+          description: {
+            type: String,
+            default: "",
+            trim: true,
+          },
+
+          details: {
+            type: [
+              {
+                label: {
+                  type: String,
+                  required: true,
+                  trim: true,
+                },
+
+                content: {
+                  type: String,
+                  required: true,
+                  trim: true,
+                },
+              },
+            ],
+
+            default: [],
+          },
+        },
+      ],
+
+      default: [],
     },
 
     biography: {

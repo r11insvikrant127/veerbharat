@@ -13,6 +13,10 @@ import {
 import {
   HistoricalArtifacts,
 } from "@/components/hero/HistoricalArtifacts";
+import {
+  HistoricalPerspectives,
+  type HistoricalPerspective,
+} from "@/components/hero/HistoricalPerspectives";
 
 interface HeroImage {
   _id: string;
@@ -46,6 +50,8 @@ interface Hero {
 
   biography: string;
   shortDescription: string;
+
+  historicalNarratives?: HistoricalPerspective[];
 
   historicalArtifacts?: {
     title: string;
@@ -81,6 +87,7 @@ interface Hero {
   rank: string;
 
   armySize: number | null;
+  armySizeSummary?: string;
 
   clan: string;
   reignPeriod: string;
@@ -507,31 +514,45 @@ export default function HeroDetailPage({
               heroName={hero.name}
             />
 
+            <HistoricalPerspectives
+              perspectives={hero.historicalNarratives}
+            />
+
             <HistoricalArtifacts
               artifacts={hero.historicalArtifacts}
             />
 
-            {/* KNOWN FOR */}
-            <div className="grid md:grid-cols-2 gap-6 mt-6">
-              <ArraySection
-                title="Known For"
-                items={hero.knownFor}
-              />
+            {/* PROFILE INFORMATION */}
+            <div className="section-card-hover p-8 md:p-10 mt-6">
+              <p className="text-xs uppercase tracking-[0.25em] text-[#D4AF37]/60 mb-3">
+                Profile
+              </p>
 
-              <ArraySection
-                title="Occupations"
-                items={hero.occupation}
-              />
+              <h2 className="font-serif text-3xl font-bold mb-8">
+                Known For & Roles
+              </h2>
 
-              <ArraySection
-                title="Roles"
-                items={hero.roles}
-              />
+              <div className="grid md:grid-cols-2 gap-x-12 gap-y-10">
+                <ArraySection
+                  title="Known For"
+                  items={hero.knownFor}
+                />
 
-              <ArraySection
-                title="Languages"
-                items={hero.languagesKnown}
-              />
+                <ArraySection
+                  title="Occupations"
+                  items={hero.occupation}
+                />
+
+                <ArraySection
+                  title="Roles"
+                  items={hero.roles}
+                />
+
+                <ArraySection
+                  title="Languages"
+                  items={hero.languagesKnown}
+                />
+              </div>
             </div>
 
             {/* MILITARY */}
@@ -551,16 +572,29 @@ export default function HeroDetailPage({
                     value={hero.rank}
                   />
 
-                  <InfoRow
-                    label="Army Size"
-                    value={
-                      hero.armySize !== null
-                        ? hero.armySize.toLocaleString(
-                            "en-IN"
-                          )
-                        : "Unknown"
-                    }
-                  />
+                  <div>
+                    <h3 className="text-sm uppercase tracking-wider text-[#D4AF37]/70 mb-4">
+                      Estimated Army Size
+                    </h3>
+
+                    {hero.armySize !== null ? (
+                      <div className="flex flex-wrap gap-2">
+                        <span className="px-3 py-2 rounded-lg bg-[#1C1410] border border-[#D4AF37]/10 text-sm text-[#D7C9A5]">
+                          Approximately {hero.armySize.toLocaleString("en-IN")} defenders
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-[#A09682]/60">
+                        No information recorded.
+                      </p>
+                    )}
+
+                    {hero.armySizeSummary && (
+                      <div className="mt-4 rounded-lg bg-[#1C1410] border border-[#D4AF37]/10 px-3 py-3 text-sm text-[#D7C9A5] leading-7">
+                        {hero.armySizeSummary}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <ArraySection

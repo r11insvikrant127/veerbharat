@@ -1,11 +1,15 @@
 "use client";
 
 interface BiographySectionProps {
-  biography: string;
+  biography?: string;
   heroName: string;
 }
 
-function splitBiography(biography: string) {
+function splitBiography(biography?: string) {
+  if (!biography) {
+    return [];
+  }
+
   return biography
     .replace(/\s+/g, " ")
     .trim()
