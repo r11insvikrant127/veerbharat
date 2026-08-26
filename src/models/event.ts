@@ -125,8 +125,17 @@ const EventSchema = new Schema(
 
     imageIds: [
       {
-        type: Schema.Types.ObjectId,
-        ref: "Image",
+        imageId: {
+          type: Schema.Types.ObjectId,
+          ref: "Image",
+          required: true,
+        },
+
+        relatedSection: {
+          type: String,
+          trim: true,
+          default: null,
+        },
       },
     ],
 

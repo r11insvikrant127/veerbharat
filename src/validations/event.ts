@@ -107,7 +107,19 @@ export const createEventSchema = z.object({
     .optional()
     .default(""),
 
-  imageIds: objectIdArray,
+  imageIds: z
+    .array(
+      z.object({
+        imageId: objectId,
+
+        relatedSection: z
+          .string()
+          .trim()
+          .optional()
+          .default(""),
+      })
+    )
+    .default([]),
 
   sourceIds: objectIdArray,
 

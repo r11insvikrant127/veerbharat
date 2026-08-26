@@ -53,6 +53,24 @@ const ImageSchema = new Schema(
       trim: true,
     },
 
+    /*
+      Optional.
+
+      Used to explicitly connect an image
+      with a particular section of an event.
+
+      Example:
+      relatedSection: "The Wagon Tragedy"
+
+      The frontend matches this with the
+      section title dynamically.
+    */
+    relatedSection: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+
     artist: {
       type: String,
       trim: true,
@@ -195,6 +213,10 @@ const ImageSchema = new Schema(
   }
 );
 
-ImageSchema.index({ title: "text", altText: "text", tags: "text" });
+ImageSchema.index({
+  title: "text",
+  altText: "text",
+  tags: "text",
+});
 
 export default models.Image || model("Image", ImageSchema);

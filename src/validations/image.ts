@@ -55,6 +55,19 @@ export const createImageSchema = z.object({
     .optional()
     .default(""),
 
+  /*
+    Optional section title to which this image belongs.
+
+    Example:
+    "The Wagon Tragedy"
+    "Weapons Used During the Rebellion"
+  */
+  relatedSection: z.string()
+    .trim()
+    .min(1)
+    .max(300)
+    .optional(),
+
   artist: z.string()
     .trim()
     .optional()

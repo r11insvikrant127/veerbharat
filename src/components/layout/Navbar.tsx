@@ -30,8 +30,8 @@ export function Navbar() {
     { href: '/', label: 'Home' },
     { href: '/heroes', label: 'Bravehearts' },
     { href: '/battles', label: 'Battles' },
+    { href: '/events', label: 'Events' },
     { href: '/timeline', label: 'Timeline' },
-    { href: '/dynasties', label: 'Dynasties' },
     { href: '/about', label: 'About' },
   ];
 

@@ -140,25 +140,37 @@ class EventService extends BaseService {
     const [events, total] =
       await Promise.all([
         Event.find(filter)
-        .populate({
-          path: "heroIds",
-          model: Hero,
-          select: `
-            heroId
-            name
-            nativeName
-            title
-            shortDescription
-            biography
-            status
-            imageIds
-          `,
-          populate: {
-            path: "imageIds",
+          .populate({
+            path: "imageIds.imageId",
             model: Image,
-            select: "imageId title url altText imageType",
-          },
-        })
+            select: `
+              imageId
+              title
+              url
+              altText
+              imageType
+              description
+            `,
+          })
+          .populate({
+            path: "heroIds",
+            model: Hero,
+            select: `
+              heroId
+              name
+              nativeName
+              title
+              shortDescription
+              biography
+              status
+              imageIds
+            `,
+            populate: {
+              path: "imageIds",
+              model: Image,
+              select: "imageId title url altText imageType",
+            },
+          })
           .sort(sortOption)
           .skip(skip)
           .limit(currentLimit),
@@ -186,6 +198,18 @@ class EventService extends BaseService {
       eventId,
     })
       .populate({
+        path: "imageIds.imageId",
+        model: Image,
+        select: `
+          imageId
+          title
+          url
+          altText
+          imageType
+          description
+        `,
+      })
+      .populate({
         path: "heroIds",
         model: Hero,
         select: `
@@ -201,27 +225,9 @@ class EventService extends BaseService {
         populate: {
           path: "imageIds",
           model: Image,
-          select: `
-            imageId
-            title
-            url
-            altText
-            imageType
-            description
-          `,
+          select:
+            "imageId title url altText imageType",
         },
-      })
-      .populate({
-        path: "imageIds",
-        model: Image,
-        select: `
-          imageId
-          title
-          url
-          altText
-          imageType
-          description
-        `,
       });
 
     if (!event) {
