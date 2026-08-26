@@ -100,6 +100,13 @@ const EventSchema = new Schema(
       index: true,
     },
 
+    isPersonalMilestone: {
+      type: Boolean,
+      required: true,
+      default: false,
+      index: true,
+    },
+
     description: {
       type: String,
       required: true,

@@ -77,6 +77,7 @@ class EventService extends BaseService {
       locationId,
       heroId,
       isOnThisDayEligible,
+      isPersonalMilestone,
       sort,
     } = query;
 
@@ -123,6 +124,14 @@ class EventService extends BaseService {
     ) {
       filter.isOnThisDayEligible =
         isOnThisDayEligible;
+    }
+
+    if (
+      isPersonalMilestone !==
+      undefined
+    ) {
+      filter.isPersonalMilestone =
+        isPersonalMilestone;
     }
 
     const {

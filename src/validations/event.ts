@@ -86,6 +86,10 @@ export const createEventSchema = z.object({
     .optional()
     .default(false),
 
+  isPersonalMilestone: z.boolean()
+    .optional()
+    .default(false),
+
   /* CONTENT */
 
   description: z.string()
@@ -237,7 +241,22 @@ export const eventQuerySchema =
       objectId.optional(),
 
     isOnThisDayEligible:
-      z.coerce.boolean().optional(),
+    z.enum(["true", "false"])
+      .optional()
+      .transform((value) =>
+        value === undefined
+          ? undefined
+          : value === "true"
+      ),
+
+  isPersonalMilestone:
+    z.enum(["true", "false"])
+      .optional()
+      .transform((value) =>
+        value === undefined
+          ? undefined
+          : value === "true"
+      ),
 
     sort: z.enum([
       "name",

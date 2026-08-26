@@ -25,7 +25,7 @@ import { Footer } from "@/components/layout/Footer";
 
 interface ImageData {
   _id: string;
-  imageId?: string;
+  imageId: string;
 
   title: string;
   url: string;
@@ -35,24 +35,33 @@ interface ImageData {
   description?: string;
 }
 
+interface EventImage {
+  _id: string;
 
-/*
-  This is the shape actually used by the frontend
-  after flattening the EventImageRelation.
-*/
+  imageId: string;
 
-interface EventImage extends ImageData {
+  title: string;
+  url: string;
+
+  altText?: string;
+  imageType?: string;
+  description?: string;
+
   relatedSection?: string;
 }
 
-interface EventImageRelation extends ImageData {
+interface EventImageRelation {
+  _id: string;
+
+  imageId?: ImageData | ImageData[];
+
   relatedSection?: string;
 }
 
 interface HistoricalEvent {
     _id: string;
     eventId: string;
-
+    imageUrl?: string;
     name: string;
     nativeName?: string;
 
@@ -70,9 +79,15 @@ interface HistoricalEvent {
     imageIds?: EventImageRelation[];
   }
 
+interface HistoricalSubsection {
+  title: string;
+  content: string;
+}
+
 interface HistoricalSection {
   title: string;
   content: string;
+  subsections: HistoricalSubsection[];
 }
 
 /* =====================================================
@@ -239,18 +254,64 @@ export default function EventDetailsPage() {
 
   const images: EventImage[] =
     (event.imageIds ?? [])
-      .filter(
-        (image): image is EventImageRelation =>
-          image !== null &&
-          typeof image === "object" &&
-          Boolean(image.url)
-      )
-      .map((image) => ({
-        ...image,
-        relatedSection:
-          image.relatedSection ?? "",
-      }));
+      .flatMap((relation) => {
+        if (
+          !relation ||
+          typeof relation !== "object" ||
+          !relation.imageId
+        ) {
+          return [];
+        }
+
+        const imageList = Array.isArray(
+          relation.imageId
+        )
+          ? relation.imageId
+          : [relation.imageId];
+
+        return imageList
+          .filter(
+            (image): image is ImageData =>
+              image !== null &&
+              typeof image === "object" &&
+              Boolean(image.url)
+          )
+          .map((image) => ({
+            _id:
+              relation._id ||
+              image._id,
+
+            imageId:
+              image.imageId,
+
+            title:
+              image.title,
+
+            url:
+              image.url,
+
+            altText:
+              image.altText,
+
+            imageType:
+              image.imageType,
+
+            description:
+              image.description,
+
+            relatedSection:
+              relation.relatedSection ?? "",
+          }));
+      });
       
+  /* =====================================================
+    HERO IMAGE
+  ===================================================== */
+
+  const heroImageUrl =
+    event.imageUrl || null;
+
+
   const sections = event.details
     ? parseHistoricalSections(
         event.details
@@ -265,7 +326,7 @@ export default function EventDetailsPage() {
     Every image is matched dynamically:
 
     relatedSection
-          ↓
+          Ã¢â€ â€œ
     section title
   */
 
@@ -356,11 +417,85 @@ export default function EventDetailsPage() {
                 <div className="h-px w-20 bg-gradient-to-l from-transparent to-[#D4AF37]/40" />
               </div>
 
-              {event.shortDescription && (
-                <p className="max-w-2xl mt-7 mx-auto text-[#D7C9A5] leading-relaxed">
-                  {event.shortDescription}
-                </p>
+              <div
+              className={`
+                mt-10
+                max-w-5xl
+                mx-auto
+                ${
+                  heroImageUrl
+                    ? "grid md:grid-cols-[1fr_1fr] lg:grid-cols-[1.05fr_0.95fr] gap-10 lg:gap-14 items-center text-left"
+                    : ""
+                }
+              `}
+            >
+              <div>
+
+                {event.shortDescription && (
+                  <p className="text-[#D7C9A5] text-base md:text-lg leading-8 md:leading-9">
+                    {event.shortDescription}
+                  </p>
+                )}
+
+              </div>
+
+              {heroImageUrl && (
+                <div className="relative w-full max-w-[520px] mx-auto">
+
+                  {/* SOFT GOLDEN GLOW */}
+
+                  <div className="absolute -inset-6 rounded-[2rem] bg-[#D4AF37]/10 blur-3xl" />
+
+                  {/* OUTER HISTORICAL FRAME */}
+
+                  <div className="relative p-2 rounded-2xl border border-[#D4AF37]/30 bg-[#17130F] shadow-[0_20px_60px_rgba(0,0,0,0.6)]">
+
+                    {/* INNER GOLD BORDER */}
+
+                    <div className="relative overflow-hidden rounded-xl border border-[#D4AF37]/20 bg-[#120F0C]">
+
+                      {/* IMAGE */}
+
+                      <div className="relative aspect-[5/4] overflow-hidden">
+
+                        <Image
+                          src={heroImageUrl}
+                          alt={event.name}
+                          fill
+                          priority
+                          sizes="(max-width: 768px) 100vw, 520px"
+                          className="object-cover transition-transform duration-700 hover:scale-105"
+                        />
+
+                        {/* VIGNETTE */}
+
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#0F0F0F]/35 via-transparent to-[#D4AF37]/5 pointer-events-none" />
+
+                      </div>
+                    </div>
+
+                    {/* TOP LEFT CORNER */}
+
+                    <div className="absolute top-3 left-3 w-7 h-7 border-t border-l border-[#D4AF37]/50 rounded-tl-md pointer-events-none" />
+
+                    {/* TOP RIGHT CORNER */}
+
+                    <div className="absolute top-3 right-3 w-7 h-7 border-t border-r border-[#D4AF37]/50 rounded-tr-md pointer-events-none" />
+
+                    {/* BOTTOM LEFT CORNER */}
+
+                    <div className="absolute bottom-3 left-3 w-7 h-7 border-b border-l border-[#D4AF37]/50 rounded-bl-md pointer-events-none" />
+
+                    {/* BOTTOM RIGHT CORNER */}
+
+                    <div className="absolute bottom-3 right-3 w-7 h-7 border-b border-r border-[#D4AF37]/50 rounded-br-md pointer-events-none" />
+
+                  </div>
+
+                </div>
               )}
+
+            </div>
 
             </div>
           </div>
@@ -416,32 +551,18 @@ export default function EventDetailsPage() {
                   );
 
                 return (
-                  <SectionWithImages
+                  <HistoricalArticleSection
                     key={`${section.title}-${index}`}
+                    title={section.title}
+                    content={section.content}
                     images={sectionImages}
-                  >
-                    <HistoricalCard
-                      eyebrow={
-                        index === 0
-                          ? "Detailed Historical Record"
-                          : "Historical Record"
-                      }
-                      title={section.title}
-                      icon={
-                        <ScrollText className="w-5 h-5 text-[#D4AF37]" />
-                      }
-                    >
-                      <HistoricalContent
-                        content={
-                          section.content
-                        }
-                      />
-                    </HistoricalCard>
-                  </SectionWithImages>
+                    index={index}
+                    subsections={section.subsections}
+                    allImages={images}
+                  />
                 );
               }
             )}
-
             {/* SIGNIFICANCE */}
 
             {event.significance && (
@@ -522,42 +643,203 @@ export default function EventDetailsPage() {
    SECTION WITH IMAGES
 ===================================================== */
 
-function SectionWithImages({
+function HistoricalArticleSection({
+  title,
+  content,
   images,
-  children,
+  index,
+  subsections,
+  allImages,
 }: {
+  title: string;
+  content: string;
   images: EventImage[];
-  children: ReactNode;
+  index: number;
+  subsections: HistoricalSubsection[];
+  allImages: EventImage[];
 }) {
-  if (images.length === 0) {
-    return <div>{children}</div>;
-  }
-
+  const imageOnLeft = index % 2 !== 0;
+  const getSubsectionImages = (
+    subsectionTitle: string
+  ): EventImage[] => {
+    return allImages.filter(
+      (image) =>
+        normalizeText(
+          image.relatedSection || ""
+        ) ===
+        normalizeText(subsectionTitle)
+    );
+  };
   return (
-    <div className="grid lg:grid-cols-[minmax(0,1fr)_360px] gap-6 lg:gap-8 items-start">
+    <article className="py-8 md:py-10 border-b border-[#D4AF37]/10 last:border-b-0">
+      
+      {/* SECTION HEADER */}
 
-      <div className="min-w-0">
-        {children}
+      <div className="mb-6">
+
+        <div className="flex items-center gap-3 mb-3">
+          <ScrollText className="w-5 h-5 text-[#D4AF37]" />
+
+          <p className="text-xs uppercase tracking-[0.22em] text-[#D4AF37]/60">
+            {index === 0
+              ? "Detailed Historical Record"
+              : "Historical Record"}
+          </p>
+        </div>
+
+        <h2 className="font-serif text-3xl font-bold text-[#F8F5F0]">
+          {title}
+        </h2>
+
+        <div className="mt-4 h-px w-full bg-gradient-to-r from-[#D4AF37]/40 via-[#D4AF37]/10 to-transparent" />
+
       </div>
 
-      <div className="space-y-6">
-        {images.map(
-          (image, index) => (
-            <RelatedImage
-              key={`${image._id}-${index}`}
-              image={image}
+      {/* SECTION CONTENT */}
+
+      {images.length === 0 ? (
+
+        content && (
+          <HistoricalContent
+            content={content}
+          />
+        )
+
+      ) : (
+
+        <div className="flow-root">
+
+          <aside
+            className={`
+              w-full
+              mb-6
+
+              lg:w-[300px]
+              xl:w-[340px]
+
+              ${
+                imageOnLeft
+                  ? "lg:float-left lg:mr-8"
+                  : "lg:float-right lg:ml-8"
+              }
+
+              space-y-5
+            `}
+          >
+            {images.map(
+              (image, imageIndex) => (
+                <RelatedImage
+                  key={`${image._id}-${imageIndex}`}
+                  image={image}
+                />
+              )
+            )}
+          </aside>
+
+          {content && (
+            <HistoricalContent
+              content={content}
             />
-          )
-        )}
-      </div>
+          )}
 
-    </div>
+        </div>
+
+      )}
+
+      {/* =============================================
+          SUBSECTIONS
+      ============================================= */}
+
+      {subsections.length > 0 && (
+        <div className="mt-10 space-y-8">
+
+          {subsections.map(
+            (subsection, subsectionIndex) => {
+              const subsectionImages =
+              getSubsectionImages(
+                subsection.title
+              );
+
+              return (
+                <article
+                  key={`${subsection.title}-${subsectionIndex}`}
+                  className="rounded-xl border border-[#D4AF37]/20 bg-[#120F0C] p-6 md:p-8"
+                >
+
+                  {/* SUBSECTION TITLE */}
+
+                  <div className="mb-6">
+
+                    <p className="text-xs uppercase tracking-[0.22em] text-[#D4AF37]/60 mb-2">
+                      {title}
+                    </p>
+
+                    <h3 className="font-serif text-2xl md:text-3xl font-bold text-[#F8F5F0]">
+                      {subsection.title}
+                    </h3>
+
+                    <div className="mt-4 h-px w-full bg-gradient-to-r from-[#D4AF37]/30 to-transparent" />
+
+                  </div>
+
+                  {/* SUBSECTION CONTENT */}
+
+                  {subsectionImages.length === 0 ? (
+
+                    <HistoricalContent
+                      content={subsection.content}
+                    />
+
+                  ) : (
+
+                    <div className="flow-root">
+
+                      <aside
+                        className={`
+                          w-full
+                          mb-6
+
+                          lg:w-[280px]
+
+                          ${
+                            subsectionIndex % 2 === 0
+                              ? "lg:float-right lg:ml-8"
+                              : "lg:float-left lg:mr-8"
+                          }
+
+                          space-y-5
+                        `}
+                      >
+                        {subsectionImages.map(
+                          (image, imageIndex) => (
+                            <RelatedImage
+                              key={`${image._id}-${imageIndex}`}
+                              image={image}
+                            />
+                          )
+                        )}
+                      </aside>
+
+                      <HistoricalContent
+                        content={subsection.content}
+                      />
+
+                    </div>
+
+                  )}
+
+                </article>
+              );
+            }
+          )}
+
+        </div>
+      )}
+
+    </article>
   );
 }
 
-/* =====================================================
-   HISTORICAL CARD
-===================================================== */
 
 function HistoricalCard({
   eyebrow,
@@ -609,16 +891,17 @@ function RelatedImage({
   return (
     <article className="section-card-hover overflow-hidden">
 
-      <div className="relative aspect-[4/3] bg-[#17130F]">
+      <div className="relative w-full bg-[#17130F]">
         <Image
           src={image.url}
           alt={
             image.altText ||
             image.title
           }
-          fill
+          width={800}
+          height={800}
           sizes="(max-width: 1024px) 100vw, 360px"
-          className="object-cover"
+          className="w-full h-auto object-contain"
         />
       </div>
 
@@ -702,23 +985,20 @@ function OverviewContent({
 }: {
   content: string;
 }) {
-  const points = content
-    .split(/(?<=[.!?])\s+/)
-    .map(
-      (point) =>
-        point.trim()
-    )
+  const paragraphs = content
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.trim())
     .filter(Boolean);
 
   return (
     <div className="space-y-7">
-      {points.map(
-        (point, index) => (
+      {paragraphs.map(
+        (paragraph, index) => (
           <p
             key={index}
             className="text-[#D7C9A5] leading-8"
           >
-            {point}
+            {paragraph}
           </p>
         )
       )}
@@ -733,48 +1013,109 @@ function OverviewContent({
 function parseHistoricalSections(
   content: string
 ): HistoricalSection[] {
-  const lines =
-    content.split("\n");
+  const lines = content.split("\n");
 
-  const sections:
-    HistoricalSection[] = [];
+  const sections: HistoricalSection[] = [];
 
-  let currentTitle =
-    "What Happened";
+  let currentSection:
+    | HistoricalSection
+    | null = null;
 
-  let currentContent:
-    string[] = [];
+  let currentSubsection:
+    | HistoricalSubsection
+    | null = null;
 
-  function saveSection() {
+  let currentContent: string[] = [];
+
+  function saveCurrentContent() {
     const cleanedContent =
       currentContent
         .join("\n")
         .trim();
 
-    if (cleanedContent) {
-      sections.push({
-        title: currentTitle,
-        content: cleanedContent,
-      });
+    if (!cleanedContent) {
+      currentContent = [];
+      return;
     }
+
+    if (currentSubsection) {
+      currentSubsection.content =
+        cleanedContent;
+
+      currentSection?.subsections.push(
+        currentSubsection
+      );
+
+      currentSubsection = null;
+    } else if (currentSection) {
+      currentSection.content =
+        cleanedContent;
+    }
+
+    currentContent = [];
+  }
+
+  function saveSection() {
+    if (!currentSection) {
+      return;
+    }
+
+    saveCurrentContent();
+
+    sections.push(
+      currentSection
+    );
+
+    currentSection = null;
   }
 
   lines.forEach((line) => {
-    const trimmed =
-      line.trim();
+    const trimmed = line.trim();
 
-    const headingMatch =
+    const mainHeadingMatch =
       trimmed.match(
-        /^(#{2,3})\s+(.+)$/
+        /^##\s+(.+)$/
       );
 
-    if (headingMatch) {
+    const subHeadingMatch =
+      trimmed.match(
+        /^###\s+(.+)$/
+      );
+
+    /* ===============================
+       MAIN SECTION
+       ##
+    =============================== */
+
+    if (mainHeadingMatch) {
       saveSection();
 
-      currentTitle =
-        headingMatch[2].trim();
+      currentSection = {
+        title:
+          mainHeadingMatch[1].trim(),
+        content: "",
+        subsections: [],
+      };
 
-      currentContent = [];
+      return;
+    }
+
+    /* ===============================
+       SUBSECTION
+       ###
+    =============================== */
+
+    if (
+      subHeadingMatch &&
+      currentSection
+    ) {
+      saveCurrentContent();
+
+      currentSubsection = {
+        title:
+          subHeadingMatch[1].trim(),
+        content: "",
+      };
 
       return;
     }
@@ -800,7 +1141,7 @@ function HistoricalContent({
     parseContentBlocks(content);
 
   return (
-    <div className="space-y-7 text-[#D7C9A5]">
+    <div className="text-[#D7C9A5]">
       {blocks.map(
         (block, index) => {
           if (
@@ -810,7 +1151,7 @@ function HistoricalContent({
             return (
               <p
                 key={index}
-                className="leading-8"
+                className="leading-8 mb-7"
               >
                 {block.text}
               </p>
@@ -983,10 +1324,19 @@ function parseContentBlocks(
   }
 
   lines.forEach((line) => {
-    const trimmed =
-      line.trim();
+  const trimmed =
+    line.trim();
 
-    if (!trimmed) {
+  // Ignore Markdown horizontal rules such as ---
+  if (/^-{3,}$/.test(trimmed)) {
+    saveParagraph();
+    saveBullets();
+    saveNumbered();
+
+    return;
+  }
+
+  if (!trimmed) {
       saveParagraph();
       saveBullets();
       saveNumbered();

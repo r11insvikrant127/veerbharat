@@ -46,6 +46,8 @@ interface HistoricalEvent {
   type?: string;
   status?: string;
 
+  imageUrl?: string;
+
   imageIds?: EventImageRelation[];
 }
 
@@ -93,10 +95,11 @@ export default function EventsPage() {
         setError("");
 
         const params =
-          new URLSearchParams({
+        new URLSearchParams({
             page: String(page),
             limit: String(limit),
-          });
+            isPersonalMilestone: "false",
+        });
 
         if (search) {
           params.set(
@@ -336,18 +339,20 @@ export default function EventsPage() {
 
                       <div className="relative aspect-[16/10] bg-[#17130F] overflow-hidden">
 
-                        {image?.url ? (
-                          <Image
-                            src={image.url}
-                            alt={
-                              image.altText ||
-                              image.title
-                            }
-                            fill
-                            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                            className="object-cover transition-transform duration-500 group-hover:scale-105"
-                          />
-                        ) : (
+                        {(event.imageUrl || image?.url) ? (
+                            <Image
+                                src={event.imageUrl || image!.url}
+                                alt={
+                                event.name ||
+                                image?.altText ||
+                                image?.title ||
+                                "Historical event"
+                                }
+                                fill
+                                sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                            ) : (
                           <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#1C1710] to-[#0F0F0F]">
 
                             <ScrollText className="w-12 h-12 text-[#D4AF37]/25" />
