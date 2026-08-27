@@ -156,18 +156,19 @@ export function OnThisDay() {
 
             {events.map((event, index) => {
 
-              const relatedHero =
-                event.heroIds?.[0];
+              const relatedHero = event.heroIds?.[0];
 
-              const destination =
-                relatedHero
-                  ? `/heroes/${relatedHero.heroId}`
-                  : `/events/${event.eventId}`;
+              const isHeroFocusedEvent =
+                relatedHero &&
+                /^(Birth|Death|Martyrdom) of /i.test(event.name);
 
-              const linkText =
-                relatedHero
-                  ? `Discover ${relatedHero.name}`
-                  : 'Explore this event';
+              const destination = isHeroFocusedEvent
+                ? `/heroes/${relatedHero.heroId}`
+                : `/events/${event.eventId}`;
+
+              const linkText = isHeroFocusedEvent
+                ? `Discover ${relatedHero.name}`
+                : 'Explore this event';
 
               return (
                 <motion.div
@@ -211,7 +212,6 @@ export function OnThisDay() {
                           className="mt-4 inline-flex text-[#D4AF37] font-medium hover:text-[#C46A00] items-center gap-1 transition-colors"
                         >
                           {linkText}
-
                           <ArrowRight className="w-4 h-4" />
                         </Link>
 

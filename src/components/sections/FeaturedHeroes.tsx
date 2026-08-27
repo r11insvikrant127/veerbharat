@@ -97,7 +97,7 @@ export function FeaturedHeroes() {
           ).values()
         );
 
-        const maxFeaturedHeroes = 4;
+        const maxFeaturedHeroes = 10;
 
         setHeroes(
           uniqueHeroes.slice(0, maxFeaturedHeroes)
