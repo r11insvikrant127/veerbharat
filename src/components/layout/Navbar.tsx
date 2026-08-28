@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Menu, X, Search, XCircle, Shield } from 'lucide-react';
+import { Menu, X, XCircle, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useScroll } from '@/hooks/useScroll';
 
@@ -29,6 +29,10 @@ export function Navbar() {
   const navLinks = [
     { href: '/', label: 'Home' },
     { href: '/heroes', label: 'Bravehearts' },
+    {
+      href: '/historical-personalities',
+      label: 'Historical Personalities',
+    },
     { href: '/battles', label: 'Battles' },
     { href: '/events', label: 'Events' },
     { href: '/timeline', label: 'Timeline' },
@@ -186,7 +190,7 @@ export function Navbar() {
               onClick={() => setIsLogoExpanded(true)}
               className="flex items-center gap-3 group cursor-pointer"
             >
-              <div className="relative w-14 h-14 md:w-16 md:h-16 rounded-full overflow-hidden border-2 border-[#D4AF37]/30 shadow-lg shadow-[#D4AF37]/10 transition-all duration-300 group-hover:border-[#D4AF37]/60 group-hover:shadow-[#D4AF37]/30 group-hover:scale-105">
+              <div className="relative w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden border-2 border-[#D4AF37]/30 shadow-lg shadow-[#D4AF37]/10 transition-all duration-300 group-hover:border-[#D4AF37]/60 group-hover:shadow-[#D4AF37]/30 group-hover:scale-105">
                 <Image
                   src="/images/veerbharat.png"
                   alt="Veer Bharat"
@@ -195,16 +199,6 @@ export function Navbar() {
                   className="object-cover"
                   priority
                 />
-              </div>
-              <div className="text-left">
-                <span className={`block text-xl md:text-2xl font-serif font-bold transition-all duration-300 ${
-                  isScrolled ? 'text-gold-gradient' : 'text-white'
-                } group-hover:text-gold-gradient`}>
-                  Veer Bharat
-                </span>
-                <span className="hidden md:block text-[11px] text-[#D4AF37]/60 font-light tracking-wider">
-                  Digital Museum of Bravehearts
-                </span>
               </div>
             </button>
 
@@ -239,21 +233,6 @@ export function Navbar() {
                   Preserving India&apos;s Legacy
                 </span>
               </button>
-
-              {/* Search Button */}
-              <Link href="/heroes">
-                <button
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-                    isScrolled
-                      ? 'bg-[#D4AF37]/10 text-[#D4AF37] hover:bg-[#D4AF37]/20 border border-[#D4AF37]/30'
-                      : 'bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm border border-white/20'
-                  }`}
-                >
-                  <Search className="w-4 h-4" />
-                  <span className="hidden md:inline">Explore Archive</span>
-                  <span className="md:hidden">Search</span>
-                </button>
-              </Link>
 
               {/* Mobile Menu Button */}
               <button
@@ -299,12 +278,6 @@ export function Navbar() {
                     <span>📜</span>
                     <span>Preserving India&apos;s Legacy</span>
                   </button>
-                  <Link href="/heroes" onClick={() => setIsMenuOpen(false)}>
-                    <button className="w-full px-4 py-3 bg-[#D4AF37] text-[#0F0F0F] rounded-lg hover:bg-[#C46A00] transition-colors flex items-center justify-center gap-2 font-medium">
-                      <Search className="w-4 h-4" />
-                      Explore Archive
-                    </button>
-                  </Link>
                 </nav>
               </motion.div>
             )}

@@ -1,5 +1,5 @@
-
 import { Cinzel, Inter } from "next/font/google";
+import { Navbar } from "@/components/layout/Navbar";
 import "./globals.css";
 
 const cinzel = Cinzel({
@@ -28,8 +28,10 @@ export default function RootLayout({
       lang="en"
       className={`${cinzel.variable} ${inter.variable} h-full scroll-smooth`}
     >
-      <body className="min-h-screen bg-[#F8F5F0] text-gray-900">{children}</body>
+      <body className="min-h-screen bg-[#F8F5F0] text-gray-900">
+        <Navbar />
+        {children}
+      </body>
     </html>
   );
 }
-
