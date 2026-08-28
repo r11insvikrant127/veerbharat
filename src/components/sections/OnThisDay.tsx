@@ -7,8 +7,9 @@ import {
   Calendar,
   Flag,
   ArrowRight,
+  Crown,
+  Shield,
 } from 'lucide-react';
-
 
 interface EventHero {
   _id: string;
@@ -20,12 +21,34 @@ interface HistoricalEvent {
   _id: string;
   eventId: string;
   name: string;
+  status?: string;
   eventDate: string | null;
   eventDateAccuracy: string;
   description: string;
   significance?: string;
   isOnThisDayEligible: boolean;
   heroIds: EventHero[];
+}
+
+interface Hero {
+  _id: string;
+  heroId: string;
+  name: string;
+  status?: string;
+  birthDate?: string | null;
+  deathDate?: string | null;
+  shortDescription?: string;
+}
+
+interface HistoricalPersonality {
+  _id: string;
+  historicalPersonalityId: string;
+  name: string;
+  status?: string;
+  birthDate?: string | null;
+  deathDate?: string | null;
+  shortDescription?: string;
+  legacy?: string;
 }
 
 interface EventsResponse {
@@ -38,12 +61,31 @@ interface EventsResponse {
   };
 }
 
+interface HeroesResponse {
+  data: Hero[];
+}
+
+interface HistoricalPersonalitiesResponse {
+  data: HistoricalPersonality[];
+}
+
+interface OnThisDayItem {
+  id: string;
+  name: string;
+  year: number | null;
+  description: string;
+  href: string;
+  type: 'event' | 'hero' | 'personality';
+}
+
 export function OnThisDay() {
-  const [events, setEvents] =
-    useState<HistoricalEvent[]>([]);
+  const [items, setItems] =
+    useState<OnThisDayItem[]>([]);
 
   const [loading, setLoading] =
     useState(true);
+  const isPublished = (status?: string) =>
+    status?.trim().toLowerCase() === 'published';
 
   const today = useMemo(
     () => new Date(),
@@ -59,45 +101,232 @@ export function OnThisDay() {
     )}`;
 
   useEffect(() => {
-    async function fetchTodayEvents() {
+    async function fetchTodayHistory() {
       try {
         setLoading(true);
 
-        const response = await fetch(
-          '/api/events?page=1&limit=100&status=Published'
-        );
+        const [
+          eventsResponse,
+          heroesResponse,
+          personalitiesResponse,
+        ] = await Promise.all([
+          fetch('/api/events?page=1&limit=100'),
+          fetch('/api/heroes?page=1&limit=100'),
+          fetch(
+            '/api/historical-personalities?page=1&limit=100'
+          ),
+        ]);
 
-        if (!response.ok) {
-          throw new Error(
-            'Failed to fetch historical events.'
-          );
-        }
+        const allItems: OnThisDayItem[] = [];
 
-        const result: EventsResponse =
-          await response.json();
+        /*
+         * EVENTS
+         */
+        if (eventsResponse.ok) {
+          const result: EventsResponse =
+            await eventsResponse.json();
 
-        const eventsForToday =
-          result.data.filter((item) => {
-            if (!item.eventDate) {
-              return false;
-            }
+          result.data.forEach((event) => {
+          if (
+            !isPublished(event.status) ||
+            !event.eventDate
+          ) {
+            return;
+          }
 
             const eventDate =
-              new Date(item.eventDate);
+              new Date(event.eventDate);
 
-            return (
+            if (
               eventDate.getDate() ===
                 today.getDate() &&
               eventDate.getMonth() ===
                 today.getMonth()
-            );
-          });
+            ) {
+              const relatedHero =
+                event.heroIds?.[0];
 
-        setEvents(eventsForToday);
+              const isHeroFocusedEvent =
+                relatedHero &&
+                /^(Birth|Death|Martyrdom) of /i.test(
+                  event.name
+                );
+
+              allItems.push({
+                id: event._id,
+                name: event.name,
+                year: eventDate.getFullYear(),
+                description:
+                  event.description,
+                href: isHeroFocusedEvent
+                  ? `/heroes/${relatedHero.heroId}`
+                  : `/events/${event.eventId}`,
+                type: 'event',
+              });
+            }
+          });
+        }
+
+        /*
+         * HEROES
+         */
+        if (heroesResponse.ok) {
+          const result: HeroesResponse =
+            await heroesResponse.json();
+
+          result.data.forEach((hero) => {
+          if (!isPublished(hero.status)) {
+            return;
+          }
+
+          if (hero.birthDate) {
+              const birthDate =
+                new Date(hero.birthDate);
+
+              if (
+                birthDate.getDate() ===
+                  today.getDate() &&
+                birthDate.getMonth() ===
+                  today.getMonth()
+              ) {
+                allItems.push({
+                  id: `${hero._id}-birth`,
+                  name:
+                    `Birth of ${hero.name}`,
+                  year:
+                    birthDate.getFullYear(),
+                  description:
+                    hero.shortDescription ||
+                    `Birth anniversary of ${hero.name}.`,
+                  href:
+                    `/heroes/${hero.heroId}`,
+                  type: 'hero',
+                });
+              }
+            }
+
+            if (hero.deathDate) {
+              const deathDate =
+                new Date(hero.deathDate);
+
+              if (
+                deathDate.getDate() ===
+                  today.getDate() &&
+                deathDate.getMonth() ===
+                  today.getMonth()
+              ) {
+                allItems.push({
+                  id: `${hero._id}-death`,
+                  name:
+                    `Death of ${hero.name}`,
+                  year:
+                    deathDate.getFullYear(),
+                  description:
+                    hero.shortDescription ||
+                    `Death anniversary of ${hero.name}.`,
+                  href:
+                    `/heroes/${hero.heroId}`,
+                  type: 'hero',
+                });
+              }
+            }
+          });
+        }
+
+        /*
+         * HISTORICAL PERSONALITIES
+         */
+        if (personalitiesResponse.ok) {
+          const result:
+            HistoricalPersonalitiesResponse =
+              await personalitiesResponse.json();
+
+          result.data.forEach(
+            (personality) => {
+              if (
+                !isPublished(personality.status)
+              ) {
+                return;
+              }
+
+              if (personality.birthDate) {
+                const birthDate =
+                  new Date(
+                    personality.birthDate
+                  );
+
+                if (
+                  birthDate.getDate() ===
+                    today.getDate() &&
+                  birthDate.getMonth() ===
+                    today.getMonth()
+                ) {
+                  allItems.push({
+                    id:
+                      `${personality._id}-birth`,
+                    name:
+                      `Birth of ${personality.name}`,
+                    year:
+                      birthDate.getFullYear(),
+                    description:
+                      personality.shortDescription ||
+                      personality.legacy ||
+                      `Birth anniversary of ${personality.name}.`,
+                    href:
+                      `/historical-personalities/${personality.historicalPersonalityId}`,
+                    type: 'personality',
+                  });
+                }
+              }
+
+              if (personality.deathDate) {
+                const deathDate =
+                  new Date(
+                    personality.deathDate
+                  );
+
+                if (
+                  deathDate.getDate() ===
+                    today.getDate() &&
+                  deathDate.getMonth() ===
+                    today.getMonth()
+                ) {
+                  allItems.push({
+                    id:
+                      `${personality._id}-death`,
+                    name:
+                      `Death of ${personality.name}`,
+                    year:
+                      deathDate.getFullYear(),
+                    description:
+                      personality.shortDescription ||
+                      personality.legacy ||
+                      `Death anniversary of ${personality.name}.`,
+                    href:
+                      `/historical-personalities/${personality.historicalPersonalityId}`,
+                    type: 'personality',
+                  });
+                }
+              }
+            }
+          );
+        }
+
+        /*
+         * Sort oldest events first
+         */
+        allItems.sort((a, b) => {
+          if (a.year === null) return 1;
+          if (b.year === null) return -1;
+
+          return a.year - b.year;
+        });
+
+        setItems(allItems);
 
       } catch (error) {
         console.error(
-          'Failed to load On This Day events:',
+          'Failed to load On This Day history:',
           error
         );
       } finally {
@@ -105,7 +334,7 @@ export function OnThisDay() {
       }
     }
 
-    fetchTodayEvents();
+    fetchTodayHistory();
   }, [today]);
 
   if (loading) {
@@ -120,7 +349,7 @@ export function OnThisDay() {
     );
   }
 
-  if (events.length === 0) {
+  if (items.length === 0) {
     return null;
   }
 
@@ -129,10 +358,20 @@ export function OnThisDay() {
       <div className="container mx-auto px-4">
 
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+          initial={{
+            opacity: 0,
+            y: 20,
+          }}
+          whileInView={{
+            opacity: 1,
+            y: 0,
+          }}
+          viewport={{
+            once: true,
+          }}
+          transition={{
+            duration: 0.6,
+          }}
           className="max-w-4xl mx-auto"
         >
 
@@ -154,30 +393,24 @@ export function OnThisDay() {
 
           <div className="space-y-5">
 
-            {events.map((event, index) => {
-
-              const relatedHero = event.heroIds?.[0];
-
-              const isHeroFocusedEvent =
-                relatedHero &&
-                /^(Birth|Death|Martyrdom) of /i.test(event.name);
-
-              const destination = isHeroFocusedEvent
-                ? `/heroes/${relatedHero.heroId}`
-                : `/events/${event.eventId}`;
-
-              const linkText = isHeroFocusedEvent
-                ? `Discover ${relatedHero.name}`
-                : 'Explore this event';
-
-              return (
+            {items.map(
+              (item, index) => (
                 <motion.div
-                  key={event.eventId}
-                  initial={{ opacity: 0, y: 15 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
+                  key={item.id}
+                  initial={{
+                    opacity: 0,
+                    y: 15,
+                  }}
+                  whileInView={{
+                    opacity: 1,
+                    y: 0,
+                  }}
+                  viewport={{
+                    once: true,
+                  }}
                   transition={{
-                    delay: index * 0.1,
+                    delay:
+                      index * 0.1,
                   }}
                 >
 
@@ -186,32 +419,41 @@ export function OnThisDay() {
                     <div className="flex items-start gap-4">
 
                       <div className="w-12 h-12 bg-[#D4AF37]/10 rounded-full flex items-center justify-center flex-shrink-0 border border-[#D4AF37]/20">
-                        <Flag className="w-6 h-6 text-[#D4AF37]" />
+
+                        {item.type ===
+                        'personality' ? (
+                          <Crown className="w-6 h-6 text-[#D4AF37]" />
+                        ) : item.type ===
+                          'hero' ? (
+                          <Shield className="w-6 h-6 text-[#D4AF37]" />
+                        ) : (
+                          <Flag className="w-6 h-6 text-[#D4AF37]" />
+                        )}
+
                       </div>
 
                       <div className="flex-1">
 
-                        {event.eventDate && (
+                        {item.year && (
                           <p className="text-[#D4AF37] text-sm font-medium mb-1">
-                            {new Date(
-                              event.eventDate
-                            ).getFullYear()}
+                            {item.year}
                           </p>
                         )}
 
                         <h3 className="text-xl font-semibold text-[#F8F5F0] mb-2">
-                          {event.name}
+                          {item.name}
                         </h3>
 
                         <p className="text-[#D7C9A5] leading-relaxed">
-                          {event.description}
+                          {item.description}
                         </p>
 
                         <Link
-                          href={destination}
+                          href={item.href}
                           className="mt-4 inline-flex text-[#D4AF37] font-medium hover:text-[#C46A00] items-center gap-1 transition-colors"
                         >
-                          {linkText}
+                          Explore this record
+
                           <ArrowRight className="w-4 h-4" />
                         </Link>
 
@@ -222,8 +464,8 @@ export function OnThisDay() {
                   </div>
 
                 </motion.div>
-              );
-            })}
+              )
+            )}
 
           </div>
 
