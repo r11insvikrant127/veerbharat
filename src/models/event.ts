@@ -106,6 +106,13 @@ const EventSchema = new Schema(
       default: false,
       index: true,
     },
+    
+    linkedEventId: {
+      type: Schema.Types.ObjectId,
+      ref: "Event",
+      default: null,
+      index: true,
+    },
 
     description: {
       type: String,
@@ -162,6 +169,7 @@ const EventSchema = new Schema(
     ],
 
     crossReferences: {
+
       relatedHeroes: [
         {
           type: Schema.Types.ObjectId,

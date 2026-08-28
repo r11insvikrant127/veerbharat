@@ -149,8 +149,16 @@ class EventService extends BaseService {
     const [events, total] =
       await Promise.all([
         Event.find(filter)
-          .populate({
-            path: "imageIds.imageId",
+        .populate({
+          path: "linkedEventId",
+          model: Event,
+          select: `
+            eventId
+            name
+          `,
+        })
+        .populate({
+          path: "imageIds.imageId",
             model: Image,
             select: `
               imageId
@@ -206,6 +214,14 @@ class EventService extends BaseService {
     const event = await Event.findOne({
       eventId,
     })
+      .populate({
+        path: "linkedEventId",
+        model: Event,
+        select: `
+          eventId
+          name
+        `,
+      })
       .populate({
         path: "imageIds.imageId",
         model: Image,

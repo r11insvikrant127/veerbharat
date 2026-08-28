@@ -25,8 +25,18 @@ interface HistoricalEvent {
   eventDate: string | null;
   eventDateAccuracy: string;
   description: string;
+  shortDescription?: string;
   significance?: string;
   isOnThisDayEligible: boolean;
+
+  linkedEventId?:
+    | {
+        _id: string;
+        eventId: string;
+      }
+    | string
+    | null;
+
   heroIds: EventHero[];
 }
 
@@ -38,6 +48,7 @@ interface Hero {
   birthDate?: string | null;
   deathDate?: string | null;
   shortDescription?: string;
+  causeOfDeath?: string;
 }
 
 interface HistoricalPersonality {
@@ -129,6 +140,7 @@ export function OnThisDay() {
           result.data.forEach((event) => {
           if (
             !isPublished(event.status) ||
+            !event.isOnThisDayEligible ||
             !event.eventDate
           ) {
             return;
@@ -152,15 +164,34 @@ export function OnThisDay() {
                   event.name
                 );
 
+              /*
+              * If this is an On This Day entry linked
+              * to another event, open that event instead
+              * of creating/opening its own event page.
+              */
+              const linkedEvent =
+                event.linkedEventId;
+
+              const linkedEventHref =
+                typeof linkedEvent === 'object' &&
+                linkedEvent?.eventId
+                  ? `/events/${linkedEvent.eventId}`
+                  : null;
+
               allItems.push({
                 id: event._id,
                 name: event.name,
                 year: eventDate.getFullYear(),
+
                 description:
+                  event.shortDescription ||
                   event.description,
+
                 href: isHeroFocusedEvent
                   ? `/heroes/${relatedHero.heroId}`
-                  : `/events/${event.eventId}`,
+                  : linkedEventHref ||
+                    `/events/${event.eventId}`,
+
                 type: 'event',
               });
             }
@@ -218,7 +249,11 @@ export function OnThisDay() {
                 allItems.push({
                   id: `${hero._id}-death`,
                   name:
-                    `Death of ${hero.name}`,
+                    /martyr|executed|execution|shot dead|hanged/i.test(
+                      hero.causeOfDeath || ''
+                    )
+                      ? `Martyrdom of ${hero.name}`
+                      : `Death of ${hero.name}`,
                   year:
                     deathDate.getFullYear(),
                   description:
