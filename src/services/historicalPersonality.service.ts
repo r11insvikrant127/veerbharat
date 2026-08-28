@@ -66,7 +66,7 @@ class HistoricalPersonalityService extends BaseService {
     // Generate ID: HP001, HP002, HP003...
     const historicalPersonalityId = `HP${String(
       nextNumber
-    ).padStart(3, "0")}`;
+    ).padStart(4, "0")}`;
 
     const historicalPersonality =
       await HistoricalPersonality.create({
