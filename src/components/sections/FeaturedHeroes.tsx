@@ -24,19 +24,13 @@ interface Hero {
   shortDescription?: string;
   biography?: string;
   status: string;
+  birthDate?: string | null;
+  deathDate?: string | null;
   imageIds?: HeroImage[];
 }
 
-interface HistoricalEvent {
-  _id: string;
-  eventId: string;
-  name: string;
-  eventDate: string | null;
-  heroIds: Hero[];
-}
-
-interface EventsResponse {
-  data: HistoricalEvent[];
+interface HeroesResponse {
+  data: Hero[];
   pagination: {
     page: number;
     limit: number;
@@ -57,50 +51,65 @@ export function FeaturedHeroes() {
         setLoading(true);
 
         const response = await fetch(
-          '/api/events?page=1&limit=100&status=Published'
+          '/api/heroes?page=1&limit=100&status=Published'
         );
 
         if (!response.ok) {
-          throw new Error('Failed to fetch events');
+          throw new Error('Failed to fetch heroes');
         }
 
-        const result: EventsResponse =
+        const result: HeroesResponse =
           await response.json();
 
-        // Find all events that happened on today's
-        // day and month. Year is intentionally ignored.
-        const todaysEvents = result.data.filter((event) => {
-          if (!event.eventDate) {
-            return false;
-          }
+        /*
+         * FEATURE HEROES BASED ON
+         * BIRTH OR DEATH/MARTYRDOM ANNIVERSARY.
+         *
+         * Only the day and month are compared.
+         * The year is intentionally ignored.
+         */
+        const todaysHeroes = result.data.filter((hero) => {
+          const isBirthday =
+            hero.birthDate &&
+            (() => {
+              const birthDate =
+                new Date(hero.birthDate);
 
-          const eventDate = new Date(event.eventDate);
+              return (
+                birthDate.getDate() ===
+                  today.getDate() &&
+                birthDate.getMonth() ===
+                  today.getMonth()
+              );
+            })();
+
+          const isDeathAnniversary =
+            hero.deathDate &&
+            (() => {
+              const deathDate =
+                new Date(hero.deathDate);
+
+              return (
+                deathDate.getDate() ===
+                  today.getDate() &&
+                deathDate.getMonth() ===
+                  today.getMonth()
+              );
+            })();
 
           return (
-            eventDate.getDate() === today.getDate() &&
-            eventDate.getMonth() === today.getMonth()
+            isBirthday ||
+            isDeathAnniversary
           );
         });
-
-        // Extract all heroes connected to today's events.
-        const heroesFromEvents = todaysEvents.flatMap(
-          (event) => event.heroIds || []
-        );
-
-        // Remove duplicate heroes.
-        const uniqueHeroes = Array.from(
-          new Map(
-            heroesFromEvents.map((hero) => [
-              hero.heroId,
-              hero,
-            ])
-          ).values()
-        );
 
         const maxFeaturedHeroes = 10;
 
         setHeroes(
-          uniqueHeroes.slice(0, maxFeaturedHeroes)
+          todaysHeroes.slice(
+            0,
+            maxFeaturedHeroes
+          )
         );
 
       } catch (error) {
@@ -148,7 +157,8 @@ export function FeaturedHeroes() {
 
           <p className="text-[#6B6258]">
             Discover the remarkable individuals whose
-            stories are connected to this day in history.
+            birth, death, or martyrdom anniversary falls
+            on this day in history.
           </p>
 
         </motion.div>
@@ -194,38 +204,38 @@ export function FeaturedHeroes() {
 
                     <div className="relative h-48 bg-gradient-to-br from-[#1C1410] via-[#2B221C] to-[#C46A00]/30 overflow-hidden">
 
-                    {hero.imageIds?.[0] ? (
+                      {hero.imageIds?.[0] ? (
 
-                      <Image
-                        src={hero.imageIds[0].url}
-                        alt={hero.imageIds[0].altText}
-                        fill
-                        className="object-contain object-center p-2 group-hover:scale-105 transition-transform duration-500"
-                      />
+                        <Image
+                          src={hero.imageIds[0].url}
+                          alt={hero.imageIds[0].altText}
+                          fill
+                          className="object-contain object-center p-2 group-hover:scale-105 transition-transform duration-500"
+                        />
 
-                    ) : (
+                      ) : (
 
-                      <div className="absolute inset-0 flex items-center justify-center text-7xl opacity-30">
-                        ⚔
-                      </div>
-
-                    )}
-
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#1C1410] via-transparent to-transparent" />
-
-                    <div className="absolute bottom-4 left-4 right-4">
-
-                      {hero.title && (
-
-                        <p className="text-[#D4AF37] text-xs font-medium tracking-wide">
-                          {hero.title}
-                        </p>
+                        <div className="absolute inset-0 flex items-center justify-center text-7xl opacity-30">
+                          ⚔
+                        </div>
 
                       )}
 
-                    </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#1C1410] via-transparent to-transparent" />
 
-                  </div>
+                      <div className="absolute bottom-4 left-4 right-4">
+
+                        {hero.title && (
+
+                          <p className="text-[#D4AF37] text-xs font-medium tracking-wide">
+                            {hero.title}
+                          </p>
+
+                        )}
+
+                      </div>
+
+                    </div>
 
 
                     {/* Hero Information */}
