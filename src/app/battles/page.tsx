@@ -26,6 +26,13 @@ interface Battle {
   aftermath?: string;
   tags?: string[];
   status: string;
+
+  crossReferences?: {
+    relatedEvents?: {
+      eventId: string;
+      name: string;
+    }[];
+  };
 }
 
 interface BattlesResponse {
@@ -380,7 +387,11 @@ export default function BattlesPage() {
 
                   <Link
                     key={battle._id}
-                    href={`/battles/${battle.battleId}`}
+                    href={
+                      battle.crossReferences?.relatedEvents?.[0]?.eventId
+                        ? `/events/${battle.crossReferences.relatedEvents[0].eventId}`
+                        : "#"
+                    }
                     className="group block"
                   >
 

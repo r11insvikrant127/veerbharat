@@ -117,6 +117,11 @@ class BattleService extends BaseService {
     const [battles, total] =
       await Promise.all([
         Battle.find(filter)
+          .populate({
+            path: "crossReferences.relatedEvents",
+            model: "Event",
+            select: "eventId name",
+          })
           .sort(sortOption)
           .skip(skip)
           .limit(currentLimit),
@@ -142,12 +147,21 @@ class BattleService extends BaseService {
   ) {
     await this.connect();
 
-    return this.findByPublicIdOrThrow(
-    Battle,
-    "battleId",
-    battleId,
-    "Battle"
-    );
+    const battle =
+      await this.findByPublicIdOrThrow(
+        Battle,
+        "battleId",
+        battleId,
+        "Battle"
+      );
+
+    await battle.populate({
+      path: "crossReferences.relatedEvents",
+      model: "Event",
+      select: "eventId name",
+    });
+
+    return battle;
   }
 
   async updateBattle(

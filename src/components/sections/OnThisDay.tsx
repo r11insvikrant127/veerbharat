@@ -49,6 +49,7 @@ interface Hero {
   deathDate?: string | null;
   shortDescription?: string;
   causeOfDeath?: string;
+  tags?: string[];
 }
 
 interface HistoricalPersonality {
@@ -250,7 +251,10 @@ export function OnThisDay() {
                   id: `${hero._id}-death`,
                   name:
                     /martyr|executed|execution|shot dead|hanged/i.test(
-                      hero.causeOfDeath || ''
+                      [
+                        hero.causeOfDeath || '',
+                        ...(hero.tags || []),
+                      ].join(' ')
                     )
                       ? `Martyrdom of ${hero.name}`
                       : `Death of ${hero.name}`,

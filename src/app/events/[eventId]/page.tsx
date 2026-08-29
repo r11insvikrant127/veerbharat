@@ -998,7 +998,7 @@ function OverviewContent({
             key={index}
             className="text-[#D7C9A5] leading-8"
           >
-            {paragraph}
+            <LinkedHistoricalText text={paragraph} />
           </p>
         )
       )}
@@ -1153,7 +1153,7 @@ function HistoricalContent({
                 key={index}
                 className="leading-8 mb-7"
               >
-                {block.text}
+                <LinkedHistoricalText text={block.text} />
               </p>
             );
           }
@@ -1182,7 +1182,7 @@ function HistoricalContent({
                       <Sword className="w-4 h-4 shrink-0 mt-2 text-[#D4AF37]" />
 
                       <span className="leading-8">
-                        {item}
+                        <LinkedHistoricalText text={item} />
                       </span>
                     </li>
                   )
@@ -1217,7 +1217,7 @@ function HistoricalContent({
                       </span>
 
                       <span className="leading-8">
-                        {item}
+                        <LinkedHistoricalText text={item} />
                       </span>
                     </li>
                   )
@@ -1232,6 +1232,61 @@ function HistoricalContent({
     </div>
   );
 }
+
+/* =====================================================
+   LINK HERO NAMES INSIDE HISTORICAL TEXT
+===================================================== */
+
+function LinkedHistoricalText({
+  text,
+}: {
+  text: string;
+}) {
+  const heroLinks = [
+    {
+      name: "Benoy Krishna Basu",
+      href: "/heroes/HER0057",
+    },
+  ];
+
+  let parts: ReactNode[] = [text];
+
+  heroLinks.forEach((hero) => {
+    const nextParts: ReactNode[] = [];
+
+    parts.forEach((part) => {
+      if (typeof part !== "string") {
+        nextParts.push(part);
+        return;
+      }
+
+      const splitParts = part.split(hero.name);
+
+      splitParts.forEach((piece, index) => {
+        if (piece) {
+          nextParts.push(piece);
+        }
+
+        if (index < splitParts.length - 1) {
+          nextParts.push(
+            <Link
+              key={`${hero.name}-${index}`}
+              href={hero.href}
+              className="text-[#D4AF37] font-semibold hover:underline hover:text-[#E5C65A] transition-colors"
+            >
+              {hero.name}
+            </Link>
+          );
+        }
+      });
+    });
+
+    parts = nextParts;
+  });
+
+  return <>{parts}</>;
+}
+
 
 /* =====================================================
    CONTENT BLOCK TYPES

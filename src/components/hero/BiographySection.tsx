@@ -1,48 +1,59 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 interface BiographySectionProps {
   biography?: string;
   heroName: string;
 }
 
-function splitBiography(biography?: string) {
-  if (!biography) {
-    return [];
-  }
+/* =====================================================
+   CLEAN BIOGRAPHY TEXT
+===================================================== */
 
-  return biography
-    .replace(/\s+/g, " ")
-    .trim()
-    .match(/[^.!?]+[.!?]+|[^.!?]+$/g)
-    ?.map((sentence) => sentence.trim())
-    .filter(Boolean) ?? [];
+function cleanBiographyText(text: string): string {
+  return text
+    // Remove accidental AI/source citation artifacts
+    .replace(
+      /:contentReference\[oaicite:\d+\]\{index=\d+\}/gi,
+      ""
+    )
+    // Remove any remaining excessive whitespace
+    .replace(/[ \t]+/g, " ")
+    .trim();
 }
+
+/* =====================================================
+   HIGHLIGHT HERO NAME + DATES
+===================================================== */
 
 function highlightText(
   text: string,
   heroName: string
-) {
-  const parts = text.split(
-    new RegExp(
-      `(${heroName.replace(
-        /[.*+?^${}()|[\]\\]/g,
-        "\\$&"
-      )}|\\b(?:1[0-9]{3}|20[0-9]{2})\\b|\\b\\d{1,2}\\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\\s+\\d{4}\\b)`,
-      "gi"
-    )
+): ReactNode[] {
+  const escapedHeroName = heroName.replace(
+    /[.*+?^${}()|[\]\\]/g,
+    "\\$&"
   );
 
-  return parts.map((part, index) => {
+  const pattern = new RegExp(
+    `(${escapedHeroName}|\\b(?:1[0-9]{3}|20[0-9]{2})\\b|\\b\\d{1,2}\\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\\s+\\d{4}\\b)`,
+    "gi"
+  );
+
+  return text.split(pattern).map((part, index) => {
     const isHero =
       part.toLowerCase() === heroName.toLowerCase();
 
-    const isDate =
-      /^(?:1[0-9]{3}|20[0-9]{2})$/.test(part) ||
+    const isYear =
+      /^(?:1[0-9]{3}|20[0-9]{2})$/.test(part);
+
+    const isFullDate =
       /^\d{1,2}\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}$/i.test(
         part
       );
 
-    if (isHero || isDate) {
+    if (isHero || isYear || isFullDate) {
       return (
         <strong
           key={index}
@@ -53,22 +64,121 @@ function highlightText(
       );
     }
 
-    return part;
+    return <span key={index}>{part}</span>;
   });
 }
+
+/* =====================================================
+   PARSE BIOGRAPHY
+===================================================== */
+
+type BiographyBlock =
+  | {
+      type: "heading";
+      text: string;
+    }
+  | {
+      type: "paragraph";
+      text: string;
+    };
+
+function parseBiography(
+  biography?: string
+): BiographyBlock[] {
+  if (!biography) {
+    return [];
+  }
+
+  const cleaned = cleanBiographyText(biography);
+
+  const lines = cleaned.split("\n");
+
+  const blocks: BiographyBlock[] = [];
+
+  let paragraphLines: string[] = [];
+
+  function saveParagraph() {
+    const paragraph = paragraphLines
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (paragraph) {
+      blocks.push({
+        type: "paragraph",
+        text: paragraph,
+      });
+    }
+
+    paragraphLines = [];
+  }
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    if (!trimmed) {
+      saveParagraph();
+      continue;
+    }
+
+    /* =========================================
+       MARKDOWN HEADING
+       ## Heading
+    ========================================= */
+
+    const headingMatch =
+      trimmed.match(/^##\s+(.+)$/);
+
+    if (headingMatch) {
+      saveParagraph();
+
+      blocks.push({
+        type: "heading",
+        text: headingMatch[1].trim(),
+      });
+
+      continue;
+    }
+
+    /* =========================================
+       REMOVE ANY ACCIDENTAL MARKDOWN HEADING
+       SYMBOLS
+    ========================================= */
+
+    const cleanedLine = trimmed
+      .replace(/^###\s+/, "")
+      .replace(/^#\s+/, "")
+      .trim();
+
+    paragraphLines.push(cleanedLine);
+  }
+
+  saveParagraph();
+
+  return blocks;
+}
+
+/* =====================================================
+   COMPONENT
+===================================================== */
 
 export function BiographySection({
   biography,
   heroName,
 }: BiographySectionProps) {
-  const sentences = splitBiography(biography);
+  const blocks = parseBiography(biography);
 
-  if (!sentences.length) {
+  if (!blocks.length) {
     return null;
   }
 
   return (
-    <div className="section-card-hover p-8 md:p-10 mt-6">
+    <div className="section-card-hover p-8 md:p-10 mt-6 overflow-hidden">
+
+      {/* =============================================
+          HEADER
+      ============================================= */}
+
       <p className="text-xs uppercase tracking-[0.25em] text-[#D4AF37]/60 mb-3">
         Chronicle
       </p>
@@ -77,27 +187,50 @@ export function BiographySection({
         Biography
       </h2>
 
-      <div className="relative space-y-5">
-        <div className="absolute left-[15px] top-3 bottom-3 w-px bg-[#D4AF37]/20" />
+      {/* =============================================
+          BIOGRAPHY
+      ============================================= */}
 
-        {sentences.map((sentence, index) => (
-          <div
-            key={`${index}-${sentence.slice(0, 20)}`}
-            className="relative flex gap-5"
-          >
-            <div className="relative z-10 shrink-0 w-8 h-8 rounded-full border border-[#D4AF37]/40 bg-[#17130F] flex items-center justify-center">
-              <span className="text-[10px] text-[#D4AF37] font-semibold">
-                {String(index + 1).padStart(2, "0")}
-              </span>
-            </div>
+      <div className="max-w-none min-w-0">
 
-            <div className="pb-2 pt-1">
-              <p className="text-[#D7C9A5] leading-8">
-                {highlightText(sentence, heroName)}
-              </p>
-            </div>
-          </div>
-        ))}
+        {blocks.map((block, index) => {
+
+          /* =========================================
+             SECTION HEADING
+          ========================================= */
+
+          if (block.type === "heading") {
+            return (
+              <div
+                key={`heading-${index}`}
+                className="mt-10 mb-5 first:mt-0"
+              >
+                <h3 className="font-serif text-2xl md:text-3xl font-bold text-[#F8F5F0] break-words">
+                  {block.text}
+                </h3>
+
+                <div className="mt-4 h-px w-full bg-gradient-to-r from-[#D4AF37]/40 via-[#D4AF37]/10 to-transparent" />
+              </div>
+            );
+          }
+
+          /* =========================================
+             PARAGRAPH
+          ========================================= */
+
+          return (
+            <p
+              key={`paragraph-${index}`}
+              className="text-[#D7C9A5] leading-8 mb-7 break-words whitespace-normal overflow-wrap-anywhere"
+            >
+              {highlightText(
+                block.text,
+                heroName
+              )}
+            </p>
+          );
+        })}
+
       </div>
     </div>
   );
