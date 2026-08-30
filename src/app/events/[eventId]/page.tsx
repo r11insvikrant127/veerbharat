@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 import {
   ArrowLeft,
@@ -22,6 +22,10 @@ import { Footer } from "@/components/layout/Footer";
 /* =====================================================
    TYPES
 ===================================================== */
+interface HeroReference {
+  heroId: string;
+  name: string;
+}
 
 interface ImageData {
   _id: string;
@@ -59,25 +63,28 @@ interface EventImageRelation {
 }
 
 interface HistoricalEvent {
-    _id: string;
-    eventId: string;
-    imageUrl?: string;
-    name: string;
-    nativeName?: string;
+  _id: string;
+  eventId: string;
+  redirectToEventId?: string;
+  imageUrl?: string;
+  name: string;
+  nativeName?: string;
 
-    eventDate: string | null;
-    eventDateAccuracy?: string;
+  eventDate: string | null;
+  eventDateAccuracy?: string;
 
-    description: string;
-    shortDescription?: string;
-    details?: string;
-    significance?: string;
+  description: string;
+  shortDescription?: string;
+  details?: string;
+  significance?: string;
 
-    type?: string;
-    tags?: string[];
+  type?: string;
+  tags?: string[];
 
-    imageIds?: EventImageRelation[];
-  }
+  relatedPeople?: string[];
+
+  imageIds?: EventImageRelation[];
+}
 
 interface HistoricalSubsection {
   title: string;
@@ -96,6 +103,7 @@ interface HistoricalSection {
 
 export default function EventDetailsPage() {
   const params = useParams();
+  const router = useRouter();
 
   const eventId = params.eventId as string;
 
@@ -105,6 +113,9 @@ export default function EventDetailsPage() {
   const [loading, setLoading] = useState(true);
 
   const [error, setError] = useState("");
+
+  const [heroes, setHeroes] =
+  useState<HeroReference[]>([]);
 
   /* =====================================================
      FETCH EVENT
@@ -131,10 +142,26 @@ export default function EventDetailsPage() {
 
         const eventData =
           result.data ?? result;
+
         console.log(
           "EVENT API DATA:",
           eventData
         );
+
+        /* =====================================================
+          EVENT REDIRECT
+        ===================================================== */
+
+        if (
+          eventData.redirectToEventId &&
+          eventData.redirectToEventId !== eventData.eventId
+        ) {
+          router.replace(
+            `/events/${eventData.redirectToEventId}`
+          );
+
+          return;
+        }
 
         setEvent(eventData);
       } catch (err) {
@@ -153,7 +180,50 @@ export default function EventDetailsPage() {
     if (eventId) {
       fetchEvent();
     }
-  }, [eventId]);
+  }, [eventId, router]);
+
+
+  useEffect(() => {
+    async function fetchHeroes() {
+      try {
+        const response = await fetch("/api/heroes");
+
+        if (!response.ok) {
+          throw new Error("Unable to load heroes.");
+        }
+
+        const result = await response.json();
+
+        const heroData =
+          result.data ?? result;
+
+        if (Array.isArray(heroData)) {
+          setHeroes(
+            heroData
+              .filter(
+                (hero): hero is HeroReference =>
+                  Boolean(
+                    hero?.heroId &&
+                    hero?.name
+                  )
+              )
+              .map((hero) => ({
+                heroId: hero.heroId,
+                name: hero.name,
+              }))
+          );
+        }
+      } catch (err) {
+        console.error(
+          "Unable to load heroes:",
+          err
+        );
+      }
+    }
+
+    fetchHeroes();
+  }, []);
+
 
   /* =====================================================
      LOADING
@@ -521,6 +591,7 @@ export default function EventDetailsPage() {
             >
               <OverviewContent
                 content={event.description}
+                heroes={heroes}
               />
             </HistoricalCard>
 
@@ -537,6 +608,7 @@ export default function EventDetailsPage() {
                 >
                   <HistoricalContent
                     content={event.details}
+                    heroes={heroes}
                   />
                 </HistoricalCard>
               )}
@@ -559,6 +631,7 @@ export default function EventDetailsPage() {
                     index={index}
                     subsections={section.subsections}
                     allImages={images}
+                    heroes={heroes}
                   />
                 );
               }
@@ -577,6 +650,7 @@ export default function EventDetailsPage() {
                   content={
                     event.significance
                   }
+                   heroes={heroes}
                 />
               </HistoricalCard>
             )}
@@ -650,6 +724,7 @@ function HistoricalArticleSection({
   index,
   subsections,
   allImages,
+  heroes,
 }: {
   title: string;
   content: string;
@@ -657,7 +732,8 @@ function HistoricalArticleSection({
   index: number;
   subsections: HistoricalSubsection[];
   allImages: EventImage[];
-}) {
+  heroes: HeroReference[];
+}){
   const imageOnLeft = index % 2 !== 0;
   const getSubsectionImages = (
     subsectionTitle: string
@@ -671,27 +747,65 @@ function HistoricalArticleSection({
     );
   };
   return (
-    <article className="py-8 md:py-10 border-b border-[#D4AF37]/10 last:border-b-0">
+    <article className="relative">
       
+      {/* =============================================
+          HISTORICAL CHAPTER
+      ============================================= */}
+
+      <div className="relative">
+
+        {/* TIMELINE SPINE */}
+
+        <div className="hidden lg:block absolute left-6 top-0 bottom-0 w-px bg-gradient-to-b from-[#D4AF37]/40 via-[#D4AF37]/15 to-transparent" />
+
+        {/* CHAPTER NUMBER */}
+
+        <div className="relative flex items-start gap-6">
+
+          <div className="hidden lg:flex relative z-10 w-12 h-12 shrink-0 items-center justify-center rounded-full border border-[#D4AF37]/40 bg-[#0F0F0F] shadow-[0_0_30px_rgba(212,175,55,0.08)]">
+
+            <span className="text-sm font-serif font-bold text-[#D4AF37]">
+              {String(index + 1).padStart(2, "0")}
+            </span>
+
+          </div>
+
+          {/* CHAPTER CARD */}
+
+          <div className="flex-1 min-w-0 rounded-2xl border border-[#D4AF37]/15 bg-gradient-to-br from-[#17130F] to-[#120F0C] p-6 md:p-10 shadow-[0_15px_50px_rgba(0,0,0,0.25)]">
+
       {/* SECTION HEADER */}
 
-      <div className="mb-6">
+      <div className="mb-8">
 
-        <div className="flex items-center gap-3 mb-3">
-          <ScrollText className="w-5 h-5 text-[#D4AF37]" />
+        <div className="flex items-center gap-3 mb-4">
 
-          <p className="text-xs uppercase tracking-[0.22em] text-[#D4AF37]/60">
-            {index === 0
-              ? "Detailed Historical Record"
-              : "Historical Record"}
-          </p>
+        <div className="flex items-center justify-center w-9 h-9 rounded-lg border border-[#D4AF37]/20 bg-[#D4AF37]/5">
+          <ScrollText className="w-4 h-4 text-[#D4AF37]" />
         </div>
 
-        <h2 className="font-serif text-3xl font-bold text-[#F8F5F0]">
-          {title}
-        </h2>
+        <p className="text-xs uppercase tracking-[0.25em] text-[#D4AF37]/60">
+          Chapter {String(index + 1).padStart(2, "0")}
+        </p>
 
-        <div className="mt-4 h-px w-full bg-gradient-to-r from-[#D4AF37]/40 via-[#D4AF37]/10 to-transparent" />
+      </div>
+
+      <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold text-[#F8F5F0] leading-tight">
+          {title}
+      </h2>
+
+        <div className="mt-5 flex items-center gap-3">
+
+        <div className="h-px flex-1 bg-gradient-to-r from-[#D4AF37]/40 to-[#D4AF37]/5" />
+
+        <span className="text-[#D4AF37]/50 text-xs">
+          ✦
+        </span>
+
+        <div className="h-px w-16 bg-[#D4AF37]/10" />
+
+      </div>
 
       </div>
 
@@ -702,12 +816,13 @@ function HistoricalArticleSection({
         content && (
           <HistoricalContent
             content={content}
+             heroes={heroes}
           />
         )
 
       ) : (
 
-        <div className="flow-root">
+        <div className="flow-root mt-2">
 
           <aside
             className={`
@@ -739,6 +854,7 @@ function HistoricalArticleSection({
           {content && (
             <HistoricalContent
               content={content}
+               heroes={heroes}
             />
           )}
 
@@ -750,95 +866,107 @@ function HistoricalArticleSection({
           SUBSECTIONS
       ============================================= */}
 
-      {subsections.length > 0 && (
-        <div className="mt-10 space-y-8">
+            {subsections.length > 0 && (
+              <div className="mt-10 space-y-8">
 
-          {subsections.map(
-            (subsection, subsectionIndex) => {
-              const subsectionImages =
-              getSubsectionImages(
-                subsection.title
-              );
+                {subsections.map(
+                  (subsection, subsectionIndex) => {
+                    const subsectionImages =
+                      getSubsectionImages(
+                        subsection.title
+                      );
 
-              return (
-                <article
-                  key={`${subsection.title}-${subsectionIndex}`}
-                  className="rounded-xl border border-[#D4AF37]/20 bg-[#120F0C] p-6 md:p-8"
-                >
+                    return (
+                      <article
+                        key={`${subsection.title}-${subsectionIndex}`}
+                        className="relative rounded-xl border border-[#D4AF37]/15 bg-[#0F0F0F]/70 p-6 md:p-8 shadow-[0_10px_35px_rgba(0,0,0,0.2)]"
+                      >
 
-                  {/* SUBSECTION TITLE */}
+                        <div className="mb-6">
 
-                  <div className="mb-6">
+                          <div className="flex items-center gap-3 mb-3">
 
-                    <p className="text-xs uppercase tracking-[0.22em] text-[#D4AF37]/60 mb-2">
-                      {title}
-                    </p>
+                            <span className="flex h-7 w-7 items-center justify-center rounded-full border border-[#D4AF37]/25 text-xs text-[#D4AF37]">
+                              {subsectionIndex + 1}
+                            </span>
 
-                    <h3 className="font-serif text-2xl md:text-3xl font-bold text-[#F8F5F0]">
-                      {subsection.title}
-                    </h3>
+                            <p className="text-xs uppercase tracking-[0.22em] text-[#D4AF37]/60">
+                              {title}
+                            </p>
 
-                    <div className="mt-4 h-px w-full bg-gradient-to-r from-[#D4AF37]/30 to-transparent" />
+                          </div>
+
+                          <h3 className="font-serif text-2xl md:text-3xl font-bold text-[#F8F5F0]">
+                            {subsection.title}
+                          </h3>
+
+                          <div className="mt-4 h-px w-full bg-gradient-to-r from-[#D4AF37]/25 via-[#D4AF37]/10 to-transparent" />
+
+                        </div>
+
+                        {subsectionImages.length === 0 ? (
+
+                          <HistoricalContent
+                            content={subsection.content}
+                             heroes={heroes}
+                          />
+
+                        ) : (
+
+                          <div className="flow-root">
+
+                            <aside
+                              className={`
+                                w-full
+                                mb-6
+                                lg:w-[280px]
+                                ${
+                                  subsectionIndex % 2 === 0
+                                    ? "lg:float-right lg:ml-8"
+                                    : "lg:float-left lg:mr-8"
+                                }
+                                space-y-5
+                              `}
+                            >
+                              {subsectionImages.map(
+                                (image, imageIndex) => (
+                                  <RelatedImage
+                                    key={`${image._id}-${imageIndex}`}
+                                    image={image}
+                                  />
+                                )
+                              )}
+                            </aside>
+
+                            <HistoricalContent
+                              content={subsection.content}
+                              heroes={heroes}
+                            />
+
+                          </div>
+
+                        )}
+
+                      </article>
+                    );
+                  }
+                )}
+
+              </div>
+            )}
 
                   </div>
+                  {/* END CHAPTER CARD */}
 
-                  {/* SUBSECTION CONTENT */}
+                </div>
+                {/* END CHAPTER */}
 
-                  {subsectionImages.length === 0 ? (
+              </div>
+              {/* END TIMELINE WRAPPER */}
 
-                    <HistoricalContent
-                      content={subsection.content}
-                    />
-
-                  ) : (
-
-                    <div className="flow-root">
-
-                      <aside
-                        className={`
-                          w-full
-                          mb-6
-
-                          lg:w-[280px]
-
-                          ${
-                            subsectionIndex % 2 === 0
-                              ? "lg:float-right lg:ml-8"
-                              : "lg:float-left lg:mr-8"
-                          }
-
-                          space-y-5
-                        `}
-                      >
-                        {subsectionImages.map(
-                          (image, imageIndex) => (
-                            <RelatedImage
-                              key={`${image._id}-${imageIndex}`}
-                              image={image}
-                            />
-                          )
-                        )}
-                      </aside>
-
-                      <HistoricalContent
-                        content={subsection.content}
-                      />
-
-                    </div>
-
-                  )}
-
-                </article>
-              );
-            }
-          )}
-
-        </div>
-      )}
-
-    </article>
-  );
-}
+            </article>
+          );
+      }
 
 
 function HistoricalCard({
@@ -982,8 +1110,10 @@ function ImageCard({
 
 function OverviewContent({
   content,
+  heroes,
 }: {
   content: string;
+  heroes: HeroReference[];
 }) {
   const paragraphs = content
     .split(/\n\s*\n/)
@@ -998,7 +1128,10 @@ function OverviewContent({
             key={index}
             className="text-[#D7C9A5] leading-8"
           >
-            <LinkedHistoricalText text={paragraph} />
+            <LinkedHistoricalText
+              text={paragraph}
+              heroes={heroes}
+            />
           </p>
         )
       )}
@@ -1134,8 +1267,10 @@ function parseHistoricalSections(
 
 function HistoricalContent({
   content,
+  heroes,
 }: {
   content: string;
+  heroes: HeroReference[];
 }) {
   const blocks =
     parseContentBlocks(content);
@@ -1153,7 +1288,10 @@ function HistoricalContent({
                 key={index}
                 className="leading-8 mb-7"
               >
-                <LinkedHistoricalText text={block.text} />
+                <LinkedHistoricalText
+                  text={block.text}
+                  heroes={heroes}
+                />
               </p>
             );
           }
@@ -1182,7 +1320,10 @@ function HistoricalContent({
                       <Sword className="w-4 h-4 shrink-0 mt-2 text-[#D4AF37]" />
 
                       <span className="leading-8">
-                        <LinkedHistoricalText text={item} />
+                        <LinkedHistoricalText
+                          text={item}
+                          heroes={heroes}
+                        />
                       </span>
                     </li>
                   )
@@ -1217,7 +1358,10 @@ function HistoricalContent({
                       </span>
 
                       <span className="leading-8">
-                        <LinkedHistoricalText text={item} />
+                        <LinkedHistoricalText
+                          text={item}
+                          heroes={heroes}
+                        />
                       </span>
                     </li>
                   )
@@ -1234,57 +1378,96 @@ function HistoricalContent({
 }
 
 /* =====================================================
-   LINK HERO NAMES INSIDE HISTORICAL TEXT
+   HISTORICAL TEXT
 ===================================================== */
 
 function LinkedHistoricalText({
   text,
+  heroes,
 }: {
   text: string;
+  heroes: HeroReference[];
 }) {
-  const heroLinks = [
-    {
-      name: "Benoy Krishna Basu",
-      href: "/heroes/HER0057",
-    },
-  ];
+  if (!heroes.length) {
+    return <>{text}</>;
+  }
 
-  let parts: ReactNode[] = [text];
+  const escapeRegExp = (value: string) =>
+    value.replace(
+      /[.*+?^${}()|[\]\\]/g,
+      "\\$&"
+    );
 
-  heroLinks.forEach((hero) => {
-    const nextParts: ReactNode[] = [];
+  /*
+    Match longer hero names first.
 
-    parts.forEach((part) => {
-      if (typeof part !== "string") {
-        nextParts.push(part);
-        return;
-      }
+    Example:
+    "Dinesh Chandra Majumdar"
+    must be checked before
+    "Dinesh"
+  */
 
-      const splitParts = part.split(hero.name);
+  const sortedHeroes = [...heroes]
+    .filter(
+      (hero) =>
+        hero.heroId &&
+        hero.name
+    )
+    .sort(
+      (a, b) =>
+        b.name.length -
+        a.name.length
+    );
 
-      splitParts.forEach((piece, index) => {
-        if (piece) {
-          nextParts.push(piece);
-        }
+  if (!sortedHeroes.length) {
+    return <>{text}</>;
+  }
 
-        if (index < splitParts.length - 1) {
-          nextParts.push(
+  const pattern = sortedHeroes
+    .map((hero) =>
+      escapeRegExp(hero.name)
+    )
+    .join("|");
+
+  const regex = new RegExp(
+    `(${pattern})`,
+    "gi"
+  );
+
+  const parts = text.split(regex);
+
+  return (
+    <>
+      {parts.map(
+        (part, index) => {
+          const hero =
+            sortedHeroes.find(
+              (item) =>
+                item.name.toLowerCase() ===
+                part.toLowerCase()
+            );
+
+          if (!hero) {
+            return (
+              <span key={index}>
+                {part}
+              </span>
+            );
+          }
+
+          return (
             <Link
-              key={`${hero.name}-${index}`}
-              href={hero.href}
-              className="text-[#D4AF37] font-semibold hover:underline hover:text-[#E5C65A] transition-colors"
+              key={index}
+              href={`/heroes/${hero.heroId}`}
+              className="text-[#D4AF37] hover:text-[#F0D878] underline underline-offset-4 decoration-[#D4AF37]/30 hover:decoration-[#D4AF37] transition-colors"
             >
-              {hero.name}
+              {part}
             </Link>
           );
         }
-      });
-    });
-
-    parts = nextParts;
-  });
-
-  return <>{parts}</>;
+      )}
+    </>
+  );
 }
 
 

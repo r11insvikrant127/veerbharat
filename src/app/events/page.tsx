@@ -98,7 +98,6 @@ export default function EventsPage() {
         new URLSearchParams({
             page: String(page),
             limit: String(limit),
-            isPersonalMilestone: "false",
         });
 
         if (search) {
