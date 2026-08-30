@@ -1383,15 +1383,9 @@ function LinkedHistoricalText({
       "\\$&"
     );
 
-  /*
-    Build the list directly from the heroes
-    returned by the Event API.
 
-    No event IDs.
-    No hero IDs.
-    No hero names are hardcoded.
-  */
-  const sortedHeroes = heroes
+
+  const heroCandidates = heroes
     .filter(
       (hero) =>
         typeof hero?.heroId === "string" &&
@@ -1399,18 +1393,52 @@ function LinkedHistoricalText({
         typeof hero?.name === "string" &&
         hero.name.trim() !== ""
     )
+    .flatMap((hero) => {
+      const fullName = hero.name.trim();
+
+      /*
+        Remove common ranks/titles from the beginning
+        of the name.
+      */
+      const personalName = fullName
+        .replace(
+          /^(Field Marshal|General|Lieutenant General|Major General|Brigadier|Colonel|Lieutenant Colonel|Major|Captain|Commander|Lieutenant|Subedar Major|Subedar|Naik|Havildar|Mahatma|Pandit|Dr\.?|Sir)\s+/i,
+          ""
+        )
+        .trim();
+
+      const candidates = [
+        {
+          hero,
+          name: fullName,
+        },
+      ];
+
+      if (
+        personalName &&
+        personalName.toLowerCase() !==
+          fullName.toLowerCase()
+      ) {
+        candidates.push({
+          hero,
+          name: personalName,
+        });
+      }
+
+      return candidates;
+    })
     .sort(
       (a, b) =>
         b.name.length - a.name.length
     );
 
-  if (sortedHeroes.length === 0) {
+  if (heroCandidates.length === 0) {
     return <>{text}</>;
   }
 
-  const pattern = sortedHeroes
-    .map((hero) =>
-      escapeRegExp(hero.name.trim())
+  const pattern = heroCandidates
+    .map((candidate) =>
+      escapeRegExp(candidate.name)
     )
     .join("|");
 
@@ -1423,14 +1451,14 @@ function LinkedHistoricalText({
     <>
       {text.split(regex).map(
         (part, index) => {
-          const hero =
-            sortedHeroes.find(
+          const candidate =
+            heroCandidates.find(
               (item) =>
-                item.name.trim().toLowerCase() ===
+                item.name.toLowerCase() ===
                 part.trim().toLowerCase()
             );
 
-          if (!hero) {
+          if (!candidate) {
             return (
               <span key={index}>
                 {part}
@@ -1440,9 +1468,9 @@ function LinkedHistoricalText({
 
           return (
             <Link
-              key={`${hero.heroId}-${index}`}
+              key={`${candidate.hero.heroId}-${index}`}
               href={`/heroes/${encodeURIComponent(
-                hero.heroId
+                candidate.hero.heroId
               )}`}
               className="text-[#D4AF37] hover:text-[#F0D878] underline underline-offset-4 decoration-[#D4AF37]/30 hover:decoration-[#D4AF37] transition-colors"
             >

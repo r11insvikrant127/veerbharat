@@ -225,14 +225,14 @@ class EventService extends BaseService {
       .populate({
         path: "imageIds.imageId",
         model: Image,
-        select: `
-          imageId
-          title
-          url
-          altText
-          imageType
-          description
-        `,
+        select: {
+          imageId: 1,
+          title: 1,
+          url: 1,
+          altText: 1,
+          imageType: 1,
+          description: 1,
+        },
       })
       .populate({
         path: "heroIds",
@@ -262,7 +262,7 @@ class EventService extends BaseService {
       );
     }
 
-    return event;
+    return event.toObject();
   }
 
   async updateEvent(
