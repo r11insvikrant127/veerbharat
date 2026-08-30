@@ -62,10 +62,15 @@ interface EventImageRelation {
   relatedSection?: string;
 }
 
+interface LinkedEventReference {
+  eventId: string;
+  name: string;
+}
+
 interface HistoricalEvent {
   _id: string;
   eventId: string;
-  redirectToEventId?: string;
+  linkedEventId?: LinkedEventReference | null;
   imageUrl?: string;
   name: string;
   nativeName?: string;
@@ -82,6 +87,8 @@ interface HistoricalEvent {
   tags?: string[];
 
   relatedPeople?: string[];
+
+  heroIds?: HeroReference[];
 
   imageIds?: EventImageRelation[];
 }
@@ -149,21 +156,40 @@ export default function EventDetailsPage() {
         );
 
         /* =====================================================
-          EVENT REDIRECT
+          LINKED EVENT REDIRECT
         ===================================================== */
 
         if (
-          eventData.redirectToEventId &&
-          eventData.redirectToEventId !== eventData.eventId
+          eventData.linkedEventId &&
+          eventData.linkedEventId.eventId &&
+          eventData.linkedEventId.eventId !== eventData.eventId
         ) {
           router.replace(
-            `/events/${eventData.redirectToEventId}`
+            `/events/${encodeURIComponent(
+              eventData.linkedEventId.eventId
+            )}`
           );
 
           return;
         }
 
         setEvent(eventData);
+        console.log(
+          "EVENT HERO REFERENCES:",
+          eventData.heroIds
+        );
+
+        setHeroes(
+          Array.isArray(eventData.heroIds)
+            ? eventData.heroIds.filter(
+                (hero: HeroReference) =>
+                  Boolean(
+                    hero?.heroId &&
+                    hero?.name
+                  )
+              )
+            : []
+        );
       } catch (err) {
         console.error(err);
 
@@ -182,47 +208,6 @@ export default function EventDetailsPage() {
     }
   }, [eventId, router]);
 
-
-  useEffect(() => {
-    async function fetchHeroes() {
-      try {
-        const response = await fetch("/api/heroes");
-
-        if (!response.ok) {
-          throw new Error("Unable to load heroes.");
-        }
-
-        const result = await response.json();
-
-        const heroData =
-          result.data ?? result;
-
-        if (Array.isArray(heroData)) {
-          setHeroes(
-            heroData
-              .filter(
-                (hero): hero is HeroReference =>
-                  Boolean(
-                    hero?.heroId &&
-                    hero?.name
-                  )
-              )
-              .map((hero) => ({
-                heroId: hero.heroId,
-                name: hero.name,
-              }))
-          );
-        }
-      } catch (err) {
-        console.error(
-          "Unable to load heroes:",
-          err
-        );
-      }
-    }
-
-    fetchHeroes();
-  }, []);
 
 
   /* =====================================================
@@ -468,7 +453,10 @@ export default function EventDetailsPage() {
               </div>
 
               <h1 className="mt-7 font-serif text-5xl md:text-7xl font-bold text-gold-gradient">
-                {event.name}
+                <LinkedHistoricalText
+                  text={event.name}
+                  heroes={heroes}
+                />
               </h1>
 
               {event.nativeName && (
@@ -1388,7 +1376,7 @@ function LinkedHistoricalText({
   text: string;
   heroes: HeroReference[];
 }) {
-  if (!heroes.length) {
+  if (!text || heroes.length === 0) {
     return <>{text}</>;
   }
 
@@ -1399,33 +1387,33 @@ function LinkedHistoricalText({
     );
 
   /*
-    Match longer hero names first.
+    Build the list directly from the heroes
+    returned by the Event API.
 
-    Example:
-    "Dinesh Chandra Majumdar"
-    must be checked before
-    "Dinesh"
+    No event IDs.
+    No hero IDs.
+    No hero names are hardcoded.
   */
-
-  const sortedHeroes = [...heroes]
+  const sortedHeroes = heroes
     .filter(
       (hero) =>
-        hero.heroId &&
-        hero.name
+        typeof hero?.heroId === "string" &&
+        hero.heroId.trim() !== "" &&
+        typeof hero?.name === "string" &&
+        hero.name.trim() !== ""
     )
     .sort(
       (a, b) =>
-        b.name.length -
-        a.name.length
+        b.name.length - a.name.length
     );
 
-  if (!sortedHeroes.length) {
+  if (sortedHeroes.length === 0) {
     return <>{text}</>;
   }
 
   const pattern = sortedHeroes
     .map((hero) =>
-      escapeRegExp(hero.name)
+      escapeRegExp(hero.name.trim())
     )
     .join("|");
 
@@ -1434,17 +1422,15 @@ function LinkedHistoricalText({
     "gi"
   );
 
-  const parts = text.split(regex);
-
   return (
     <>
-      {parts.map(
+      {text.split(regex).map(
         (part, index) => {
           const hero =
             sortedHeroes.find(
               (item) =>
-                item.name.toLowerCase() ===
-                part.toLowerCase()
+                item.name.trim().toLowerCase() ===
+                part.trim().toLowerCase()
             );
 
           if (!hero) {
@@ -1457,8 +1443,10 @@ function LinkedHistoricalText({
 
           return (
             <Link
-              key={index}
-              href={`/heroes/${hero.heroId}`}
+              key={`${hero.heroId}-${index}`}
+              href={`/heroes/${encodeURIComponent(
+                hero.heroId
+              )}`}
               className="text-[#D4AF37] hover:text-[#F0D878] underline underline-offset-4 decoration-[#D4AF37]/30 hover:decoration-[#D4AF37] transition-colors"
             >
               {part}

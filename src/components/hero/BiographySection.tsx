@@ -13,12 +13,10 @@ interface BiographySectionProps {
 
 function cleanBiographyText(text: string): string {
   return text
-    // Remove accidental AI/source citation artifacts
     .replace(
       /:contentReference\[oaicite:\d+\]\{index=\d+\}/gi,
       ""
     )
-    // Remove any remaining excessive whitespace
     .replace(/[ \t]+/g, " ")
     .trim();
 }
@@ -78,6 +76,10 @@ type BiographyBlock =
       text: string;
     }
   | {
+      type: "subheading";
+      text: string;
+    }
+  | {
       type: "paragraph";
       text: string;
     };
@@ -122,8 +124,8 @@ function parseBiography(
     }
 
     /* =========================================
-       MARKDOWN HEADING
-       ## Heading
+       MAIN SECTION
+       ##
     ========================================= */
 
     const headingMatch =
@@ -141,12 +143,29 @@ function parseBiography(
     }
 
     /* =========================================
-       REMOVE ANY ACCIDENTAL MARKDOWN HEADING
-       SYMBOLS
+       SUBSECTION
+       ###
+    ========================================= */
+
+    const subheadingMatch =
+      trimmed.match(/^###\s+(.+)$/);
+
+    if (subheadingMatch) {
+      saveParagraph();
+
+      blocks.push({
+        type: "subheading",
+        text: subheadingMatch[1].trim(),
+      });
+
+      continue;
+    }
+
+    /* =========================================
+       NORMAL TEXT
     ========================================= */
 
     const cleanedLine = trimmed
-      .replace(/^###\s+/, "")
       .replace(/^#\s+/, "")
       .trim();
 
@@ -188,7 +207,7 @@ export function BiographySection({
       </h2>
 
       {/* =============================================
-          BIOGRAPHY
+          BIOGRAPHY CONTENT
       ============================================= */}
 
       <div className="max-w-none min-w-0">
@@ -196,20 +215,85 @@ export function BiographySection({
         {blocks.map((block, index) => {
 
           /* =========================================
-             SECTION HEADING
+             MAIN SECTION HEADING
+             ##
           ========================================= */
 
           if (block.type === "heading") {
             return (
               <div
                 key={`heading-${index}`}
-                className="mt-10 mb-5 first:mt-0"
+                className="
+                  mt-12
+                  mb-7
+                  first:mt-0
+                "
               >
-                <h3 className="font-serif text-2xl md:text-3xl font-bold text-[#F8F5F0] break-words">
+
+                <h3
+                  className="
+                    font-serif
+                    text-2xl
+                    md:text-3xl
+                    font-bold
+                    text-[#F8F5F0]
+                    break-words
+                  "
+                >
                   {block.text}
                 </h3>
 
-                <div className="mt-4 h-px w-full bg-gradient-to-r from-[#D4AF37]/40 via-[#D4AF37]/10 to-transparent" />
+                {/* MAIN HEADING UNDERLINE */}
+
+                <div
+                  className="
+                    mt-4
+                    h-px
+                    w-full
+                    bg-gradient-to-r
+                    from-[#D4AF37]/40
+                    via-[#D4AF37]/10
+                    to-transparent
+                  "
+                />
+
+              </div>
+            );
+          }
+
+          /* =========================================
+             SUBSECTION
+             ###
+          ========================================= */
+
+          if (block.type === "subheading") {
+            return (
+              <div
+                key={`subheading-${index}`}
+                className="
+                  mt-8
+                  mb-5
+                "
+              >
+
+                <h4
+                  className="
+                    inline-block
+                    font-serif
+                    text-lg
+                    md:text-xl
+                    font-bold
+                    text-[#F8F5F0]
+                    break-words
+                    underline
+                    underline-offset-8
+                    decoration-[#D4AF37]/50
+                    decoration-1
+                  "
+                >
+                  {block.text}
+                </h4>
+
               </div>
             );
           }
@@ -221,7 +305,14 @@ export function BiographySection({
           return (
             <p
               key={`paragraph-${index}`}
-              className="text-[#D7C9A5] leading-8 mb-7 break-words whitespace-normal overflow-wrap-anywhere"
+              className="
+                text-[#D7C9A5]
+                leading-8
+                mb-7
+                break-words
+                whitespace-normal
+                overflow-wrap-anywhere
+              "
             >
               {highlightText(
                 block.text,
