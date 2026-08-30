@@ -453,10 +453,7 @@ export default function EventDetailsPage() {
               </div>
 
               <h1 className="mt-7 font-serif text-5xl md:text-7xl font-bold text-gold-gradient">
-                <LinkedHistoricalText
-                  text={event.name}
-                  heroes={heroes}
-                />
+                {event.name}
               </h1>
 
               {event.nativeName && (
