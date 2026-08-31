@@ -16,13 +16,14 @@ import { generateNextId } from "../../../src/services/idGenerator.service";
  *
  * It assumes that:
  *
- *  1. entityInput.ts has identified the entity
- *  2. dateVerification.ts has verified the dates
- *  3. sourceVerification.ts has verified the source
- *  4. kingdomVerification.ts has verified the kingdom/polity
- *  5. relatedContent.ts has verified books/quotes
- *  6. imageVerification.ts has verified images
- *  7. finalReview.ts has approved everything
+ *  1. The workflow has identified the entity
+ *  2. Research has produced the relevant evidence
+ *  3. Dates and other relationships have been reviewed
+ *  4. The operator has approved the proposed data
+ *  5. finalReview.ts has approved everything
+ *
+ * The final approved data is the ONLY data this writer should
+ * receive.
  *
  * This file does NOT perform research.
  * This file does NOT decide whether information is correct.

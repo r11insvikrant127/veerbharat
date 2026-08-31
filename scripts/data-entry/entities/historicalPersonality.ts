@@ -10,8 +10,8 @@ import type { EntityInput } from "../db/entityInput";
  * This structure mirrors the CURRENT
  * HistoricalPersonality mongoose schema.
  *
- * Verification-specific information such as date accuracy
- * is handled by dateVerification.ts.
+ * Verification-specific information is handled by the
+ * research and workflow layers.
  *
  * Relationships discovered by research are handled by the
  * research/workflow layers.

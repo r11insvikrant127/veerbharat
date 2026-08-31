@@ -13,13 +13,9 @@ import {
  *
  * This is the LAST verification stage before MongoDB writing.
  *
- * It receives the results of:
- *
- *   1. dateVerification.ts
- *   2. sourceVerification.ts
- *   3. kingdomVerification.ts
- *   4. relatedContent.ts
- *   5. imageVerification.ts
+ * It receives the results of the research and approval
+ * stages, then performs the final operator review before
+ * database writing.
  *
  * It does NOT:
  *
