@@ -1,5 +1,6 @@
-import readline from "node:readline/promises";
-import { stdin as input, stdout as output } from "node:process";
+import {
+  ask,
+} from "../utils/prompt";
 
 export type EntityType =
   | "event"
@@ -11,10 +12,6 @@ export type EntityInput = {
   name: string;
 };
 
-const rl = readline.createInterface({
-  input,
-  output,
-});
 
 function normalizeEntityType(
   value: string
@@ -147,9 +144,7 @@ async function askEntity(): Promise<EntityInput> {
     console.log("");
 
     const answer =
-      await rl.question(
-        "ENTITY > "
-      );
+        await ask("ENTITY > ");
 
     const parsed =
       parseEntityInput(answer);
@@ -198,21 +193,6 @@ export async function getEntityInput(): Promise<EntityInput> {
 }
 
 export async function closeEntityInput(): Promise<void> {
-  rl.close();
+  // Shared prompt is closed by the main orchestrator.
 }
 
-/**
- * Standalone test.
- *
- * This does NOT connect to MongoDB
- * and does NOT modify any database data.
- */
-if (process.argv[1]?.endsWith("entityInput.ts")) {
-  (async () => {
-    try {
-      await getEntityInput();
-    } finally {
-      await closeEntityInput();
-    }
-  })();
-}

@@ -1,8 +1,6 @@
-import readline from "node:readline/promises";
 import {
-  stdin as input,
-  stdout as output,
-} from "node:process";
+  ask,
+} from "../utils/prompt";
 
 import type { EntityType } from "./entityInput";
 
@@ -29,10 +27,6 @@ export type DateVerificationResult = {
   verificationNote: string;
 };
 
-const rl = readline.createInterface({
-  input,
-  output,
-});
 
 /**
  * Convert a YYYY-MM-DD string into a Date.
@@ -111,11 +105,11 @@ async function askDate(
 ): Promise<Date | null> {
   while (true) {
     const answer =
-      await rl.question(
+    await ask(
         `${question}${
-          required ? " (required)" : " (optional)"
+        required ? " (required)" : " (optional)"
         } > `
-      );
+    );
 
     const trimmed = answer.trim();
 
@@ -174,9 +168,9 @@ async function askAccuracy(
     );
 
     const answer =
-      await rl.question(
-        "ACCURACY > "
-      );
+        await ask(
+            "ACCURACY > "
+        );
 
     switch (answer.trim()) {
       case "1":
@@ -254,9 +248,9 @@ async function askVerification(
 
   while (true) {
     const answer =
-      await rl.question(
-        "Are these dates verified/correct? (y/n) > "
-      );
+        await ask(
+            "Are these dates verified/correct? (y/n) > "
+        );
 
     const normalized =
       answer.trim().toLowerCase();
@@ -277,8 +271,8 @@ async function askVerification(
       normalized === "no"
     ) {
       const note =
-        await rl.question(
-          "What needs correction? > "
+        await ask(
+            "What needs correction? > "
         );
 
       return {
@@ -419,117 +413,6 @@ export async function verifyDates(
 }
 
 export function closeDateVerification(): void {
-  rl.close();
+  // Shared prompt is closed by the main orchestrator.
 }
 
-/**
- * Standalone test.
- *
- * This file does NOT connect to MongoDB
- * and does NOT modify the database.
- */
-if (
-  process.argv[1]?.endsWith(
-    "dateVerification.ts"
-  )
-) {
-  (async () => {
-    try {
-      console.log("");
-      console.log(
-        "========================================"
-      );
-      console.log(
-        "DATE VERIFICATION TEST"
-      );
-      console.log(
-        "========================================"
-      );
-
-      console.log("");
-      console.log(
-        "Select entity type:"
-      );
-      console.log(
-        "  1. Event"
-      );
-      console.log(
-        "  2. Hero"
-      );
-      console.log(
-        "  3. Historical Personality"
-      );
-
-      while (true) {
-        const answer =
-          await rl.question(
-            "TYPE > "
-          );
-
-        const choice =
-          answer.trim();
-
-        let entityType: EntityType | null =
-          null;
-
-        if (choice === "1") {
-          entityType = "event";
-        } else if (choice === "2") {
-          entityType = "hero";
-        } else if (choice === "3") {
-          entityType =
-            "historicalPersonality";
-        }
-
-        if (!entityType) {
-          console.log(
-            "Please enter 1, 2, or 3."
-          );
-          continue;
-        }
-
-        const result =
-          await verifyDates(
-            entityType
-          );
-
-        console.log("");
-        console.log(
-          "========================================"
-        );
-        console.log(
-          "DATE VERIFICATION RESULT"
-        );
-        console.log(
-          "========================================"
-        );
-
-        console.log(
-          JSON.stringify(
-            {
-              ...result,
-              eventDate:
-                formatDate(
-                  result.eventDate
-                ),
-              birthDate:
-                formatDate(
-                  result.birthDate
-                ),
-              deathDate:
-                formatDate(
-                  result.deathDate
-                ),
-            },
-            null,
-            2
-          )
-        );
-
-        break;
-      }
-    } finally {
-      closeDateVerification();
-    }
-  })();
-}
