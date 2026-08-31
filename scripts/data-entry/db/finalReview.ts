@@ -2,63 +2,152 @@
 
 import readline from "readline";
 
+/*
+ * ============================================================
+ * FINAL REVIEW
+ * ============================================================
+ *
+ * This module performs the LAST human review before the
+ * database writer is allowed to run.
+ *
+ * It does NOT:
+ *
+ *   - research
+ *   - create IDs
+ *   - modify MongoDB
+ *   - create source/kingdom/image records
+ *
+ * It only validates and displays the information that the
+ * previous workflow stages have assembled.
+ *
+ * ============================================================
+ */
+
 export type FinalReviewData = {
-  entityType: "event" | "hero" | "historicalPersonality";
+  entityType:
+    | "event"
+    | "hero"
+    | "historicalPersonality";
+
   entityName: string;
 
-  // Date verification
+  /*
+   * ----------------------------------------------------------
+   * DATE INFORMATION
+   * ----------------------------------------------------------
+   */
+
   eventDate?: string | null;
+
   birthDate?: string | null;
+
   birthDateAccuracy?: string | null;
+
   deathDate?: string | null;
+
   deathDateAccuracy?: string | null;
+
+  eventDateAccuracy?: string | null;
+
   onThisDay?: boolean;
 
-  // Source verification
+  /*
+   * ----------------------------------------------------------
+   * SOURCE
+   * ----------------------------------------------------------
+   */
+
   useExistingSource: boolean;
+
   existingSourceId?: string | null;
+
   createNewSource: boolean;
+
   sourceTitle?: string | null;
+
   sourceAuthor?: string | null;
+
   sourceYear?: number | null;
+
   sourceUrl?: string | null;
 
-  // Kingdom verification
+  /*
+   * ----------------------------------------------------------
+   * KINGDOM / POLITY
+   * ----------------------------------------------------------
+   */
+
   useExistingKingdom: boolean;
+
   existingKingdomId?: string | null;
+
   createNewKingdom: boolean;
+
   newKingdomName?: string | null;
+
   newKingdomNativeName?: string | null;
+
   newKingdomAlternativeNames?: string[];
 
-  // Related content
+  /*
+   * ----------------------------------------------------------
+   * RELATED CONTENT
+   * ----------------------------------------------------------
+   */
+
   selectedBookIds?: string[];
+
   selectedQuoteIds?: string[];
 
-  // Images
+  /*
+   * ----------------------------------------------------------
+   * IMAGES
+   * ----------------------------------------------------------
+   */
+
   selectedExistingImageIds?: string[];
 
   newImages?: {
     cloudinaryUrl: string;
+
     altText?: string | null;
+
     caption?: string | null;
   }[];
 };
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
-
-function ask(question: string): Promise<string> {
-  return new Promise((resolve) => {
-    rl.question(question, (answer) => {
-      resolve(answer.trim());
-    });
+const rl =
+  readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
   });
+
+function ask(
+  question: string
+): Promise<string> {
+  return new Promise(
+    (resolve) => {
+      rl.question(
+        question,
+        (answer) => {
+          resolve(
+            answer.trim()
+          );
+        }
+      );
+    }
+  );
 }
 
-function display(value: unknown): string {
+/*
+ * ============================================================
+ * DISPLAY HELPERS
+ * ============================================================
+ */
+
+function display(
+  value: unknown
+): string {
   if (
     value === null ||
     value === undefined ||
@@ -67,7 +156,9 @@ function display(value: unknown): string {
     return "NONE";
   }
 
-  if (Array.isArray(value)) {
+  if (
+    Array.isArray(value)
+  ) {
     return value.length > 0
       ? value.join(", ")
       : "NONE";
@@ -77,9 +168,12 @@ function display(value: unknown): string {
 }
 
 function entityTypeLabel(
-  entityType: FinalReviewData["entityType"]
+  entityType:
+    FinalReviewData["entityType"]
 ): string {
-  switch (entityType) {
+  switch (
+    entityType
+  ) {
     case "event":
       return "EVENT";
 
@@ -94,14 +188,10 @@ function entityTypeLabel(
   }
 }
 
-function printLine() {
-  console.log(
-    "----------------------------------------"
-  );
-}
-
-function printSection(title: string) {
-  console.log();
+function printSection(
+  title: string
+): void {
+  console.log("");
   console.log(
     "========================================"
   );
@@ -111,54 +201,87 @@ function printSection(title: string) {
   );
 }
 
-function printReview(data: FinalReviewData) {
-  printSection("ENTITY");
+/*
+ * ============================================================
+ * DATE REVIEW
+ * ============================================================
+ */
 
-  console.log(
-    `ENTITY TYPE : ${entityTypeLabel(data.entityType)}`
+function printDateReview(
+  data: FinalReviewData
+): void {
+  printSection(
+    "DATE / ON-THIS-DAY"
   );
 
-  console.log(
-    `ENTITY NAME : ${display(data.entityName)}`
-  );
-
-  printSection("DATE / ON-THIS-DAY");
-
-  if (data.entityType === "event") {
+  if (
+    data.entityType ===
+    "event"
+  ) {
     console.log(
-      `EVENT DATE   : ${display(data.eventDate)}`
+      `EVENT DATE       : ${display(
+        data.eventDate
+      )}`
     );
 
     console.log(
-      `ON-THIS-DAY  : ${
-        data.onThisDay ? "YES" : "NO"
+      `DATE ACCURACY    : ${display(
+        data.eventDateAccuracy
+      )}`
+    );
+
+    console.log(
+      `ON-THIS-DAY      : ${
+        data.onThisDay
+          ? "YES"
+          : "NO"
       }`
     );
-  } else {
-    console.log(
-      `BIRTH DATE   : ${display(data.birthDate)}`
-    );
 
-    console.log(
-      `BIRTH ACCURACY : ${display(
-        data.birthDateAccuracy
-      )}`
-    );
-
-    console.log(
-      `DEATH DATE   : ${display(data.deathDate)}`
-    );
-
-    console.log(
-      `DEATH ACCURACY : ${display(
-        data.deathDateAccuracy
-      )}`
-    );
+    return;
   }
 
-  printSection("SOURCE");
+  console.log(
+    `BIRTH DATE       : ${display(
+      data.birthDate
+    )}`
+  );
 
-  if (data.useExistingSource) {
+  console.log(
+    `BIRTH ACCURACY   : ${display(
+      data.birthDateAccuracy
+    )}`
+  );
+
+  console.log(
+    `DEATH DATE       : ${display(
+      data.deathDate
+    )}`
+  );
+
+  console.log(
+    `DEATH ACCURACY   : ${display(
+      data.deathDateAccuracy
+    )}`
+  );
+}
+
+/*
+ * ============================================================
+ * SOURCE REVIEW
+ * ============================================================
+ */
+
+function printSourceReview(
+  data: FinalReviewData
+): void {
+  printSection(
+    "SOURCE"
+  );
+
+  if (
+    data.useExistingSource
+  ) {
     console.log(
       "SOURCE ACTION : LINK EXISTING SOURCE"
     );
@@ -168,35 +291,65 @@ function printReview(data: FinalReviewData) {
         data.existingSourceId
       )}`
     );
-  } else if (data.createNewSource) {
+
+    return;
+  }
+
+  if (
+    data.createNewSource
+  ) {
     console.log(
       "SOURCE ACTION : CREATE NEW SOURCE"
     );
 
     console.log(
-      `TITLE         : ${display(data.sourceTitle)}`
+      `TITLE         : ${display(
+        data.sourceTitle
+      )}`
     );
 
     console.log(
-      `AUTHOR        : ${display(data.sourceAuthor)}`
+      `AUTHOR        : ${display(
+        data.sourceAuthor
+      )}`
     );
 
     console.log(
-      `YEAR          : ${display(data.sourceYear)}`
+      `YEAR          : ${display(
+        data.sourceYear
+      )}`
     );
 
     console.log(
-      `URL           : ${display(data.sourceUrl)}`
+      `URL           : ${display(
+        data.sourceUrl
+      )}`
     );
-  } else {
-    console.log(
-      "SOURCE ACTION : NO SOURCE LINKED"
-    );
+
+    return;
   }
 
-  printSection("KINGDOM / POLITY");
+  console.log(
+    "SOURCE ACTION : NO SOURCE LINKED"
+  );
+}
 
-  if (data.useExistingKingdom) {
+/*
+ * ============================================================
+ * KINGDOM REVIEW
+ * ============================================================
+ */
+
+function printKingdomReview(
+  data: FinalReviewData
+): void {
+  printSection(
+    "KINGDOM / POLITY"
+  );
+
+  if (
+    data.useExistingKingdom
+  ) {
     console.log(
       "KINGDOM ACTION : LINK EXISTING KINGDOM"
     );
@@ -206,7 +359,13 @@ function printReview(data: FinalReviewData) {
         data.existingKingdomId
       )}`
     );
-  } else if (data.createNewKingdom) {
+
+    return;
+  }
+
+  if (
+    data.createNewKingdom
+  ) {
     console.log(
       "KINGDOM ACTION : CREATE NEW KINGDOM"
     );
@@ -228,29 +387,61 @@ function printReview(data: FinalReviewData) {
         data.newKingdomAlternativeNames
       )}`
     );
-  } else {
-    console.log(
-      "KINGDOM ACTION : NO KINGDOM / POLITY LINKED"
-    );
+
+    return;
   }
 
-  printSection("RELATED CONTENT");
-
   console.log(
-    `BOOK IDS  : ${display(data.selectedBookIds)}`
+    "KINGDOM ACTION : NO KINGDOM / POLITY LINKED"
+  );
+}
+
+/*
+ * ============================================================
+ * RELATED CONTENT
+ * ============================================================
+ */
+
+function printRelatedContentReview(
+  data: FinalReviewData
+): void {
+  printSection(
+    "RELATED CONTENT"
   );
 
   console.log(
-    `QUOTE IDS : ${display(data.selectedQuoteIds)}`
+    `BOOK IDS        : ${display(
+      data.selectedBookIds
+    )}`
   );
 
-  printSection("IMAGES");
+  console.log(
+    `QUOTE IDS       : ${display(
+      data.selectedQuoteIds
+    )}`
+  );
+}
+
+/*
+ * ============================================================
+ * IMAGE REVIEW
+ * ============================================================
+ */
+
+function printImageReview(
+  data: FinalReviewData
+): void {
+  printSection(
+    "IMAGES"
+  );
 
   const existingImages =
-    data.selectedExistingImageIds ?? [];
+    data.selectedExistingImageIds ??
+    [];
 
   const newImages =
-    data.newImages ?? [];
+    data.newImages ??
+    [];
 
   console.log(
     `EXISTING IMAGE IDS : ${display(
@@ -264,9 +455,12 @@ function printReview(data: FinalReviewData) {
     }`
   );
 
-  if (newImages.length > 0) {
-    newImages.forEach((image, index) => {
-      console.log();
+  newImages.forEach(
+    (
+      image,
+      index
+    ) => {
+      console.log("");
       console.log(
         `IMAGE ${index + 1}`
       );
@@ -286,44 +480,102 @@ function printReview(data: FinalReviewData) {
           image.caption
         )}`
       );
-    });
-  }
+    }
+  );
 
-  console.log();
+  const totalImages =
+    existingImages.length +
+    newImages.length;
 
-  if (data.entityType === "event") {
-    const totalImages =
-      existingImages.length +
-      newImages.length;
+  console.log("");
 
-    console.log(
-      `TOTAL EVENT IMAGES : ${totalImages}`
-    );
-  } else {
-    const totalImages =
-      existingImages.length +
-      newImages.length;
-
-    console.log(
-      `TOTAL ENTITY IMAGES : ${totalImages}`
-    );
-  }
+  console.log(
+    `TOTAL IMAGES : ${totalImages}`
+  );
 }
+
+/*
+ * ============================================================
+ * COMPLETE REVIEW
+ * ============================================================
+ */
+
+function printReview(
+  data: FinalReviewData
+): void {
+  printSection(
+    "ENTITY"
+  );
+
+  console.log(
+    `ENTITY TYPE : ${entityTypeLabel(
+      data.entityType
+    )}`
+  );
+
+  console.log(
+    `ENTITY NAME : ${display(
+      data.entityName
+    )}`
+  );
+
+  printDateReview(
+    data
+  );
+
+  printSourceReview(
+    data
+  );
+
+  printKingdomReview(
+    data
+  );
+
+  printRelatedContentReview(
+    data
+  );
+
+  printImageReview(
+    data
+  );
+}
+
+/*
+ * ============================================================
+ * IMAGE VALIDATION
+ * ============================================================
+ */
 
 function validateImageRule(
   data: FinalReviewData
 ): string | null {
   const existingCount =
-    data.selectedExistingImageIds?.length ?? 0;
+    data.selectedExistingImageIds
+      ?.length ?? 0;
 
   const newCount =
     data.newImages?.length ?? 0;
 
   const totalCount =
-    existingCount + newCount;
+    existingCount +
+    newCount;
+
+  /*
+   * Current project rule:
+   *
+   * Hero:
+   *   maximum 1 image
+   *
+   * Historical Personality:
+   *   maximum 1 image
+   *
+   * Event:
+   *   multiple images allowed.
+   */
 
   if (
-    data.entityType !== "event" &&
+    data.entityType !==
+      "event" &&
     totalCount > 1
   ) {
     return (
@@ -334,6 +586,12 @@ function validateImageRule(
 
   return null;
 }
+
+/*
+ * ============================================================
+ * SOURCE VALIDATION
+ * ============================================================
+ */
 
 function validateSourceRule(
   data: FinalReviewData
@@ -369,6 +627,12 @@ function validateSourceRule(
 
   return null;
 }
+
+/*
+ * ============================================================
+ * KINGDOM VALIDATION
+ * ============================================================
+ */
 
 function validateKingdomRule(
   data: FinalReviewData
@@ -406,29 +670,111 @@ function validateKingdomRule(
   return null;
 }
 
+/*
+ * ============================================================
+ * DATE VALIDATION
+ * ============================================================
+ */
+
+function validateDateRule(
+  data: FinalReviewData
+): string | null {
+  if (
+    data.entityType ===
+    "event"
+  ) {
+    if (
+      data.onThisDay &&
+      !data.eventDate
+    ) {
+      return (
+        "An On-This-Day event must have an event date."
+      );
+    }
+
+    return null;
+  }
+
+  if (
+    data.birthDate &&
+    data.deathDate
+  ) {
+    const birth =
+      new Date(
+        data.birthDate
+      );
+
+    const death =
+      new Date(
+        data.deathDate
+      );
+
+    if (
+      !Number.isNaN(
+        birth.getTime()
+      ) &&
+      !Number.isNaN(
+        death.getTime()
+      ) &&
+      birth > death
+    ) {
+      return (
+        "Birth date cannot be later than death date."
+      );
+    }
+  }
+
+  return null;
+}
+
+/*
+ * ============================================================
+ * MAIN VALIDATION
+ * ============================================================
+ */
+
 function validate(
   data: FinalReviewData
 ): string | null {
-  if (!data.entityName.trim()) {
-    return "Entity name is missing.";
+  if (
+    !data.entityName.trim()
+  ) {
+    return (
+      "Entity name is missing."
+    );
+  }
+
+  const dateError =
+    validateDateRule(
+      data
+    );
+
+  if (dateError) {
+    return dateError;
   }
 
   const imageError =
-    validateImageRule(data);
+    validateImageRule(
+      data
+    );
 
   if (imageError) {
     return imageError;
   }
 
   const sourceError =
-    validateSourceRule(data);
+    validateSourceRule(
+      data
+    );
 
   if (sourceError) {
     return sourceError;
   }
 
   const kingdomError =
-    validateKingdomRule(data);
+    validateKingdomRule(
+      data
+    );
 
   if (kingdomError) {
     return kingdomError;
@@ -437,22 +783,45 @@ function validate(
   return null;
 }
 
-/**
- * Run the final review interactively.
+/*
+ * ============================================================
+ * FINAL REVIEW
+ * ============================================================
  *
  * IMPORTANT:
- * This function does NOT write anything to MongoDB.
- * It only verifies the complete Phase 1 selection.
+ *
+ * Returning the data means:
+ *
+ *     discovery
+ *        ↓
+ *     verification
+ *        ↓
+ *     FINAL REVIEW
+ *        ↓
+ *     DATABASE WRITER
+ *
+ * MongoDB is still untouched here.
+ * ============================================================
  */
+
 export async function runFinalReview(
   data: FinalReviewData
-): Promise<FinalReviewData | null> {
-  const validationError = validate(data);
+): Promise<
+  FinalReviewData | null
+> {
+  const validationError =
+    validate(data);
 
-  if (validationError) {
-    printSection("FINAL REVIEW ERROR");
+  if (
+    validationError
+  ) {
+    printSection(
+      "FINAL REVIEW ERROR"
+    );
 
-    console.log(validationError);
+    console.log(
+      validationError
+    );
 
     return null;
   }
@@ -461,9 +830,13 @@ export async function runFinalReview(
     "VEERBHARAT FINAL DATA REVIEW"
   );
 
-  printReview(data);
+  printReview(
+    data
+  );
 
-  printSection("FINAL CONFIRMATION");
+  printSection(
+    "FINAL CONFIRMATION"
+  );
 
   console.log(
     "Everything above will be used to prepare"
@@ -473,22 +846,26 @@ export async function runFinalReview(
     "the final MongoDB data-entry operation."
   );
 
-  console.log();
+  console.log("");
 
   console.log(
     "IMPORTANT: MongoDB has NOT been modified yet."
   );
 
-  console.log();
+  console.log("");
 
-  const answer = (
-    await ask(
-      "Is ALL of this information correct? (y/n) > "
-    )
-  ).toLowerCase();
+  const answer =
+    (
+      await ask(
+        "Is ALL of this information correct? (y/n) > "
+      )
+    ).toLowerCase();
 
-  if (answer !== "y") {
-    console.log();
+  if (
+    answer !== "y" &&
+    answer !== "yes"
+  ) {
+    console.log("");
 
     console.log(
       "FINAL REVIEW REJECTED."
@@ -516,7 +893,7 @@ export async function runFinalReview(
     `ENTITY NAME : ${data.entityName}`
   );
 
-  console.log();
+  console.log("");
 
   console.log(
     "All Phase 1 information has been verified."
@@ -529,72 +906,116 @@ export async function runFinalReview(
   return data;
 }
 
-async function main() {
-  /*
-   * This standalone test uses sample data.
-   *
-   * In the final orchestrator, runFinalReview()
-   * will receive the actual results returned by:
-   *
-   *   entityInput
-   *   dateVerification
-   *   sourceVerification
-   *   kingdomVerification
-   *   relatedContent
-   *   imageVerification
-   */
+/*
+ * ============================================================
+ * STANDALONE TEST
+ * ============================================================
+ *
+ * This is only a validation/display test.
+ *
+ * It does NOT write to MongoDB.
+ * ============================================================
+ */
 
-  const sampleData: FinalReviewData = {
-    entityType: "hero",
-    entityName: "Bina Das",
+async function main(): Promise<void> {
+  const sampleData:
+    FinalReviewData =
+    {
+      entityType:
+        "hero",
 
-    birthDate: "1911-08-24",
-    birthDateAccuracy: "Exact",
-    deathDate: "1986-12-26",
-    deathDateAccuracy: "Exact",
-    onThisDay: false,
+      entityName:
+        "Bina Das",
 
-    useExistingSource: true,
-    existingSourceId: "SRC0001",
-    createNewSource: false,
+      birthDate:
+        "1911-08-24",
 
-    useExistingKingdom: true,
-    existingKingdomId: "KNG0003",
-    createNewKingdom: false,
+      birthDateAccuracy:
+        "Exact",
 
-    selectedBookIds: [
-      "BOOK0001",
-    ],
+      deathDate:
+        "1986-12-26",
 
-    selectedQuoteIds: [],
+      deathDateAccuracy:
+        "Exact",
 
-    selectedExistingImageIds: [
-      "IMG0004",
-    ],
+      onThisDay:
+        false,
 
-    newImages: [],
-  };
+      useExistingSource:
+        true,
+
+      existingSourceId:
+        "SRC0001",
+
+      createNewSource:
+        false,
+
+      useExistingKingdom:
+        true,
+
+      existingKingdomId:
+        "KNG0003",
+
+      createNewKingdom:
+        false,
+
+      selectedBookIds:
+        [
+          "BOOK0001",
+        ],
+
+      selectedQuoteIds:
+        [],
+
+      selectedExistingImageIds:
+        [
+          "IMG0004",
+        ],
+
+      newImages:
+        [],
+    };
 
   const result =
-    await runFinalReview(sampleData);
+    await runFinalReview(
+      sampleData
+    );
 
   if (!result) {
-    process.exitCode = 1;
+    process.exitCode =
+      1;
   }
 
   rl.close();
 }
 
-if (require.main === module) {
-  main().catch((error) => {
-    console.error();
-    console.error(
-      "FINAL REVIEW FAILED"
-    );
-    console.error(error);
+/*
+ * ============================================================
+ * DIRECT EXECUTION
+ * ============================================================
+ */
 
-    rl.close();
+if (
+  require.main ===
+  module
+) {
+  main().catch(
+    (error) => {
+      console.error("");
 
-    process.exitCode = 1;
-  });
+      console.error(
+        "FINAL REVIEW FAILED"
+      );
+
+      console.error(
+        error
+      );
+
+      rl.close();
+
+      process.exitCode =
+        1;
+    }
+  );
 }

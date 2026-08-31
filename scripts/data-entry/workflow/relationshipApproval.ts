@@ -9,16 +9,8 @@ import type {
 } from "../db/entityInput";
 
 import type {
-  SourceResearchCandidate,
-} from "../research/sourceResearch";
-
-import type {
-  PlaceCandidate,
-} from "../research/placeFinder";
-
-import type {
-  BattleCandidate,
-} from "../research/battleFinder";
+  RelationshipCandidate,
+} from "../research/relationshipFinder";
 
 /*
  * ============================================================
@@ -41,30 +33,24 @@ export type RelationshipSelection = {
   newName: string | null;
 };
 
-export type SourceRelationshipSelection =
+export type RelationshipRelationshipSelection =
   RelationshipSelection & {
-    candidate: SourceResearchCandidate;
-  };
-
-export type PlaceRelationshipSelection =
-  RelationshipSelection & {
-    candidate: PlaceCandidate;
-  };
-
-export type BattleRelationshipSelection =
-  RelationshipSelection & {
-    candidate: BattleCandidate;
+    candidate: RelationshipCandidate;
   };
 
 export type RelationshipApprovalResult = {
   entityType: EntityType;
+
   entityName: string;
 
-  sources: SourceRelationshipSelection[];
+  sources:
+    RelationshipRelationshipSelection[];
 
-  places: PlaceRelationshipSelection[];
+  places:
+    RelationshipRelationshipSelection[];
 
-  battles: BattleRelationshipSelection[];
+  battles:
+    RelationshipRelationshipSelection[];
 
   verified: boolean;
 
@@ -111,23 +97,48 @@ function isNo(
 
 /*
  * ============================================================
- * EXISTING RECORD SELECTION
+ * EMPTY SELECTION
+ * ============================================================
+ */
+
+function createSkippedSelection(
+  candidate: RelationshipCandidate
+): RelationshipRelationshipSelection {
+  return {
+    candidate,
+
+    decision:
+      "skip",
+
+    existingId:
+      null,
+
+    createNew:
+      false,
+
+    newName:
+      null,
+  };
+}
+
+/*
+ * ============================================================
+ * EXISTING / NEW / SKIP
  * ============================================================
  *
  * IMPORTANT:
  *
  * This function does NOT search MongoDB.
  *
- * duplicateFinder.ts / relationshipFinder.ts are responsible
- * for finding existing records.
+ * It only receives a candidate that was already discovered.
  *
- * This function only asks the operator what to do with the
- * candidates already discovered.
+ * Existing IDs may be supplied by a future duplicate-search
+ * integration layer.
+ * ============================================================
  */
 
 async function askExistingOrNew(
-  entityLabel: string,
-  name: string,
+  candidate: RelationshipCandidate,
   existingId?: string | null
 ): Promise<RelationshipSelection> {
   console.log("");
@@ -136,21 +147,25 @@ async function askExistingOrNew(
   );
 
   console.log(
-    `${entityLabel.toUpperCase()} RELATIONSHIP`
+    "RELATIONSHIP ACTION"
   );
 
   console.log(
-    "----------------------------------------"
+    `NAME : ${candidate.name}`
   );
 
   console.log(
-    `NAME : ${name}`
+    `COLLECTION : ${candidate.collection}`
+  );
+
+  console.log(
+    `ID : ${candidate.id}`
   );
 
   if (existingId) {
     console.log("");
     console.log(
-      `EXISTING RECORD : ${existingId}`
+      `EXISTING RECORD FOUND : ${existingId}`
     );
 
     console.log("");
@@ -201,7 +216,7 @@ async function askExistingOrNew(
               true,
 
             newName:
-              name,
+              candidate.name,
           };
 
         case "3":
@@ -227,24 +242,32 @@ async function askExistingOrNew(
     }
   }
 
+  /*
+   * No existing database ID has been supplied.
+   */
+
   console.log("");
   console.log(
-    "NO EXISTING RECORD WAS PROVIDED."
+    "NO EXISTING RECORD ID WAS SUPPLIED."
   );
 
   console.log("");
   console.log(
-    "Create a new record?"
+    "  1. Create new record"
+  );
+
+  console.log(
+    "  2. Skip relationship"
   );
 
   while (true) {
     const answer =
       await ask(
-        "(y/n) > "
+        "SELECT 1 or 2 > "
       );
 
     if (
-      isYes(answer)
+      answer.trim() === "1"
     ) {
       return {
         decision:
@@ -257,12 +280,12 @@ async function askExistingOrNew(
           true,
 
         newName:
-          name,
+          candidate.name,
       };
     }
 
     if (
-      isNo(answer)
+      answer.trim() === "2"
     ) {
       return {
         decision:
@@ -280,9 +303,128 @@ async function askExistingOrNew(
     }
 
     console.log(
-      "Please enter y or n."
+      "Please enter 1 or 2."
     );
   }
+}
+
+/*
+ * ============================================================
+ * APPROVE GENERIC CANDIDATES
+ * ============================================================
+ */
+
+async function approveCandidates(
+  label: string,
+  candidates: RelationshipCandidate[],
+  existingIds: Map<string, string>
+): Promise<
+  RelationshipRelationshipSelection[]
+> {
+  const selections:
+    RelationshipRelationshipSelection[] =
+    [];
+
+  console.log("");
+  console.log(
+    "========================================"
+  );
+
+  console.log(
+    `${label.toUpperCase()} RELATIONSHIP APPROVAL`
+  );
+
+  console.log(
+    "========================================"
+  );
+
+  if (
+    candidates.length === 0
+  ) {
+    console.log("");
+    console.log(
+      `NO ${label.toUpperCase()} CANDIDATES.`
+    );
+
+    return selections;
+  }
+
+  for (
+    const candidate of candidates
+  ) {
+    console.log("");
+    console.log(
+      "----------------------------------------"
+    );
+
+    console.log(
+      `${label.toUpperCase()} CANDIDATE`
+    );
+
+    console.log(
+      "----------------------------------------"
+    );
+
+    console.log(
+      `NAME       : ${candidate.name}`
+    );
+
+    console.log(
+      `ID         : ${candidate.id}`
+    );
+
+    console.log(
+      `COLLECTION : ${candidate.collection}`
+    );
+
+    console.log(
+      `REASON     : ${candidate.reason}`
+    );
+
+    const relevant =
+      await ask(
+        `Is this ${label.toLowerCase()} relevant to the entity? (y/n) > `
+      );
+
+    if (
+      !isYes(relevant)
+    ) {
+      selections.push(
+        createSkippedSelection(
+          candidate
+        )
+      );
+
+      continue;
+    }
+
+    /*
+     * An external duplicate-search layer may later supply
+     * an existing ID for this candidate.
+     *
+     * At present, no ID is invented here.
+     */
+
+    const existingId =
+      existingIds.get(
+        candidate.id
+      ) ??
+      null;
+
+    const selection =
+      await askExistingOrNew(
+        candidate,
+        existingId
+      );
+
+    selections.push({
+      candidate,
+
+      ...selection,
+    });
+  }
+
+  return selections;
 }
 
 /*
@@ -292,106 +434,17 @@ async function askExistingOrNew(
  */
 
 export async function approveSources(
-  candidates: Array<{
-    candidate: SourceResearchCandidate;
-
-    existingSourceId?: string | null;
-  }>
+  candidates: RelationshipCandidate[],
+  existingIds: Map<string, string> =
+    new Map()
 ): Promise<
-  SourceRelationshipSelection[]
+  RelationshipRelationshipSelection[]
 > {
-  const selections:
-    SourceRelationshipSelection[] =
-    [];
-
-  console.log("");
-  console.log(
-    "========================================"
+  return approveCandidates(
+    "Source",
+    candidates,
+    existingIds
   );
-  console.log(
-    "SOURCE RELATIONSHIP APPROVAL"
-  );
-  console.log(
-    "========================================"
-  );
-
-  if (
-    candidates.length === 0
-  ) {
-    console.log("");
-    console.log(
-      "NO SOURCE CANDIDATES."
-    );
-
-    return selections;
-  }
-
-  for (
-    const item of candidates
-  ) {
-    const candidate =
-      item.candidate;
-
-    console.log("");
-    console.log(
-      `SOURCE : ${candidate.title}`
-    );
-
-    console.log(
-      `URL    : ${candidate.url}`
-    );
-
-    console.log(
-      `CONFIDENCE : ${candidate.confidence}`
-    );
-
-    console.log(
-      `REASON : ${candidate.relevanceReason}`
-    );
-
-    const useCandidate =
-      await ask(
-        "Consider this source relevant? (y/n) > "
-      );
-
-    if (
-      !isYes(useCandidate)
-    ) {
-      selections.push({
-        candidate,
-
-        decision:
-          "skip",
-
-        existingId:
-          null,
-
-        createNew:
-          false,
-
-        newName:
-          null,
-      });
-
-      continue;
-    }
-
-    const selection =
-      await askExistingOrNew(
-        "Source",
-        candidate.title,
-        item.existingSourceId ??
-          null
-      );
-
-    selections.push({
-      candidate,
-
-      ...selection,
-    });
-  }
-
-  return selections;
 }
 
 /*
@@ -401,119 +454,17 @@ export async function approveSources(
  */
 
 export async function approvePlaces(
-  candidates: Array<{
-    candidate: PlaceCandidate;
-
-    existingPlaceId?: string | null;
-  }>
+  candidates: RelationshipCandidate[],
+  existingIds: Map<string, string> =
+    new Map()
 ): Promise<
-  PlaceRelationshipSelection[]
+  RelationshipRelationshipSelection[]
 > {
-  const selections:
-    PlaceRelationshipSelection[] =
-    [];
-
-  console.log("");
-  console.log(
-    "========================================"
+  return approveCandidates(
+    "Place",
+    candidates,
+    existingIds
   );
-  console.log(
-    "PLACE RELATIONSHIP APPROVAL"
-  );
-  console.log(
-    "========================================"
-  );
-
-  if (
-    candidates.length === 0
-  ) {
-    console.log("");
-    console.log(
-      "NO PLACE CANDIDATES."
-    );
-
-    return selections;
-  }
-
-  for (
-    const item of candidates
-  ) {
-    const candidate =
-      item.candidate;
-
-    console.log("");
-    console.log(
-      `PLACE : ${candidate.name}`
-    );
-
-    console.log(
-      `NATIVE NAME : ${
-        candidate.nativeName ??
-        "NONE"
-      }`
-    );
-
-    console.log(
-      `ALIASES : ${
-        candidate.aliases.length
-          ? candidate.aliases.join(
-              ", "
-            )
-          : "NONE"
-      }`
-    );
-
-    console.log(
-      `CONFIDENCE : ${candidate.confidence}`
-    );
-
-    console.log(
-      `REASON : ${candidate.reason}`
-    );
-
-    const relevant =
-      await ask(
-        "Is this place relevant to the entity? (y/n) > "
-      );
-
-    if (
-      !isYes(relevant)
-    ) {
-      selections.push({
-        candidate,
-
-        decision:
-          "skip",
-
-        existingId:
-          null,
-
-        createNew:
-          false,
-
-        newName:
-          null,
-      });
-
-      continue;
-    }
-
-    const selection =
-      await askExistingOrNew(
-        "Place",
-        candidate.name,
-        item.existingPlaceId ??
-          null
-      );
-
-    selections.push({
-      candidate,
-
-      ...selection,
-    });
-  }
-
-  return selections;
 }
 
 /*
@@ -523,144 +474,109 @@ export async function approvePlaces(
  */
 
 export async function approveBattles(
-  candidates: Array<{
-    candidate: BattleCandidate;
-
-    existingBattleId?: string | null;
-  }>
+  candidates: RelationshipCandidate[],
+  existingIds: Map<string, string> =
+    new Map()
 ): Promise<
-  BattleRelationshipSelection[]
+  RelationshipRelationshipSelection[]
 > {
-  const selections:
-    BattleRelationshipSelection[] =
-    [];
-
-  console.log("");
-  console.log(
-    "========================================"
+  return approveCandidates(
+    "Battle",
+    candidates,
+    existingIds
   );
-  console.log(
-    "BATTLE RELATIONSHIP APPROVAL"
-  );
-  console.log(
-    "========================================"
-  );
-
-  if (
-    candidates.length === 0
-  ) {
-    console.log("");
-    console.log(
-      "NO BATTLE CANDIDATES."
-    );
-
-    return selections;
-  }
-
-  for (
-    const item of candidates
-  ) {
-    const candidate =
-      item.candidate;
-
-    console.log("");
-    console.log(
-      `BATTLE : ${candidate.name}`
-    );
-
-    console.log(
-      `ALTERNATE NAMES : ${
-        candidate.alternateNames.length
-          ? candidate.alternateNames.join(
-              ", "
-            )
-          : "NONE"
-      }`
-    );
-
-    console.log(
-      `DATE : ${
-        candidate.date ??
-        "NONE"
-      }`
-    );
-
-    console.log(
-      `LOCATION : ${
-        candidate.location ??
-        "NONE"
-      }`
-    );
-
-    console.log(
-      `CONFIDENCE : ${candidate.confidence}`
-    );
-
-    console.log(
-      `REASON : ${candidate.reason}`
-    );
-
-    const relevant =
-      await ask(
-        "Is this battle relevant to the entity? (y/n) > "
-      );
-
-    if (
-      !isYes(relevant)
-    ) {
-      selections.push({
-        candidate,
-
-        decision:
-          "skip",
-
-        existingId:
-          null,
-
-        createNew:
-          false,
-
-        newName:
-          null,
-      });
-
-      continue;
-    }
-
-    const selection =
-      await askExistingOrNew(
-        "Battle",
-        candidate.name,
-        item.existingBattleId ??
-          null
-      );
-
-    selections.push({
-      candidate,
-
-      ...selection,
-    });
-  }
-
-  return selections;
 }
 
 /*
  * ============================================================
- * FINAL RELATIONSHIP REVIEW
+ * REVIEW
  * ============================================================
  */
 
 function printSelections(
+  label: string,
+  selections:
+    RelationshipRelationshipSelection[]
+): void {
+  console.log("");
+  console.log(
+    "----------------------------------------"
+  );
+
+  console.log(
+    label.toUpperCase()
+  );
+
+  console.log(
+    "----------------------------------------"
+  );
+
+  if (
+    selections.length === 0
+  ) {
+    console.log(
+      "NONE"
+    );
+
+    return;
+  }
+
+  selections.forEach(
+    (
+      selection,
+      index
+    ) => {
+      console.log("");
+      console.log(
+        `[${index + 1}] ${selection.candidate.name}`
+      );
+
+      console.log(
+        `    Candidate ID : ${selection.candidate.id}`
+      );
+
+      console.log(
+        `    Collection   : ${selection.candidate.collection}`
+      );
+
+      console.log(
+        `    Decision     : ${selection.decision}`
+      );
+
+      if (
+        selection.existingId
+      ) {
+        console.log(
+          `    Existing ID  : ${selection.existingId}`
+        );
+      }
+
+      if (
+        selection.createNew
+      ) {
+        console.log(
+          `    New Name     : ${
+            selection.newName ??
+            "NONE"
+          }`
+        );
+      }
+    }
+  );
+}
+
+function printReview(
   result: RelationshipApprovalResult
 ): void {
   console.log("");
   console.log(
     "========================================"
   );
+
   console.log(
     "RELATIONSHIP REVIEW"
   );
+
   console.log(
     "========================================"
   );
@@ -668,109 +584,26 @@ function printSelections(
   console.log("");
 
   console.log(
-    "SOURCES"
+    `ENTITY TYPE : ${result.entityType}`
   );
-
-  if (
-    result.sources.length === 0
-  ) {
-    console.log(
-      "  NONE"
-    );
-  }
-
-  result.sources.forEach(
-    (
-      selection
-    ) => {
-      console.log(
-        `  ${selection.candidate.title}`
-      );
-
-      console.log(
-        `    Decision : ${selection.decision}`
-      );
-
-      if (
-        selection.existingId
-      ) {
-        console.log(
-          `    Existing ID : ${selection.existingId}`
-        );
-      }
-    }
-  );
-
-  console.log("");
 
   console.log(
-    "PLACES"
+    `ENTITY NAME : ${result.entityName}`
   );
 
-  if (
-    result.places.length === 0
-  ) {
-    console.log(
-      "  NONE"
-    );
-  }
-
-  result.places.forEach(
-    (
-      selection
-    ) => {
-      console.log(
-        `  ${selection.candidate.name}`
-      );
-
-      console.log(
-        `    Decision : ${selection.decision}`
-      );
-
-      if (
-        selection.existingId
-      ) {
-        console.log(
-          `    Existing ID : ${selection.existingId}`
-        );
-      }
-    }
+  printSelections(
+    "SOURCES",
+    result.sources
   );
 
-  console.log("");
-
-  console.log(
-    "BATTLES"
+  printSelections(
+    "PLACES",
+    result.places
   );
 
-  if (
-    result.battles.length === 0
-  ) {
-    console.log(
-      "  NONE"
-    );
-  }
-
-  result.battles.forEach(
-    (
-      selection
-    ) => {
-      console.log(
-        `  ${selection.candidate.name}`
-      );
-
-      console.log(
-        `    Decision : ${selection.decision}`
-      );
-
-      if (
-        selection.existingId
-      ) {
-        console.log(
-          `    Existing ID : ${selection.existingId}`
-        );
-      }
-    }
+  printSelections(
+    "BATTLES",
+    result.battles
   );
 }
 
@@ -786,37 +619,34 @@ export async function runRelationshipApproval(
 
     entityName: string;
 
-    sources?: Array<{
-      candidate: SourceResearchCandidate;
+    sources?: RelationshipCandidate[];
 
-      existingSourceId?: string | null;
-    }>;
+    places?: RelationshipCandidate[];
 
-    places?: Array<{
-      candidate: PlaceCandidate;
+    battles?: RelationshipCandidate[];
 
-      existingPlaceId?: string | null;
-    }>;
+    existingSourceIds?: Map<string, string>;
 
-    battles?: Array<{
-      candidate: BattleCandidate;
+    existingPlaceIds?: Map<string, string>;
 
-      existingBattleId?: string | null;
-    }>;
+    existingBattleIds?: Map<string, string>;
   }
 ): Promise<RelationshipApprovalResult> {
   console.log("");
   console.log(
     "========================================"
   );
+
   console.log(
     "VEERBHARAT RELATIONSHIP APPROVAL"
   );
+
   console.log(
     "========================================"
   );
 
   console.log("");
+
   console.log(
     `ENTITY TYPE : ${input.entityType}`
   );
@@ -825,19 +655,43 @@ export async function runRelationshipApproval(
     `ENTITY NAME : ${input.entityName}`
   );
 
+  /*
+   * ----------------------------------------------------------
+   * SOURCE
+   * ----------------------------------------------------------
+   */
+
   const sources =
     await approveSources(
-      input.sources ?? []
+      input.sources ?? [],
+      input.existingSourceIds ??
+        new Map()
     );
+
+  /*
+   * ----------------------------------------------------------
+   * PLACE
+   * ----------------------------------------------------------
+   */
 
   const places =
     await approvePlaces(
-      input.places ?? []
+      input.places ?? [],
+      input.existingPlaceIds ??
+        new Map()
     );
+
+  /*
+   * ----------------------------------------------------------
+   * BATTLE
+   * ----------------------------------------------------------
+   */
 
   const battles =
     await approveBattles(
-      input.battles ?? []
+      input.battles ?? [],
+      input.existingBattleIds ??
+        new Map()
     );
 
   const result:
@@ -862,7 +716,13 @@ export async function runRelationshipApproval(
         "",
     };
 
-  printSelections(
+  /*
+   * ----------------------------------------------------------
+   * REVIEW
+   * ----------------------------------------------------------
+   */
+
+  printReview(
     result
   );
 
@@ -887,6 +747,20 @@ export async function runRelationshipApproval(
     };
   }
 
+  if (
+    isNo(confirmation)
+  ) {
+    return {
+      ...result,
+
+      verified:
+        false,
+
+      verificationNote:
+        "Relationship selections rejected by the data-entry operator.",
+    };
+  }
+
   return {
     ...result,
 
@@ -894,7 +768,7 @@ export async function runRelationshipApproval(
       false,
 
     verificationNote:
-      "Relationship selections rejected by the data-entry operator.",
+      "Relationship selection was not explicitly confirmed.",
   };
 }
 
@@ -903,22 +777,31 @@ export async function runRelationshipApproval(
  * ARCHITECTURAL RULE
  * ============================================================
  *
- * This module does NOT:
+ * This module ONLY performs operator approval.
+ *
+ * It does NOT:
  *
  *   - search the web
  *   - search MongoDB
  *   - generate IDs
  *   - insert records
+ *   - modify existing records
+ *   - automatically approve candidates
  *
- * Its only job is:
+ * Correct architecture:
  *
- *       DISCOVERY
- *          ↓
- *       CANDIDATE
- *          ↓
- *       EXISTING MATCH
- *          ↓
- *       OPERATOR DECISION
+ *   RESEARCH
+ *       ↓
+ *   CANDIDATE
+ *       ↓
+ *   EXISTING MATCH (if available)
+ *       ↓
+ *   OPERATOR DECISION
+ *       ↓
+ *   FINAL VERIFICATION
+ *       ↓
+ *   DATABASE WRITER
  *
- * The actual database writer remains the final step.
+ * No historical entity data is hardcoded here.
+ * ============================================================
  */
