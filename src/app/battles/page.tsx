@@ -387,11 +387,7 @@ export default function BattlesPage() {
 
                   <Link
                     key={battle._id}
-                    href={
-                      battle.crossReferences?.relatedEvents?.[0]?.eventId
-                        ? `/events/${battle.crossReferences.relatedEvents[0].eventId}`
-                        : "#"
-                    }
+                    href={`/battles/${battle.battleId}`}
                     className="group block"
                   >
 

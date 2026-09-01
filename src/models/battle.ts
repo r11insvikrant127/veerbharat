@@ -105,21 +105,28 @@ const BattleSchema = new Schema(
     },
 
     casualties: {
-      type: Number,
-      min: 0,
+      attackers: {
+        type: String,
+        trim: true,
+      },
+
+      defenders: {
+        type: String,
+        trim: true,
+      },
     },
 
     armySizes: {
-      type: Map,
-      of: Number,
-    },
-
-    weaponsUsed: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "Weapon",
+      attackers: {
+        type: String,
+        trim: true,
       },
-    ],
+
+      defenders: {
+        type: String,
+        trim: true,
+      },
+    },
 
     warAnimalIds: [
       {
@@ -133,6 +140,29 @@ const BattleSchema = new Schema(
       ref: "WarStrategy",
     },
 
+    weapons: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
+
+    tactics: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
+
+    terrain: {
+      type: String,
+      trim: true,
+    },
+
+    outcome: {
+      type: String,
+      trim: true,
+    },
     keyEvents: [
       {
         type: String,
@@ -141,6 +171,10 @@ const BattleSchema = new Schema(
     ],
 
     significance: {
+      type: String,
+      trim: true,
+    },
+    shortDescription: {
       type: String,
       trim: true,
     },
@@ -218,6 +252,13 @@ const BattleSchema = new Schema(
         {
           type: Schema.Types.ObjectId,
           ref: "Event",
+        },
+      ],
+
+      relatedBattles: [
+        {
+          type: Schema.Types.ObjectId,
+          ref: "Battle",
         },
       ],
 

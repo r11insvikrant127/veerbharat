@@ -4,6 +4,21 @@ import Battle from "@/models/battle";
 import ApiError from "@/lib/ApiError";
 import BaseService from "./base.service";
 
+
+import Event from "@/models/event";
+import Hero from "@/models/hero";
+import HistoricalPersonality from "@/models/historicalPersonality";
+import Kingdom from "@/models/kingdom";
+import Weapon from "@/models/weapon";
+import Place from "@/models/place";
+import Book from "@/models/book";
+import Source from "@/models/source";
+import Image from "@/models/image";
+import HistoricalPeriod from "@/models/historicalPeriod";
+import MilitaryCommander from "@/models/militaryCommander";
+import WarAnimal from "@/models/warAnimal";
+import WarStrategy from "@/models/warStrategy";
+
 import {
   buildSearchFilter,
   escapeRegex,
@@ -115,21 +130,16 @@ class BattleService extends BaseService {
       getSort(sort);
 
     const [battles, total] =
-      await Promise.all([
-        Battle.find(filter)
-          .populate({
-            path: "crossReferences.relatedEvents",
-            model: "Event",
-            select: "eventId name",
-          })
-          .sort(sortOption)
-          .skip(skip)
-          .limit(currentLimit),
+    await Promise.all([
+      Battle.find(filter)
+        .sort(sortOption)
+        .skip(skip)
+        .limit(currentLimit),
 
-        Battle.countDocuments(
-          filter
-        ),
-      ]);
+      Battle.countDocuments(
+        filter
+      ),
+    ]);
 
     return {
     data: battles,
@@ -155,11 +165,66 @@ class BattleService extends BaseService {
         "Battle"
       );
 
-    await battle.populate({
-      path: "crossReferences.relatedEvents",
-      model: "Event",
-      select: "eventId name",
-    });
+    await battle.populate([
+      {
+        path: "locationId",
+        model: Place,
+        select: "_id name placeId",
+      },
+
+      {
+        path: "historicalPeriodId",
+        model: HistoricalPeriod,
+        select: "_id name historicalPeriodId",
+      },
+
+      {
+        path: "kingdomIds",
+        model: Kingdom,
+        select: "_id name kingdomId",
+      },
+
+      {
+        path: "commanderIds",
+        model: Hero,
+        select: "_id name heroId",
+      },
+
+      {
+        path: "commanderPersonalityIds",
+        model: HistoricalPersonality,
+        select: "_id name historicalPersonalityId",
+      },
+    {
+      path: "opposingCommanderIds",
+      model: MilitaryCommander,
+      select: "_id name",
+    },
+
+    {
+      path: "opposingCommanderPersonalityIds",
+      model: HistoricalPersonality,
+      select: "_id name historicalPersonalityId",
+    },
+
+    {
+      path: "victorId",
+    },
+
+   
+
+    {
+      path: "warAnimalIds",
+      model: WarAnimal,
+      select: "_id name warAnimalId",
+    },
+
+    {
+      path: "strategyId",
+      model: WarStrategy,
+      select: "_id name strategyId",
+    },
+    ]);
 
     return battle;
   }

@@ -9,6 +9,7 @@ import {
   ArrowRight,
   Crown,
   Shield,
+  Swords,
 } from 'lucide-react';
 
 interface EventHero {
@@ -81,13 +82,34 @@ interface HistoricalPersonalitiesResponse {
   data: HistoricalPersonality[];
 }
 
+interface Battle {
+  _id: string;
+  battleId: string;
+  name: string;
+  status?: string;
+  battleDate: string | null;
+  battleDateAccuracy?: string;
+  shortDescription?: string;
+  description: string;
+}
+
+interface BattlesResponse {
+  data: Battle[];
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 interface OnThisDayItem {
   id: string;
   name: string;
   year: number | null;
   description: string;
   href: string;
-  type: 'event' | 'hero' | 'personality';
+  type: 'event' | 'battle' | 'hero' | 'personality';
 }
 
 export function OnThisDay() {
@@ -119,10 +141,12 @@ export function OnThisDay() {
 
         const [
           eventsResponse,
+          battlesResponse,
           heroesResponse,
           personalitiesResponse,
         ] = await Promise.all([
           fetch('/api/events?page=1&limit=100'),
+          fetch('/api/battles?page=1&limit=100'),
           fetch('/api/heroes?page=1&limit=100'),
           fetch(
             '/api/historical-personalities?page=1&limit=100'
@@ -194,6 +218,45 @@ export function OnThisDay() {
                     `/events/${event.eventId}`,
 
                 type: 'event',
+              });
+            }
+          });
+        }
+
+
+        /*
+         * BATTLES
+         */
+        if (battlesResponse.ok) {
+          const result: BattlesResponse =
+            await battlesResponse.json();
+
+          result.data.forEach((battle) => {
+            if (
+              !isPublished(battle.status) ||
+              !battle.battleDate
+            ) {
+              return;
+            }
+
+            const battleDate =
+              new Date(battle.battleDate);
+
+            if (
+              battleDate.getDate() ===
+                today.getDate() &&
+              battleDate.getMonth() ===
+                today.getMonth()
+            ) {
+              allItems.push({
+                id: battle._id,
+                name: battle.name,
+                year: battleDate.getFullYear(),
+                description:
+                  battle.shortDescription || battle.description,
+                href:
+                  `/battles/${battle.battleId}`,
+                type: 'battle',
               });
             }
           });
@@ -459,12 +522,12 @@ export function OnThisDay() {
 
                       <div className="w-12 h-12 bg-[#D4AF37]/10 rounded-full flex items-center justify-center flex-shrink-0 border border-[#D4AF37]/20">
 
-                        {item.type ===
-                        'personality' ? (
+                        {item.type === 'personality' ? (
                           <Crown className="w-6 h-6 text-[#D4AF37]" />
-                        ) : item.type ===
-                          'hero' ? (
+                        ) : item.type === 'hero' ? (
                           <Shield className="w-6 h-6 text-[#D4AF37]" />
+                        ) : item.type === 'battle' ? (
+                          <Swords className="w-6 h-6 text-[#D4AF37]" />
                         ) : (
                           <Flag className="w-6 h-6 text-[#D4AF37]" />
                         )}
