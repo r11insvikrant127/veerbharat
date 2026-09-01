@@ -34,6 +34,11 @@ const BattleSchema = new Schema(
       default: null,
     },
 
+    battleEndDate: {
+      type: Date,
+      default: null,
+    },
+
     battleDateAccuracy: {
       type: String,
       enum: [
