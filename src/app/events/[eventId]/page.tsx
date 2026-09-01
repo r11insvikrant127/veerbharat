@@ -27,6 +27,11 @@ interface HeroReference {
   name: string;
 }
 
+interface HistoricalPersonalityReference {
+  historicalPersonalityId: string;
+  name: string;
+}
+
 interface ImageData {
   _id: string;
   imageId: string;
@@ -89,6 +94,7 @@ interface HistoricalEvent {
   relatedPeople?: string[];
 
   heroIds?: HeroReference[];
+  historicalPersonalityIds?: HistoricalPersonalityReference[];
 
   imageIds?: EventImageRelation[];
 }
@@ -103,6 +109,26 @@ interface HistoricalSection {
   content: string;
   subsections: HistoricalSubsection[];
 }
+
+/* =====================================================
+   LINK CANDIDATE TYPES
+===================================================== */
+
+interface HeroLinkCandidate {
+  type: "hero";
+  hero: HeroReference;
+  name: string;
+}
+
+interface HistoricalPersonalityLinkCandidate {
+  type: "historicalPersonality";
+  person: HistoricalPersonalityReference;
+  name: string;
+}
+
+type HistoricalLinkCandidate =
+  | HeroLinkCandidate
+  | HistoricalPersonalityLinkCandidate;
 
 /* =====================================================
    PAGE
@@ -123,6 +149,9 @@ export default function EventDetailsPage() {
 
   const [heroes, setHeroes] =
   useState<HeroReference[]>([]);
+  
+  const [historicalPersonalities, setHistoricalPersonalities] =
+  useState<HistoricalPersonalityReference[]>([]);
 
   /* =====================================================
      FETCH EVENT
@@ -186,6 +215,18 @@ export default function EventDetailsPage() {
                   Boolean(
                     hero?.heroId &&
                     hero?.name
+                  )
+              )
+            : []
+        );
+
+        setHistoricalPersonalities(
+          Array.isArray(eventData.historicalPersonalityIds)
+            ? eventData.historicalPersonalityIds.filter(
+                (person: HistoricalPersonalityReference) =>
+                  Boolean(
+                    person?.historicalPersonalityId &&
+                    person?.name
                   )
               )
             : []
@@ -381,7 +422,7 @@ export default function EventDetailsPage() {
     Every image is matched dynamically:
 
     relatedSection
-          Ã¢â€ â€œ
+          â†“
     section title
   */
 
@@ -577,6 +618,7 @@ export default function EventDetailsPage() {
               <OverviewContent
                 content={event.description}
                 heroes={heroes}
+                historicalPersonalities={historicalPersonalities}
               />
             </HistoricalCard>
 
@@ -594,6 +636,7 @@ export default function EventDetailsPage() {
                   <HistoricalContent
                     content={event.details}
                     heroes={heroes}
+                    historicalPersonalities={historicalPersonalities}
                   />
                 </HistoricalCard>
               )}
@@ -617,6 +660,7 @@ export default function EventDetailsPage() {
                     subsections={section.subsections}
                     allImages={images}
                     heroes={heroes}
+                    historicalPersonalities={historicalPersonalities}
                   />
                 );
               }
@@ -636,6 +680,7 @@ export default function EventDetailsPage() {
                     event.significance
                   }
                    heroes={heroes}
+                   historicalPersonalities={historicalPersonalities}
                 />
               </HistoricalCard>
             )}
@@ -710,6 +755,7 @@ function HistoricalArticleSection({
   subsections,
   allImages,
   heroes,
+  historicalPersonalities,
 }: {
   title: string;
   content: string;
@@ -718,7 +764,8 @@ function HistoricalArticleSection({
   subsections: HistoricalSubsection[];
   allImages: EventImage[];
   heroes: HeroReference[];
-}){
+  historicalPersonalities: HistoricalPersonalityReference[];
+}) {
   const imageOnLeft = index % 2 !== 0;
   const getSubsectionImages = (
     subsectionTitle: string
@@ -802,6 +849,7 @@ function HistoricalArticleSection({
           <HistoricalContent
             content={content}
              heroes={heroes}
+             historicalPersonalities={historicalPersonalities}
           />
         )
 
@@ -840,6 +888,7 @@ function HistoricalArticleSection({
             <HistoricalContent
               content={content}
                heroes={heroes}
+               historicalPersonalities={historicalPersonalities}
             />
           )}
 
@@ -894,6 +943,7 @@ function HistoricalArticleSection({
                           <HistoricalContent
                             content={subsection.content}
                              heroes={heroes}
+                             historicalPersonalities={historicalPersonalities}
                           />
 
                         ) : (
@@ -926,6 +976,7 @@ function HistoricalArticleSection({
                             <HistoricalContent
                               content={subsection.content}
                               heroes={heroes}
+                              historicalPersonalities={historicalPersonalities}
                             />
 
                           </div>
@@ -1096,9 +1147,11 @@ function ImageCard({
 function OverviewContent({
   content,
   heroes,
+  historicalPersonalities,
 }: {
   content: string;
   heroes: HeroReference[];
+  historicalPersonalities: HistoricalPersonalityReference[];
 }) {
   const paragraphs = content
     .split(/\n\s*\n/)
@@ -1116,6 +1169,7 @@ function OverviewContent({
             <LinkedHistoricalText
               text={paragraph}
               heroes={heroes}
+              historicalPersonalities={historicalPersonalities}
             />
           </p>
         )
@@ -1253,9 +1307,11 @@ function parseHistoricalSections(
 function HistoricalContent({
   content,
   heroes,
+  historicalPersonalities,
 }: {
   content: string;
   heroes: HeroReference[];
+  historicalPersonalities: HistoricalPersonalityReference[];
 }) {
   const blocks =
     parseContentBlocks(content);
@@ -1276,6 +1332,7 @@ function HistoricalContent({
                 <LinkedHistoricalText
                   text={block.text}
                   heroes={heroes}
+                  historicalPersonalities={historicalPersonalities}
                 />
               </p>
             );
@@ -1308,6 +1365,7 @@ function HistoricalContent({
                         <LinkedHistoricalText
                           text={item}
                           heroes={heroes}
+                          historicalPersonalities={historicalPersonalities}
                         />
                       </span>
                     </li>
@@ -1346,6 +1404,7 @@ function HistoricalContent({
                         <LinkedHistoricalText
                           text={item}
                           heroes={heroes}
+                          historicalPersonalities={historicalPersonalities}
                         />
                       </span>
                     </li>
@@ -1369,11 +1428,17 @@ function HistoricalContent({
 function LinkedHistoricalText({
   text,
   heroes,
+  historicalPersonalities,
 }: {
   text: string;
   heroes: HeroReference[];
+  historicalPersonalities: HistoricalPersonalityReference[];
 }) {
-  if (!text || heroes.length === 0) {
+  if (
+    !text ||
+    (heroes.length === 0 &&
+      historicalPersonalities.length === 0)
+  ) {
     return <>{text}</>;
   }
 
@@ -1383,9 +1448,7 @@ function LinkedHistoricalText({
       "\\$&"
     );
 
-
-
-  const heroCandidates = heroes
+  const heroCandidates: HeroLinkCandidate[] = heroes
     .filter(
       (hero) =>
         typeof hero?.heroId === "string" &&
@@ -1407,8 +1470,9 @@ function LinkedHistoricalText({
         )
         .trim();
 
-      const candidates = [
+      const candidates: HeroLinkCandidate[] = [
         {
+          type: "hero",
           hero,
           name: fullName,
         },
@@ -1420,6 +1484,7 @@ function LinkedHistoricalText({
           fullName.toLowerCase()
       ) {
         candidates.push({
+          type: "hero",
           hero,
           name: personalName,
         });
@@ -1432,11 +1497,44 @@ function LinkedHistoricalText({
         b.name.length - a.name.length
     );
 
-  if (heroCandidates.length === 0) {
+  const historicalPersonalityCandidates: HistoricalPersonalityLinkCandidate[] =
+    historicalPersonalities
+      .filter(
+        (person) =>
+          typeof person?.historicalPersonalityId === "string" &&
+          person.historicalPersonalityId.trim() !== "" &&
+          typeof person?.name === "string" &&
+          person.name.trim() !== ""
+      )
+      .flatMap((person) => {
+        const fullName = person.name.trim();
+
+        return [
+          {
+            type: "historicalPersonality" as const,
+            person,
+            name: fullName,
+          },
+        ];
+      })
+      .sort(
+        (a, b) =>
+          b.name.length - a.name.length
+      );
+
+  const candidates: HistoricalLinkCandidate[] = [
+    ...heroCandidates,
+    ...historicalPersonalityCandidates,
+  ].sort(
+    (a, b) =>
+      b.name.length - a.name.length
+  );
+
+  if (candidates.length === 0) {
     return <>{text}</>;
   }
 
-  const pattern = heroCandidates
+  const pattern = candidates
     .map((candidate) =>
       escapeRegExp(candidate.name)
     )
@@ -1452,7 +1550,7 @@ function LinkedHistoricalText({
       {text.split(regex).map(
         (part, index) => {
           const candidate =
-            heroCandidates.find(
+            candidates.find(
               (item) =>
                 item.name.toLowerCase() ===
                 part.trim().toLowerCase()
@@ -1466,11 +1564,25 @@ function LinkedHistoricalText({
             );
           }
 
+          if (candidate.type === "hero") {
+            return (
+              <Link
+                key={`hero-${candidate.hero.heroId}-${index}`}
+                href={`/heroes/${encodeURIComponent(
+                  candidate.hero.heroId
+                )}`}
+                className="text-[#D4AF37] hover:text-[#F0D878] underline underline-offset-4 decoration-[#D4AF37]/30 hover:decoration-[#D4AF37] transition-colors"
+              >
+                {part}
+              </Link>
+            );
+          }
+
           return (
             <Link
-              key={`${candidate.hero.heroId}-${index}`}
-              href={`/heroes/${encodeURIComponent(
-                candidate.hero.heroId
+              key={`person-${candidate.person.historicalPersonalityId}-${index}`}
+              href={`/historical-personalities/${encodeURIComponent(
+                candidate.person.historicalPersonalityId
               )}`}
               className="text-[#D4AF37] hover:text-[#F0D878] underline underline-offset-4 decoration-[#D4AF37]/30 hover:decoration-[#D4AF37] transition-colors"
             >

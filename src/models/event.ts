@@ -177,6 +177,13 @@ const EventSchema = new Schema(
         },
       ],
 
+      historicalPersonalityIds: [
+        {
+          type: Schema.Types.ObjectId,
+          ref: "HistoricalPersonality",
+        },
+      ],
+
       relatedPlaces: [
         {
           type: Schema.Types.ObjectId,

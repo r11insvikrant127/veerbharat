@@ -5,6 +5,7 @@ import ApiError from "@/lib/ApiError";
 import BaseService from "./base.service";
 import Hero from "@/models/hero";
 import Image from "@/models/image";
+import HistoricalPersonality from "@/models/historicalPersonality";
 
 import {
   buildSearchFilter,
@@ -188,6 +189,20 @@ class EventService extends BaseService {
               select: "imageId title url altText imageType",
             },
           })
+          .populate({
+            path: "historicalPersonalityIds",
+            model: HistoricalPersonality,
+            select: `
+              historicalPersonalityId
+              name
+              nativeName
+              title
+              shortDescription
+              biography
+              status
+              imageIds
+            `,
+          })
           .sort(sortOption)
           .skip(skip)
           .limit(currentLimit),
@@ -253,6 +268,20 @@ class EventService extends BaseService {
           select:
             "imageId title url altText imageType",
         },
+      })
+      .populate({
+        path: "historicalPersonalityIds",
+        model: HistoricalPersonality,
+        select: `
+          historicalPersonalityId
+          name
+          nativeName
+          title
+          shortDescription
+          biography
+          status
+          imageIds
+        `,
       });
 
     if (!event) {
