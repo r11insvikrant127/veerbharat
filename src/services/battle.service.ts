@@ -195,6 +195,36 @@ class BattleService extends BaseService {
         model: Battle,
         select: "_id name battleId",
       },
+
+      {
+        path: "crossReferences.relatedPlaces",
+        model: Place,
+        select: "_id name placeId",
+      },
+
+      {
+        path: "crossReferences.relatedBooks",
+        model: Book,
+        select: "_id name bookId",
+      },
+
+      {
+        path: "crossReferences.relatedSources",
+        model: Source,
+        select: "_id title sourceId",
+      },
+
+      {
+        path: "crossReferences.relatedWeapons",
+        model: Weapon,
+        select: "_id name weaponId",
+      },
+
+      {
+        path: "crossReferences.relatedImages",
+        model: Image,
+        select: "_id name imageId",
+      },
       
       {
         path: "locationId",

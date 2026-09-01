@@ -22,7 +22,9 @@ import { Footer } from "@/components/layout/Footer";
 
 interface Reference {
   _id?: string;
-  name: string;
+  name?: string;
+  title?: string;
+
   heroId?: string;
   historicalPersonalityId?: string;
   kingdomId?: string;
@@ -32,6 +34,7 @@ interface Reference {
   sourceId?: string;
   weaponId?: string;
   placeId?: string;
+  imageId?: string;
 }
 
 interface Battle {
@@ -151,7 +154,7 @@ function ReferenceCard({
 
       <div className="flex items-center justify-between gap-3">
         <p className="font-serif text-lg text-[#F8F5F0] group-hover:text-[#D4AF37] transition-colors">
-          {item.name}
+          {item.name || item.title || "Unnamed record"}
         </p>
 
         {href && (
