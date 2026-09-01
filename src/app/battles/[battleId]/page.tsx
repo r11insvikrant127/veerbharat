@@ -270,9 +270,12 @@ export default function BattleDetailPage() {
         }
 
         const result =
-          await response.json();
+            await response.json();
 
-        setBattle(result);
+            const battleData =
+            result.data ?? result;
+
+            setBattle(battleData);
       } catch (err) {
         console.error(err);
 
