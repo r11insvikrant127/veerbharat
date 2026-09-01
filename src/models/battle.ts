@@ -72,11 +72,25 @@ const BattleSchema = new Schema(
         required: true,
       },
     ],
+    
+    commanderPersonalityIds: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "HistoricalPersonality",
+      },
+    ],
 
     opposingCommanderIds: [
       {
         type: Schema.Types.ObjectId,
         ref: "MilitaryCommander",
+      },
+    ],
+
+    opposingCommanderPersonalityIds: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "HistoricalPersonality",
       },
     ],
 
@@ -169,6 +183,13 @@ const BattleSchema = new Schema(
         {
           type: Schema.Types.ObjectId,
           ref: "Hero",
+        },
+      ],
+
+      relatedHistoricalPersonalities: [
+        {
+          type: Schema.Types.ObjectId,
+          ref: "HistoricalPersonality",
         },
       ],
 
