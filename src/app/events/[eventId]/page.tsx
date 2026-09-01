@@ -26,6 +26,11 @@ interface HeroReference {
   heroId: string;
   name: string;
 }
+interface BattleReference {
+  battleId: string;
+  name: string;
+  shortDescription?: string;
+}
 
 interface HistoricalPersonalityReference {
   historicalPersonalityId: string;
@@ -95,6 +100,10 @@ interface HistoricalEvent {
 
   heroIds?: HeroReference[];
   historicalPersonalityIds?: HistoricalPersonalityReference[];
+
+  crossReferences?: {
+    relatedBattles?: BattleReference[];
+  };
 
   imageIds?: EventImageRelation[];
 }
@@ -707,6 +716,53 @@ export default function EventDetailsPage() {
                 </div>
               </HistoricalCard>
             )}
+
+            {/* RELATED BATTLES */}
+
+            {event.crossReferences?.relatedBattles &&
+              event.crossReferences.relatedBattles.length > 0 && (
+                <HistoricalCard
+                  eyebrow="Battles"
+                  title="Battles of This Event"
+                  icon={
+                    <Sword className="w-5 h-5 text-[#D4AF37]" />
+                  }
+                >
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {event.crossReferences.relatedBattles.map(
+                      (battle) => (
+                        <Link
+                          key={battle.battleId}
+                          href={`/battles/${encodeURIComponent(
+                            battle.battleId
+                          )}`}
+                          className="group rounded-xl border border-[#D4AF37]/15 bg-[#17130F]/70 p-5 transition-all duration-300 hover:border-[#D4AF37]/40 hover:bg-[#1C1410]"
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <p className="text-[10px] uppercase tracking-[0.2em] text-[#D4AF37]/60 mb-2">
+                                Battle
+                              </p>
+
+                              <h3 className="font-serif text-xl font-bold text-[#F8F5F0] group-hover:text-[#D4AF37] transition-colors">
+                                {battle.name}
+                              </h3>
+
+                              {battle.shortDescription && (
+                                <p className="mt-3 text-sm leading-7 text-[#A09682]">
+                                  {battle.shortDescription}
+                                </p>
+                              )}
+                            </div>
+
+                            <Sword className="w-4 h-4 shrink-0 text-[#D4AF37]/50 group-hover:text-[#D4AF37] transition-colors" />
+                          </div>
+                        </Link>
+                      )
+                    )}
+                  </div>
+                </HistoricalCard>
+              )}
 
             {/* TAGS */}
 

@@ -167,6 +167,36 @@ class BattleService extends BaseService {
 
     await battle.populate([
       {
+        path: "crossReferences.relatedHeroes",
+        model: Hero,
+        select: "_id name heroId",
+      },
+
+      {
+        path: "crossReferences.relatedHistoricalPersonalities",
+        model: HistoricalPersonality,
+        select: "_id name historicalPersonalityId",
+      },
+
+      {
+        path: "crossReferences.relatedKingdoms",
+        model: Kingdom,
+        select: "_id name kingdomId",
+      },
+
+      {
+        path: "crossReferences.relatedEvents",
+        model: Event,
+        select: "_id name eventId",
+      },
+
+      {
+        path: "crossReferences.relatedBattles",
+        model: Battle,
+        select: "_id name battleId",
+      },
+      
+      {
         path: "locationId",
         model: Place,
         select: "_id name placeId",
