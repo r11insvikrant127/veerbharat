@@ -521,10 +521,15 @@ export default function BattleDetailPage() {
             <div className="mt-5">
               <ReferenceGrid
                 items={
-                  battle.opposingCommanderPersonalityIds
+                    battle.opposingCommanderPersonalityIds
                 }
                 type="Historical Personality"
-              />
+                hrefBuilder={(item) =>
+                    item.historicalPersonalityId
+                    ? `/historical-personalities/${item.historicalPersonalityId}`
+                    : undefined
+                }
+                />
             </div>
           </Section>
         )}
