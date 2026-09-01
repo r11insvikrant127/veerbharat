@@ -37,7 +37,9 @@ interface HistoricalPersonality {
   alternativeNames?: string[];
 
   title?: string;
+  shortDescription?: string;
 
+  biography?: string;
   category?: string;
 
   roles?: string[];
@@ -360,6 +362,11 @@ export default function HistoricalPersonalityDetailPage({
                     {personality.title}
                   </p>
                 )}
+                {personality.shortDescription && (
+                  <p className="max-w-2xl mt-7 text-[#D7C9A5] leading-relaxed mx-auto lg:mx-0">
+                    {personality.shortDescription}
+                  </p>
+                )}
 
                 <div className="flex items-center justify-center lg:justify-start gap-4 mt-7">
                   <div className="h-px w-20 bg-gradient-to-r from-transparent to-[#D4AF37]/40" />
@@ -515,7 +522,23 @@ export default function HistoricalPersonalityDetailPage({
                 </div>
               </div>
             </div>
+            {/* BIOGRAPHY */}
 
+              {personality.biography && (
+                <div className="section-card-hover p-8 md:p-10 mt-6">
+                  <p className="text-xs uppercase tracking-[0.25em] text-[#D4AF37]/60 mb-3">
+                    Historical Biography
+                  </p>
+
+                  <h2 className="font-serif text-3xl font-bold mb-6">
+                    Biography
+                  </h2>
+
+                  <p className="text-[#D7C9A5] leading-8 whitespace-pre-line">
+                    {personality.biography}
+                  </p>
+                </div>
+              )}                       
             {/* KNOWN FOR */}
 
             {personality.knownFor &&

@@ -5,6 +5,7 @@ import ApiError from "@/lib/ApiError";
 import BaseService from "./base.service";
 import Hero from "@/models/hero";
 import Image from "@/models/image";
+import Battle from "@/models/battle";
 import HistoricalPersonality from "@/models/historicalPersonality";
 
 import {
@@ -203,6 +204,15 @@ class EventService extends BaseService {
               imageIds
             `,
           })
+          .populate({
+            path: "crossReferences.relatedBattles",
+            model: Battle,
+            select: `
+              battleId
+              name
+              shortDescription
+            `,
+          })
           .sort(sortOption)
           .skip(skip)
           .limit(currentLimit),
@@ -281,6 +291,15 @@ class EventService extends BaseService {
           biography
           status
           imageIds
+        `,
+      })
+      .populate({
+        path: "crossReferences.relatedBattles",
+        model: Battle,
+        select: `
+          battleId
+          name
+          shortDescription
         `,
       });
 

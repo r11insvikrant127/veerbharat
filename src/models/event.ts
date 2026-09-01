@@ -51,6 +51,13 @@ const EventSchema = new Schema(
       },
     ],
 
+    historicalPersonalityIds: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "HistoricalPersonality",
+      },
+    ],
+
     historicalPeriodId: {
       type: Schema.Types.ObjectId,
       ref: "HistoricalPeriod",
@@ -174,13 +181,6 @@ const EventSchema = new Schema(
         {
           type: Schema.Types.ObjectId,
           ref: "Hero",
-        },
-      ],
-
-      historicalPersonalityIds: [
-        {
-          type: Schema.Types.ObjectId,
-          ref: "HistoricalPersonality",
         },
       ],
 
