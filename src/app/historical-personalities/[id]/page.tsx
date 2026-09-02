@@ -27,6 +27,11 @@ interface HistoricalPersonalityImage {
   imageType: string;
 }
 
+interface HeroReference {
+  heroId: string;
+  name: string;
+}
+
 interface HistoricalPersonality {
   _id: string;
 
@@ -35,7 +40,7 @@ interface HistoricalPersonality {
   name: string;
 
   alternativeNames?: string[];
-
+  relatedHeroes?: HeroReference[];
   title?: string;
   shortDescription?: string;
 
@@ -86,6 +91,16 @@ interface HistoricalPersonality {
   tags?: string[];
 
   status?: string;
+}
+
+interface HeroReference {
+  heroId: string;
+  name: string;
+}
+
+interface HeroLinkCandidate {
+  hero: HeroReference;
+  name: string;
 }
 
 interface HistoricalPersonalityResponse {
@@ -535,7 +550,10 @@ export default function HistoricalPersonalityDetailPage({
                   </h2>
 
                   <p className="text-[#D7C9A5] leading-8 whitespace-pre-line">
-                    {personality.biography}
+                    <LinkedHistoricalText
+                      text={personality.biography}
+                      heroes={personality.relatedHeroes ?? []}
+                    />
                   </p>
                 </div>
               )}                       
@@ -681,7 +699,10 @@ export default function HistoricalPersonalityDetailPage({
                 </div>
 
                 <p className="text-[#D7C9A5] leading-8">
-                  {personality.classificationReason}
+                  <LinkedHistoricalText
+                    text={personality.classificationReason}
+                    heroes={personality.relatedHeroes ?? []}
+                  />
                 </p>
               </div>
             )}
@@ -699,7 +720,10 @@ export default function HistoricalPersonalityDetailPage({
                 </h2>
 
                 <p className="text-[#D7C9A5] leading-8">
-                  {personality.legacy}
+                  <LinkedHistoricalText
+                    text={personality.legacy}
+                    heroes={personality.relatedHeroes ?? []}
+                  />
                 </p>
               </div>
             )}
@@ -767,5 +791,125 @@ function InfoRow({
         {value}
       </span>
     </div>
+  );
+}
+
+function LinkedHistoricalText({
+  text,
+  heroes,
+}: {
+  text: string;
+  heroes: HeroReference[];
+}) {
+  if (
+    !text ||
+    !heroes ||
+    heroes.length === 0
+  ) {
+    return <>{text}</>;
+  }
+
+  const escapeRegExp = (value: string) =>
+    value.replace(
+      /[.*+?^${}()|[\]\\]/g,
+      "\\$&"
+    );
+
+  const heroCandidates: HeroLinkCandidate[] =
+    heroes
+      .filter(
+        (hero) =>
+          typeof hero?.heroId === "string" &&
+          hero.heroId.trim() !== "" &&
+          typeof hero?.name === "string" &&
+          hero.name.trim() !== ""
+      )
+      .flatMap((hero) => {
+        const fullName = hero.name.trim();
+
+        /*
+         * Same title/rank removal logic
+         * used by the Event page.
+         */
+        const personalName = fullName
+          .replace(
+            /^(Field Marshal|General|Lieutenant General|Major General|Brigadier|Colonel|Lieutenant Colonel|Major|Captain|Commander|Lieutenant|Subedar Major|Subedar|Naik|Havildar|Mahatma|Pandit|Dr\.?|Sir)\s+/i,
+            ""
+          )
+          .trim();
+
+        const candidates: HeroLinkCandidate[] = [
+          {
+            hero,
+            name: fullName,
+          },
+        ];
+
+        if (
+          personalName &&
+          personalName.toLowerCase() !==
+            fullName.toLowerCase()
+        ) {
+          candidates.push({
+            hero,
+            name: personalName,
+          });
+        }
+
+        return candidates;
+      })
+      .sort(
+        (a, b) =>
+          b.name.length - a.name.length
+      );
+
+  if (heroCandidates.length === 0) {
+    return <>{text}</>;
+  }
+
+  const pattern = heroCandidates
+    .map((candidate) =>
+      escapeRegExp(candidate.name)
+    )
+    .join("|");
+
+  const regex = new RegExp(
+    `(${pattern})`,
+    "gi"
+  );
+
+  return (
+    <>
+      {text.split(regex).map(
+        (part, index) => {
+          const candidate =
+            heroCandidates.find(
+              (item) =>
+                item.name.toLowerCase() ===
+                part.trim().toLowerCase()
+            );
+
+          if (!candidate) {
+            return (
+              <span key={index}>
+                {part}
+              </span>
+            );
+          }
+
+          return (
+            <Link
+              key={`hero-${candidate.hero.heroId}-${index}`}
+              href={`/heroes/${encodeURIComponent(
+                candidate.hero.heroId
+              )}`}
+              className="text-[#D4AF37] hover:text-[#F0D878] underline underline-offset-4 decoration-[#D4AF37]/30 hover:decoration-[#D4AF37] transition-colors"
+            >
+              {part}
+            </Link>
+          );
+        }
+      )}
+    </>
   );
 }

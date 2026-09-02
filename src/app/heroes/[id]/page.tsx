@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, Shield, Calendar } from "lucide-react";
+import {
+  ArrowLeft,
+  Shield,
+  Calendar,
+} from "lucide-react";
 
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -27,6 +31,11 @@ interface HeroImage {
   imageType: string;
 }
 
+interface HistoricalPersonalityReference {
+  historicalPersonalityId: string;
+  name: string;
+  alternativeNames?: string[];
+}
 interface Hero {
   _id: string;
   heroId: string;
@@ -52,7 +61,7 @@ interface Hero {
   shortDescription: string;
 
   historicalNarratives?: HistoricalPerspective[];
-
+  relatedHistoricalPersonalities?: HistoricalPersonalityReference[];
   historicalArtifacts?: {
     title: string;
     type: string;
@@ -512,6 +521,9 @@ export default function HeroDetailPage({
             <BiographySection
               biography={hero.biography}
               heroName={hero.name}
+              historicalPersonalities={
+                hero.relatedHistoricalPersonalities ?? []
+              }
             />
 
             <HistoricalPerspectives
@@ -626,6 +638,7 @@ export default function HeroDetailPage({
                 items={hero.achievements}
               />
             </div>
+          
 
             {/* LEGACY */}
             {hero.legacy && (
@@ -639,7 +652,12 @@ export default function HeroDetailPage({
                 </h2>
 
                 <p className="text-[#D7C9A5] leading-8">
-                  {hero.legacy}
+                  <LinkedHistoricalText
+                    text={hero.legacy}
+                    historicalPersonalities={
+                      hero.relatedHistoricalPersonalities ?? []
+                    }
+                  />
                 </p>
               </div>
             )}
@@ -743,5 +761,125 @@ function ArraySection({
         ))}
       </div>
     </div>
+  );
+}
+
+interface HistoricalPersonalityLinkCandidate {
+  person: HistoricalPersonalityReference;
+  name: string;
+}
+
+function LinkedHistoricalText({
+  text,
+  historicalPersonalities,
+}: {
+  text: string;
+  historicalPersonalities: HistoricalPersonalityReference[];
+}) {
+  if (
+    !text ||
+    !historicalPersonalities ||
+    historicalPersonalities.length === 0
+  ) {
+    return <>{text}</>;
+  }
+
+  const escapeRegExp = (value: string) =>
+    value.replace(
+      /[.*+?^${}()|[\]\\]/g,
+      "\\$&"
+    );
+
+  const candidates: HistoricalPersonalityLinkCandidate[] =
+    historicalPersonalities
+      .filter(
+        (person) =>
+          typeof person?.historicalPersonalityId === "string" &&
+          person.historicalPersonalityId.trim() !== "" &&
+          typeof person?.name === "string" &&
+          person.name.trim() !== ""
+      )
+      .flatMap((person) => {
+        const fullName = person.name.trim();
+
+        const candidates: HistoricalPersonalityLinkCandidate[] = [
+          {
+            person,
+            name: fullName,
+          },
+        ];
+
+        if (Array.isArray(person.alternativeNames)) {
+          for (const alternativeName of person.alternativeNames) {
+            const alias = alternativeName?.trim();
+
+            if (
+              alias &&
+              alias.toLowerCase() !==
+                fullName.toLowerCase()
+            ) {
+              candidates.push({
+                person,
+                name: alias,
+              });
+            }
+          }
+        }
+
+        return candidates;
+      })
+      .sort(
+        (a, b) =>
+          b.name.length - a.name.length
+      );
+
+  if (candidates.length === 0) {
+    return <>{text}</>;
+  }
+
+  const pattern = candidates
+    .map((candidate) =>
+      escapeRegExp(candidate.name)
+    )
+    .join("|");
+
+  const regex = new RegExp(
+    `(${pattern})`,
+    "gi"
+  );
+
+  return (
+    <>
+      {text.split(regex).map(
+        (part, index) => {
+          const candidate =
+            candidates.find(
+              (item) =>
+                item.name.toLowerCase() ===
+                part.trim().toLowerCase()
+            );
+
+          if (!candidate) {
+            return (
+              <span key={index}>
+                {part}
+              </span>
+            );
+          }
+
+          return (
+            <Link
+              key={`person-${candidate.person.historicalPersonalityId}-${index}`}
+              href={`/historical-personalities/${encodeURIComponent(
+                candidate.person.historicalPersonalityId
+              )}`}
+              className="text-[#D4AF37] hover:text-[#F0D878] underline underline-offset-4 decoration-[#D4AF37]/30 hover:decoration-[#D4AF37] transition-colors"
+            >
+              {part}
+            </Link>
+          );
+        }
+      )}
+    </>
   );
 }

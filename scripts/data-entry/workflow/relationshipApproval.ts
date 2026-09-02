@@ -43,13 +43,34 @@ export type RelationshipApprovalResult = {
 
   entityName: string;
 
+  kingdoms:
+    RelationshipRelationshipSelection[];
+
   sources:
+    RelationshipRelationshipSelection[];
+
+  books:
+    RelationshipRelationshipSelection[];
+
+  quotes:
     RelationshipRelationshipSelection[];
 
   places:
     RelationshipRelationshipSelection[];
 
   battles:
+    RelationshipRelationshipSelection[];
+
+  heroes:
+    RelationshipRelationshipSelection[];
+
+  historicalPersonalities:
+    RelationshipRelationshipSelection[];
+
+  historicalPeriods:
+    RelationshipRelationshipSelection[];
+
+  images:
     RelationshipRelationshipSelection[];
 
   verified: boolean;
@@ -429,6 +450,26 @@ async function approveCandidates(
 
 /*
  * ============================================================
+ * KINGDOM APPROVAL
+ * ============================================================
+ */
+
+export async function approveKingdoms(
+  candidates: RelationshipCandidate[],
+  existingIds: Map<string, string> =
+    new Map()
+): Promise<
+  RelationshipRelationshipSelection[]
+> {
+  return approveCandidates(
+    "Kingdom / Polity",
+    candidates,
+    existingIds
+  );
+}
+
+/*
+ * ============================================================
  * SOURCE APPROVAL
  * ============================================================
  */
@@ -442,6 +483,46 @@ export async function approveSources(
 > {
   return approveCandidates(
     "Source",
+    candidates,
+    existingIds
+  );
+}
+
+/*
+ * ============================================================
+ * BOOK APPROVAL
+ * ============================================================
+ */
+
+export async function approveBooks(
+  candidates: RelationshipCandidate[],
+  existingIds: Map<string, string> =
+    new Map()
+): Promise<
+  RelationshipRelationshipSelection[]
+> {
+  return approveCandidates(
+    "Book",
+    candidates,
+    existingIds
+  );
+}
+
+/*
+ * ============================================================
+ * QUOTE APPROVAL
+ * ============================================================
+ */
+
+export async function approveQuotes(
+  candidates: RelationshipCandidate[],
+  existingIds: Map<string, string> =
+    new Map()
+): Promise<
+  RelationshipRelationshipSelection[]
+> {
+  return approveCandidates(
+    "Quote",
     candidates,
     existingIds
   );
@@ -482,6 +563,86 @@ export async function approveBattles(
 > {
   return approveCandidates(
     "Battle",
+    candidates,
+    existingIds
+  );
+}
+
+/*
+ * ============================================================
+ * HERO APPROVAL
+ * ============================================================
+ */
+
+export async function approveHeroes(
+  candidates: RelationshipCandidate[],
+  existingIds: Map<string, string> =
+    new Map()
+): Promise<
+  RelationshipRelationshipSelection[]
+> {
+  return approveCandidates(
+    "Hero",
+    candidates,
+    existingIds
+  );
+}
+
+/*
+ * ============================================================
+ * HISTORICAL PERSONALITY APPROVAL
+ * ============================================================
+ */
+
+export async function approveHistoricalPersonalities(
+  candidates: RelationshipCandidate[],
+  existingIds: Map<string, string> =
+    new Map()
+): Promise<
+  RelationshipRelationshipSelection[]
+> {
+  return approveCandidates(
+    "Historical Personality",
+    candidates,
+    existingIds
+  );
+}
+
+/*
+ * ============================================================
+ * HISTORICAL PERIOD APPROVAL
+ * ============================================================
+ */
+
+export async function approveHistoricalPeriods(
+  candidates: RelationshipCandidate[],
+  existingIds: Map<string, string> =
+    new Map()
+): Promise<
+  RelationshipRelationshipSelection[]
+> {
+  return approveCandidates(
+    "Historical Period",
+    candidates,
+    existingIds
+  );
+}
+
+/*
+ * ============================================================
+ * IMAGE APPROVAL
+ * ============================================================
+ */
+
+export async function approveImages(
+  candidates: RelationshipCandidate[],
+  existingIds: Map<string, string> =
+    new Map()
+): Promise<
+  RelationshipRelationshipSelection[]
+> {
+  return approveCandidates(
+    "Image",
     candidates,
     existingIds
   );
@@ -592,8 +753,23 @@ function printReview(
   );
 
   printSelections(
+    "KINGDOMS / POLITIES",
+    result.kingdoms
+  );
+
+  printSelections(
     "SOURCES",
     result.sources
+  );
+
+  printSelections(
+    "BOOKS",
+    result.books
+  );
+
+  printSelections(
+    "QUOTES",
+    result.quotes
   );
 
   printSelections(
@@ -604,6 +780,26 @@ function printReview(
   printSelections(
     "BATTLES",
     result.battles
+  );
+
+  printSelections(
+    "HEROES",
+    result.heroes
+  );
+
+  printSelections(
+    "HISTORICAL PERSONALITIES",
+    result.historicalPersonalities
+  );
+
+  printSelections(
+    "HISTORICAL PERIODS",
+    result.historicalPeriods
+  );
+
+  printSelections(
+    "IMAGES",
+    result.images
   );
 }
 
@@ -619,17 +815,45 @@ export async function runRelationshipApproval(
 
     entityName: string;
 
+    kingdoms?: RelationshipCandidate[];
+
     sources?: RelationshipCandidate[];
+
+    books?: RelationshipCandidate[];
+
+    quotes?: RelationshipCandidate[];
 
     places?: RelationshipCandidate[];
 
     battles?: RelationshipCandidate[];
 
+    heroes?: RelationshipCandidate[];
+
+    historicalPersonalities?: RelationshipCandidate[];
+
+    historicalPeriods?: RelationshipCandidate[];
+
+    images?: RelationshipCandidate[];
+
+    existingKingdomIds?: Map<string, string>;
+
     existingSourceIds?: Map<string, string>;
+
+    existingBookIds?: Map<string, string>;
+
+    existingQuoteIds?: Map<string, string>;
 
     existingPlaceIds?: Map<string, string>;
 
     existingBattleIds?: Map<string, string>;
+
+    existingHeroIds?: Map<string, string>;
+
+    existingHistoricalPersonalityIds?: Map<string, string>;
+
+    existingHistoricalPeriodIds?: Map<string, string>;
+
+    existingImageIds?: Map<string, string>;
   }
 ): Promise<RelationshipApprovalResult> {
   console.log("");
@@ -657,6 +881,19 @@ export async function runRelationshipApproval(
 
   /*
    * ----------------------------------------------------------
+   * KINGDOM / POLITY
+   * ----------------------------------------------------------
+   */
+
+  const kingdoms =
+    await approveKingdoms(
+      input.kingdoms ?? [],
+      input.existingKingdomIds ??
+        new Map()
+    );
+
+  /*
+   * ----------------------------------------------------------
    * SOURCE
    * ----------------------------------------------------------
    */
@@ -665,6 +902,32 @@ export async function runRelationshipApproval(
     await approveSources(
       input.sources ?? [],
       input.existingSourceIds ??
+        new Map()
+    );
+
+  /*
+   * ----------------------------------------------------------
+   * BOOK
+   * ----------------------------------------------------------
+   */
+
+  const books =
+    await approveBooks(
+      input.books ?? [],
+      input.existingBookIds ??
+        new Map()
+    );
+
+  /*
+   * ----------------------------------------------------------
+   * QUOTE
+   * ----------------------------------------------------------
+   */
+
+  const quotes =
+    await approveQuotes(
+      input.quotes ?? [],
+      input.existingQuoteIds ??
         new Map()
     );
 
@@ -694,6 +957,64 @@ export async function runRelationshipApproval(
         new Map()
     );
 
+  /*
+   * ----------------------------------------------------------
+   * HERO
+   * ----------------------------------------------------------
+   */
+
+  const heroes =
+    await approveHeroes(
+      input.heroes ?? [],
+      input.existingHeroIds ??
+        new Map()
+    );
+
+  /*
+   * ----------------------------------------------------------
+   * HISTORICAL PERSONALITY
+   * ----------------------------------------------------------
+   */
+
+  const historicalPersonalities =
+    await approveHistoricalPersonalities(
+      input.historicalPersonalities ?? [],
+      input.existingHistoricalPersonalityIds ??
+        new Map()
+    );
+
+  /*
+   * ----------------------------------------------------------
+   * HISTORICAL PERIOD
+   * ----------------------------------------------------------
+   */
+
+  const historicalPeriods =
+    await approveHistoricalPeriods(
+      input.historicalPeriods ?? [],
+      input.existingHistoricalPeriodIds ??
+        new Map()
+    );
+
+  /*
+   * ----------------------------------------------------------
+   * IMAGE
+   * ----------------------------------------------------------
+   */
+
+  const images =
+    await approveImages(
+      input.images ?? [],
+      input.existingImageIds ??
+        new Map()
+    );
+
+  /*
+   * ----------------------------------------------------------
+   * BUILD RESULT
+   * ----------------------------------------------------------
+   */
+
   const result:
     RelationshipApprovalResult =
     {
@@ -703,11 +1024,25 @@ export async function runRelationshipApproval(
       entityName:
         input.entityName,
 
+      kingdoms,
+
       sources,
+
+      books,
+
+      quotes,
 
       places,
 
       battles,
+
+      heroes,
+
+      historicalPersonalities,
+
+      historicalPeriods,
+
+      images,
 
       verified:
         false,

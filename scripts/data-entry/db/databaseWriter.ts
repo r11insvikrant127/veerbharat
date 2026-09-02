@@ -1,35 +1,23 @@
-// scripts/data-entry/db/databaseWriter.ts
+﻿// scripts/data-entry/db/databaseWriter.ts
 
+import dotenv from "dotenv";
 import mongoose from "mongoose";
 
-import { getIdConfig, type IdConfig } from "../config/idConfig";
-import { generateNextId } from "../../../src/services/idGenerator.service";
+import {
+  generateNextId,
+} from "../../../src/services/idGenerator.service";
+
+import {
+  ID_PREFIXES,
+} from "../../../src/constants";
+
+dotenv.config({
+  path: ".env.local",
+});
 
 /*
  * ============================================================
- * VEERBHARAT DATABASE WRITER
- * ============================================================
- *
- * IMPORTANT:
- *
- * This file performs the FINAL database write.
- *
- * It assumes that:
- *
- *  1. The workflow has identified the entity
- *  2. Research has produced the relevant evidence
- *  3. Dates and other relationships have been reviewed
- *  4. The operator has approved the proposed data
- *  5. finalReview.ts has approved everything
- *
- * The final approved data is the ONLY data this writer should
- * receive.
- *
- * This file does NOT perform research.
- * This file does NOT decide whether information is correct.
- *
- * It only writes already-verified information.
- *
+ * TYPES
  * ============================================================
  */
 
@@ -40,12 +28,32 @@ export type WriterEntityType =
 
 export type WriterImage = {
   cloudinaryUrl: string;
+
   altText?: string | null;
+
   caption?: string | null;
+
+  relatedSection?: string | null;
+
+  imageType?:
+    | "Painting"
+    | "Portrait"
+    | "Photograph"
+    | "Statue"
+    | "Map"
+    | "Coin"
+    | "Weapon"
+    | "Inscription"
+    | "Fort"
+    | "Manuscript"
+    | "Stamp";
+
+  description?: string | null;
 };
 
 export type DatabaseWriterInput = {
   entityType: WriterEntityType;
+
   entityName: string;
 
   /*
@@ -56,13 +64,43 @@ export type DatabaseWriterInput = {
 
   eventDate?: string | null;
 
+  eventDateAccuracy?: string | null;
+
   birthDate?: string | null;
+
   birthDateAccuracy?: string | null;
 
   deathDate?: string | null;
+
   deathDateAccuracy?: string | null;
 
   onThisDay?: boolean;
+
+  /*
+   * ----------------------------------------------------------
+   * ENTITY CONTENT
+   * ----------------------------------------------------------
+   */
+
+  nativeName?: string | null;
+
+  alternativeNames?: string[];
+
+  title?: string | null;
+
+  gender?: string | null;
+
+  biography?: string | null;
+
+  description?: string | null;
+
+  shortDescription?: string | null;
+
+  eventType?: string | null;
+
+  significance?: string | null;
+
+  details?: string | null;
 
   /*
    * ----------------------------------------------------------
@@ -71,13 +109,36 @@ export type DatabaseWriterInput = {
    */
 
   useExistingSource: boolean;
+
   existingSourceId?: string | null;
 
   createNewSource: boolean;
 
   sourceTitle?: string | null;
+
+  sourceType?:
+    | "Book"
+    | "Research Paper"
+    | "Government Record"
+    | "ASI"
+    | "Museum"
+    | "Archive"
+    | "Inscription"
+    | "Travel Account"
+    | "Chronicle"
+    | "Manuscript"
+    | null;
+
   sourceAuthor?: string | null;
-  sourceYear?: number | null;
+
+  sourceLanguage?: string | null;
+
+  sourceYear?: number | string | null;
+
+  sourcePublisher?: string | null;
+
+  sourceDescription?: string | null;
+
   sourceUrl?: string | null;
 
   /*
@@ -87,22 +148,56 @@ export type DatabaseWriterInput = {
    */
 
   useExistingKingdom: boolean;
+
   existingKingdomId?: string | null;
 
   createNewKingdom: boolean;
 
   newKingdomName?: string | null;
+
   newKingdomNativeName?: string | null;
+
   newKingdomAlternativeNames?: string[];
+
+  newKingdomDescription?: string | null;
 
   /*
    * ----------------------------------------------------------
-   * RELATED CONTENT
+   * RELATIONSHIPS
+   *
+   * These are PUBLIC IDs such as:
+   *
+   * KNG0003
+   * SRC0001
+   * BOOK0001
+   * QUOTE0001
+   * PLC0001
+   * BAT0001
+   * HERO0058
+   * PER0001
+   * IMG0004
+   *
+   * The writer resolves them to MongoDB ObjectIds.
    * ----------------------------------------------------------
    */
 
+  selectedKingdomIds?: string[];
+
+  selectedSourceIds?: string[];
+
   selectedBookIds?: string[];
+
   selectedQuoteIds?: string[];
+
+  selectedPlaceIds?: string[];
+
+  selectedBattleIds?: string[];
+
+  selectedHeroIds?: string[];
+
+  selectedHistoricalPersonalityIds?: string[];
+
+  selectedHistoricalPeriodIds?: string[];
 
   /*
    * ----------------------------------------------------------
@@ -113,17 +208,35 @@ export type DatabaseWriterInput = {
   selectedExistingImageIds?: string[];
 
   newImages?: WriterImage[];
+
+  /*
+   * ----------------------------------------------------------
+   * METADATA
+   * ----------------------------------------------------------
+   */
+
+  createdBy?: string | null;
+
+  verifiedBy?: string | null;
+
+  status?:
+    | "Draft"
+    | "Verified"
+    | "Published"
+    | "Needs Review";
 };
 
 export type DatabaseWriterResult = {
   success: boolean;
 
   entityType: WriterEntityType;
+
   entityName: string;
 
   entityId: string | null;
 
   createdSourceId: string | null;
+
   createdKingdomId: string | null;
 
   createdImageIds: string[];
@@ -131,17 +244,34 @@ export type DatabaseWriterResult = {
   linkedExistingImageIds: string[];
 
   selectedBookIds: string[];
+
   selectedQuoteIds: string[];
+
+  resolvedRelationshipIds: {
+    kingdoms: string[];
+    sources: string[];
+    books: string[];
+    quotes: string[];
+    places: string[];
+    battles: string[];
+    heroes: string[];
+    historicalPersonalities: string[];
+    historicalPeriods: string[];
+    images: string[];
+  };
 };
 
 /*
  * ============================================================
- * HELPERS
+ * DATABASE
  * ============================================================
  */
 
-function getDatabase() {
-  const db = mongoose.connection.db;
+async function getDatabase() {
+  await connectDatabase();
+
+  const db =
+    mongoose.connection.db;
 
   if (!db) {
     throw new Error(
@@ -152,7 +282,25 @@ function getDatabase() {
   return db;
 }
 
-function normalize(value?: string | null): string | null {
+async function connectDatabase(): Promise<void> {
+  const {
+    connectDB,
+  } = await import(
+    "../../../src/lib/mongoose"
+  );
+
+  await connectDB();
+}
+
+/*
+ * ============================================================
+ * NORMALIZATION
+ * ============================================================
+ */
+
+function normalize(
+  value?: string | null
+): string | null {
   if (
     value === undefined ||
     value === null
@@ -160,7 +308,8 @@ function normalize(value?: string | null): string | null {
     return null;
   }
 
-  const trimmed = value.trim();
+  const trimmed =
+    value.trim();
 
   return trimmed === ""
     ? null
@@ -174,9 +323,42 @@ function normalizeArray(
     return [];
   }
 
-  return values
-    .map((value) => value.trim())
-    .filter(Boolean);
+  return Array.from(
+    new Set(
+      values
+        .map(
+          (value) =>
+            value.trim()
+        )
+        .filter(Boolean)
+    )
+  );
+}
+
+function toDate(
+  value?: string | null
+): Date | null {
+  const normalized =
+    normalize(value);
+
+  if (!normalized) {
+    return null;
+  }
+
+  const date =
+    new Date(normalized);
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    throw new Error(
+      `Invalid date: ${normalized}`
+    );
+  }
+
+  return date;
 }
 
 /*
@@ -188,7 +370,9 @@ function normalizeArray(
 function validateInput(
   input: DatabaseWriterInput
 ): void {
-  if (!input.entityName.trim()) {
+  if (
+    !input.entityName.trim()
+  ) {
     throw new Error(
       "Entity name cannot be empty."
     );
@@ -209,7 +393,9 @@ function validateInput(
 
   if (
     input.useExistingSource &&
-    !normalize(input.existingSourceId)
+    !normalize(
+      input.existingSourceId
+    )
   ) {
     throw new Error(
       "Existing source selected but source ID is missing."
@@ -218,10 +404,32 @@ function validateInput(
 
   if (
     input.createNewSource &&
-    !normalize(input.sourceTitle)
+    !normalize(
+      input.sourceTitle
+    )
   ) {
     throw new Error(
       "New source selected but source title is missing."
+    );
+  }
+
+  if (
+    input.createNewSource &&
+    !input.sourceType
+  ) {
+    throw new Error(
+      "New source selected but source type is missing."
+    );
+  }
+
+  if (
+    input.createNewSource &&
+    !normalize(
+      input.sourceDescription
+    )
+  ) {
+    throw new Error(
+      "New source selected but source description is missing."
     );
   }
 
@@ -240,7 +448,9 @@ function validateInput(
 
   if (
     input.useExistingKingdom &&
-    !normalize(input.existingKingdomId)
+    !normalize(
+      input.existingKingdomId
+    )
   ) {
     throw new Error(
       "Existing kingdom selected but kingdom ID is missing."
@@ -249,34 +459,40 @@ function validateInput(
 
   if (
     input.createNewKingdom &&
-    !normalize(input.newKingdomName)
+    !normalize(
+      input.newKingdomName
+    )
   ) {
     throw new Error(
       "New kingdom selected but kingdom name is missing."
     );
   }
 
+  if (
+    input.createNewKingdom &&
+    !normalize(
+      input.newKingdomDescription
+    )
+  ) {
+    throw new Error(
+      "New kingdom selected but kingdom description is missing."
+    );
+  }
+
   /*
    * IMAGE RULE
-   *
-   * Hero:
-   * exactly one maximum.
-   *
-   * Historical Personality:
-   * exactly one maximum.
-   *
-   * Event:
-   * multiple allowed.
    */
 
   const existingImageCount =
-    input.selectedExistingImageIds?.length ?? 0;
+    input.selectedExistingImageIds
+      ?.length ?? 0;
 
   const newImageCount =
     input.newImages?.length ?? 0;
 
   const totalImageCount =
-    existingImageCount + newImageCount;
+    existingImageCount +
+    newImageCount;
 
   if (
     input.entityType !== "event" &&
@@ -286,6 +502,150 @@ function validateInput(
       "Hero and Historical Personality entities can have only one image."
     );
   }
+
+  /*
+   * HISTORICAL PERSONALITY
+   */
+
+  if (
+    input.entityType ===
+      "historicalPersonality" &&
+    !normalize(
+      input.biography
+    )
+  ) {
+    /*
+     * biography is optional in the current
+     * Mongoose interface, so this is intentionally
+     * NOT a hard failure.
+     */
+  }
+}
+
+/*
+ * ============================================================
+ * GENERIC ID RESOLUTION
+ * ============================================================
+ *
+ * Public IDs are strings.
+ *
+ * Relationship fields in MongoDB are ObjectIds.
+ *
+ * Example:
+ *
+ * HERO0058
+ *    â†“
+ * heroes.heroId
+ *    â†“
+ * MongoDB _id
+ *
+ * ============================================================
+ */
+
+type CollectionName =
+  | "kingdoms"
+  | "sources"
+  | "books"
+  | "quotes"
+  | "places"
+  | "battles"
+  | "heroes"
+  | "historicalPersonalities"
+  | "historicalPeriods"
+  | "images";
+
+type PublicIdField =
+  | "kingdomId"
+  | "sourceId"
+  | "bookId"
+  | "quoteId"
+  | "placeId"
+  | "battleId"
+  | "heroId"
+  | "historicalPersonalityId"
+  | "periodId"
+  | "imageId";
+
+async function resolvePublicId(
+  collection: CollectionName,
+  publicIdField: PublicIdField,
+  publicId: string
+): Promise<mongoose.Types.ObjectId> {
+  const db =
+    await getDatabase();
+
+  const normalized =
+    normalize(publicId);
+
+  if (!normalized) {
+    throw new Error(
+      `Cannot resolve empty ID for ${collection}.`
+    );
+  }
+
+  /*
+   * If an ObjectId was accidentally supplied,
+   * do not silently accept it.
+   *
+   * The data-entry system uses public IDs.
+   */
+
+  const document =
+    await db
+      .collection(collection)
+      .findOne({
+        [publicIdField]:
+          normalized,
+      });
+
+  if (!document) {
+    throw new Error(
+      `Relationship ID "${normalized}" was not found in ${collection}.${publicIdField}.`
+    );
+  }
+
+  if (
+    !document._id ||
+    !(
+      document._id instanceof
+      mongoose.Types.ObjectId
+    )
+  ) {
+    throw new Error(
+      `Relationship "${normalized}" in ${collection} does not have a valid MongoDB ObjectId.`
+    );
+  }
+
+  return document._id;
+}
+
+async function resolvePublicIds(
+  collection: CollectionName,
+  publicIdField: PublicIdField,
+  publicIds?: string[]
+): Promise<mongoose.Types.ObjectId[]> {
+  const ids =
+    normalizeArray(
+      publicIds
+    );
+
+  const resolved:
+    mongoose.Types.ObjectId[] =
+    [];
+
+  for (
+    const id of ids
+  ) {
+    resolved.push(
+      await resolvePublicId(
+        collection,
+        publicIdField,
+        id
+      )
+    );
+  }
+
+  return resolved;
 }
 
 /*
@@ -297,33 +657,106 @@ function validateInput(
 async function createSource(
   input: DatabaseWriterInput
 ): Promise<string> {
-  const db = getDatabase();
+  const db =
+    await getDatabase();
 
   const sourceId =
-    await generateNextId("SRC");
+    await generateNextId(
+      ID_PREFIXES.SRC
+    );
 
   const sourceDocument = {
     sourceId,
 
     title:
-      normalize(input.sourceTitle) ?? "",
+      normalize(
+        input.sourceTitle
+      ) ?? "",
+
+    type:
+      input.sourceType,
 
     author:
-      normalize(input.sourceAuthor),
+      normalize(
+        input.sourceAuthor
+      ),
+
+    language:
+      normalize(
+        input.sourceLanguage
+      ),
 
     year:
-      input.sourceYear ?? null,
+      input.sourceYear !==
+      undefined
+        ? String(
+            input.sourceYear
+          )
+        : undefined,
+
+    publisher:
+      normalize(
+        input.sourcePublisher
+      ),
+
+    description:
+      normalize(
+        input.sourceDescription
+      ) ?? "",
 
     url:
-      normalize(input.sourceUrl),
+      normalize(
+        input.sourceUrl
+      ),
 
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    tags: [],
+
+    crossReferences: {
+      relatedHeroes: [],
+      relatedBooks: [],
+      relatedBattles: [],
+      relatedKingdoms: [],
+      relatedPlaces: [],
+      relatedImages: [],
+    },
+
+    searchFields: {
+      keywords: [],
+      nativeSpellings: [],
+      alternateSpellings: [],
+      aliases: [],
+    },
+
+    metadata: {
+      createdBy:
+        normalize(
+          input.createdBy
+        ) ?? "",
+
+      verifiedBy:
+        normalize(
+          input.verifiedBy
+        ) ?? "",
+
+      version: 1,
+    },
+
+    status:
+      input.status ??
+      "Draft",
+
+    createdAt:
+      new Date(),
+
+    updatedAt:
+      new Date(),
   };
 
   await db
     .collection("sources")
-    .insertOne(sourceDocument);
+    .insertOne(
+      sourceDocument
+    );
 
   return sourceId;
 }
@@ -337,34 +770,143 @@ async function createSource(
 async function createKingdom(
   input: DatabaseWriterInput
 ): Promise<string> {
-  const db = getDatabase();
+  const db =
+    await getDatabase();
 
   const kingdomId =
-    await generateNextId("KNG");
-
-  const alternativeNames =
-    normalizeArray(
-      input.newKingdomAlternativeNames
+    await generateNextId(
+      ID_PREFIXES.KNG
     );
 
   const kingdomDocument = {
     kingdomId,
 
     name:
-      normalize(input.newKingdomName) ?? "",
+      normalize(
+        input.newKingdomName
+      ) ?? "",
 
     nativeName:
-      normalize(input.newKingdomNativeName),
+      normalize(
+        input.newKingdomNativeName
+      ) ?? "",
 
-    alternativeNames,
+    alternativeNames:
+      normalizeArray(
+        input.newKingdomAlternativeNames
+      ),
 
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    establishedDate:
+      null,
+
+    establishedDateAccuracy:
+      "Unknown",
+
+    dissolvedDate:
+      null,
+
+    dissolvedDateAccuracy:
+      "Unknown",
+
+    capitalId:
+      null,
+
+    dynastyId:
+      null,
+
+    founderId:
+      null,
+
+    lastRulerId:
+      null,
+
+    area:
+      "",
+
+    flagImageId:
+      null,
+
+    emblemImageId:
+      null,
+
+    governmentType:
+      "",
+
+    currencies: [],
+
+    officialLanguages: [],
+
+    officialReligions: [],
+
+    nationalAnimal:
+      "",
+
+    nationalSymbols: [],
+
+    majorCities: [],
+
+    majorForts: [],
+
+    historicalPeriodId:
+      null,
+
+    description:
+      normalize(
+        input.newKingdomDescription
+      ) ?? "",
+
+    significance:
+      "",
+
+    imageIds: [],
+
+    sourceIds: [],
+
+    tags: [],
+
+    crossReferences: {
+      relatedHeroes: [],
+      relatedBattles: [],
+      relatedPlaces: [],
+      relatedBooks: [],
+    },
+
+    searchFields: {
+      keywords: [],
+      nativeSpellings: [],
+      alternateSpellings: [],
+    },
+
+    metadata: {
+      createdBy:
+        normalize(
+          input.createdBy
+        ) ?? "",
+
+      verifiedBy:
+        normalize(
+          input.verifiedBy
+        ) ?? "",
+
+      version: 1,
+    },
+
+    status:
+      input.status ??
+      "Draft",
+
+    createdAt:
+      new Date(),
+
+    updatedAt:
+      new Date(),
   };
 
   await db
     .collection("kingdoms")
-    .insertOne(kingdomDocument);
+    .insertOne(
+      kingdomDocument
+    );
 
   return kingdomId;
 }
@@ -376,18 +918,35 @@ async function createKingdom(
  */
 
 async function createImages(
-  input: DatabaseWriterInput
+  input: DatabaseWriterInput,
+  sourceObjectId:
+    | mongoose.Types.ObjectId
+    | null
 ): Promise<string[]> {
-  const db = getDatabase();
+  const db =
+    await getDatabase();
 
   const images =
-    input.newImages ?? [];
+    input.newImages ??
+    [];
 
-  const createdImageIds: string[] = [];
+  const createdImageIds:
+    string[] =
+    [];
 
-  for (const image of images) {
+  for (
+    const image of images
+  ) {
     const imageId =
-      await generateNextId("IMG");
+      await generateNextId(
+        ID_PREFIXES.IMG
+      );
+
+    const altText =
+      normalize(
+        image.altText
+      ) ??
+      input.entityName;
 
     const imageDocument = {
       imageId,
@@ -398,27 +957,75 @@ async function createImages(
       url:
         image.cloudinaryUrl,
 
-      altText:
-        normalize(image.altText),
-
-      caption:
-        normalize(image.caption),
+      altText,
 
       imageType:
+        image.imageType ??
         "Portrait",
 
       description:
+        normalize(
+          image.description
+        ) ??
         `Image associated with ${input.entityName}.`,
 
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      relatedSection:
+        normalize(
+          image.relatedSection
+        ),
+
+      sourceId:
+        sourceObjectId,
+
+      tags: [],
+
+      crossReferences: {
+        relatedHeroes: [],
+        relatedPlaces: [],
+        relatedBattles: [],
+      },
+
+      searchFields: {
+        keywords: [],
+        nativeSpellings: [],
+        alternateSpellings: [],
+        aliases: [],
+      },
+
+      metadata: {
+        createdBy:
+          normalize(
+            input.createdBy
+          ) ?? "",
+
+        verifiedBy:
+          normalize(
+            input.verifiedBy
+          ) ?? "",
+
+        version: 1,
+      },
+
+      status:
+        input.status ??
+        "Draft",
+
+      createdAt:
+        new Date(),
+
+      updatedAt:
+        new Date(),
     };
 
     await db
       .collection("images")
-      .insertOne(imageDocument);
+      .insertOne(
+        imageDocument
+      );
 
-    createdImageIds.push(imageId);
+    createdImageIds.push(
+      imageId
+    );
   }
 
   return createdImageIds;
@@ -426,173 +1033,696 @@ async function createImages(
 
 /*
  * ============================================================
- * FIND ENTITY
+ * ENTITY DUPLICATE CHECK
  * ============================================================
  */
 
 async function findExistingEntity(
   input: DatabaseWriterInput
 ) {
-  const db = getDatabase();
+  const db =
+    await getDatabase();
 
-  const config: IdConfig =
-    getIdConfig(
-      input.entityType
-    );
+  let collection:
+    | "events"
+    | "heroes"
+    | "historicalPersonalities";
+
+  switch (
+    input.entityType
+  ) {
+    case "event":
+      collection =
+        "events";
+      break;
+
+    case "hero":
+      collection =
+        "heroes";
+      break;
+
+    case "historicalPersonality":
+      collection =
+        "historicalPersonalities";
+      break;
+
+    default:
+      throw new Error(
+        `Unsupported entity type: ${input.entityType}`
+      );
+  }
 
   return db
-    .collection(config.collection)
+    .collection(collection)
     .findOne({
-      name: input.entityName,
+      name:
+        new RegExp(
+          `^${escapeRegex(
+            input.entityName
+          )}$`,
+          "i"
+        ),
     });
+}
+
+function escapeRegex(
+  value: string
+): string {
+  return value.replace(
+    /[.*+?^${}()|[\]\\]/g,
+    "\\$&"
+  );
 }
 
 /*
  * ============================================================
- * BUILD ENTITY DOCUMENT
+ * ENTITY ID
  * ============================================================
  */
 
-function buildEntityDocument(
+async function generateEntityId(
+  entityType: WriterEntityType
+): Promise<string> {
+  switch (
+    entityType
+  ) {
+    case "hero":
+      return generateNextId(
+        ID_PREFIXES.HERO
+      );
+
+    case "event":
+      return generateNextId(
+        ID_PREFIXES.EVT
+      );
+
+    case "historicalPersonality": {
+      const db =
+        await getDatabase();
+
+      const latest =
+        await db
+          .collection(
+            "historicalPersonalities"
+          )
+          .findOne(
+            {},
+            {
+              sort: {
+                historicalPersonalityId:
+                  -1,
+              },
+
+              projection: {
+                historicalPersonalityId:
+                  1,
+              },
+            }
+          );
+
+      let nextNumber =
+        1;
+
+      if (
+        latest &&
+        typeof
+          latest.historicalPersonalityId ===
+          "string"
+      ) {
+        const match =
+          latest
+            .historicalPersonalityId
+            .match(
+              /^HP(\d+)$/
+            );
+
+        if (match) {
+          const currentNumber =
+            Number(
+              match[1]
+            );
+
+          if (
+            Number.isSafeInteger(
+              currentNumber
+            )
+          ) {
+            nextNumber =
+              currentNumber +
+              1;
+          }
+        }
+      }
+
+      return `HP${String(
+        nextNumber
+      ).padStart(
+        4,
+        "0"
+      )}`;
+    }
+
+    default:
+      throw new Error(
+        `Unsupported entity type: ${entityType}`
+      );
+  }
+}
+
+/*
+ * ============================================================
+ * BUILD HERO DOCUMENT
+ * ============================================================
+ */
+
+function buildHeroDocument(
   input: DatabaseWriterInput,
   entityId: string,
-  sourceId: string | null,
-  kingdomId: string | null,
-  imageIds: string[]
+  kingdomObjectId:
+    | mongoose.Types.ObjectId
+    | null,
+  sourceObjectIds:
+    mongoose.Types.ObjectId[],
+  quoteObjectIds:
+    mongoose.Types.ObjectId[],
+  bookObjectIds:
+    mongoose.Types.ObjectId[],
+  imageObjectIds:
+    mongoose.Types.ObjectId[],
+  historicalPeriodObjectId:
+    | mongoose.Types.ObjectId
+    | null,
+  heroObjectIds:
+    mongoose.Types.ObjectId[],
+  battleObjectIds:
+    mongoose.Types.ObjectId[],
+  placeObjectIds:
+    mongoose.Types.ObjectId[]
 ) {
-  const books =
-    normalizeArray(
-      input.selectedBookIds
-    );
+  return {
+    heroId:
+      entityId,
 
-  const quotes =
-    normalizeArray(
-      input.selectedQuoteIds
-    );
+    name:
+      input.entityName,
 
+    nativeName:
+      normalize(
+        input.nativeName
+      ) ?? "",
+
+    alternativeNames:
+      normalizeArray(
+        input.alternativeNames
+      ),
+
+    title:
+      normalize(
+        input.title
+      ) ?? "",
+
+    gender:
+      input.gender ??
+      "Other",
+
+    birthDate:
+      toDate(
+        input.birthDate
+      ),
+
+    birthDateAccuracy:
+      normalize(
+        input.birthDateAccuracy
+      ) ??
+      "Unknown",
+
+    deathDate:
+      toDate(
+        input.deathDate
+      ),
+
+    deathDateAccuracy:
+      normalize(
+        input.deathDateAccuracy
+      ) ??
+      "Unknown",
+
+    birthPlaceId:
+      placeObjectIds[0] ??
+      null,
+
+    deathPlaceId:
+      placeObjectIds[1] ??
+      null,
+
+    causeOfDeath:
+      "",
+
+    nickname:
+      "",
+
+    personalityTraits:
+      [],
+
+    legacy:
+      "",
+
+    historicalNarratives:
+      [],
+
+    biography:
+      normalize(
+        input.biography
+      ) ?? "",
+
+    shortDescription:
+      normalize(
+        input.shortDescription
+      ) ?? "",
+
+    knownFor:
+      [],
+
+    occupation:
+      [],
+
+    roles:
+      [],
+
+    languagesKnown:
+      [],
+
+    education:
+      [],
+
+    religion:
+      "",
+
+    coronationDate:
+      null,
+
+    predecessorId:
+      null,
+
+    successorId:
+      null,
+
+    officialSeal:
+      "",
+
+    coins:
+      [],
+
+    administrativeReforms:
+      [],
+
+    economicReforms:
+      [],
+
+    fatherId:
+      null,
+
+    motherId:
+      null,
+
+    brothers:
+      [],
+
+    sisters:
+      [],
+
+    spouseIds:
+      [],
+
+    childrenIds:
+      [],
+
+    dynastyId:
+      null,
+
+    clan:
+      "",
+
+    primaryWeaponIds:
+      [],
+
+    preferredWeapons:
+      [],
+
+    warAnimalId:
+      null,
+
+    armySize:
+      null,
+
+    commanderOf:
+      [],
+
+    warStrategyIds:
+      [],
+
+    militaryTactics:
+      [],
+
+    notableFeats:
+      [],
+
+    rank:
+      "",
+
+    kingdomId:
+      kingdomObjectId,
+
+    capitalId:
+      null,
+
+    reignPeriod:
+      "",
+
+    territoryControlled:
+      [],
+
+    territoriesLost:
+      [],
+
+    territoriesRecaptured:
+      [],
+
+    historicalPeriodId:
+      historicalPeriodObjectId,
+
+    relatedHeroes:
+      heroObjectIds,
+
+    relatedBattles:
+      battleObjectIds,
+
+    relatedPlaces:
+      placeObjectIds,
+
+    relatedBooks:
+      bookObjectIds,
+
+    relatedSources:
+      sourceObjectIds,
+
+    relatedImages:
+      imageObjectIds,
+
+    historicalArtifacts:
+      [],
+
+    achievements:
+      [],
+
+    quoteIds:
+      quoteObjectIds,
+
+    imageIds:
+      imageObjectIds,
+
+    museumId:
+      null,
+
+    exhibitionIds:
+      [],
+
+    memorialId:
+      null,
+
+    bookIds:
+      bookObjectIds,
+
+    sourceIds:
+      sourceObjectIds,
+
+    tags:
+      [],
+
+    searchFields: {
+      keywords: [],
+      nativeSpellings: [],
+      alternateSpellings: [],
+      aliases: [],
+    },
+
+    metadata: {
+      createdBy:
+        normalize(
+          input.createdBy
+        ) ?? "",
+
+      verifiedBy:
+        normalize(
+          input.verifiedBy
+        ) ?? "",
+
+      version: 1,
+    },
+
+    status:
+      input.status ??
+      "Draft",
+
+    createdAt:
+      new Date(),
+
+    updatedAt:
+      new Date(),
+  };
+}
+
+/*
+ * ============================================================
+ * BUILD HISTORICAL PERSONALITY DOCUMENT
+ * ============================================================
+ */
+
+function buildHistoricalPersonalityDocument(
+  input: DatabaseWriterInput,
+  entityId: string,
+  imageObjectIds:
+    mongoose.Types.ObjectId[]
+) {
   /*
-   * ----------------------------------------------------------
-   * HERO
-   * ----------------------------------------------------------
-   */
-
-  if (
-    input.entityType === "hero"
-  ) {
-    return {
-      heroId: entityId,
-
-      name: input.entityName,
-
-      birthDate:
-        normalize(input.birthDate),
-
-      birthDateAccuracy:
-        normalize(
-          input.birthDateAccuracy
-        ),
-
-      deathDate:
-        normalize(input.deathDate),
-
-      deathDateAccuracy:
-        normalize(
-          input.deathDateAccuracy
-        ),
-
-      kingdomId,
-
-      sourceIds:
-        sourceId
-          ? [sourceId]
-          : [],
-
-      quoteIds: quotes,
-
-      imageIds,
-
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-  }
-
-  /*
-   * ----------------------------------------------------------
-   * HISTORICAL PERSONALITY
-   * ----------------------------------------------------------
-   */
-
-  if (
-    input.entityType ===
-    "historicalPersonality"
-  ) {
-    return {
-      personalityId: entityId,
-
-      name: input.entityName,
-
-      birthDate:
-        normalize(input.birthDate),
-
-      birthDateAccuracy:
-        normalize(
-          input.birthDateAccuracy
-        ),
-
-      deathDate:
-        normalize(input.deathDate),
-
-      deathDateAccuracy:
-        normalize(
-          input.deathDateAccuracy
-        ),
-
-      kingdomId,
-
-      sourceIds:
-        sourceId
-          ? [sourceId]
-          : [],
-
-      imageIds,
-
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-  }
-
-  /*
-   * ----------------------------------------------------------
-   * EVENT
-   * ----------------------------------------------------------
+   * Current HistoricalPersonality schema only
+   * supports the fields below.
+   *
+   * Do NOT add kingdom/source/book/etc.
+   * until the schema itself supports them.
    */
 
   return {
-    eventId: entityId,
+    historicalPersonalityId:
+      entityId,
 
-    name: input.entityName,
+    name:
+      input.entityName,
 
-    date:
-      normalize(input.eventDate),
+    nativeName:
+      normalize(
+        input.nativeName
+      ),
 
-    onThisDay:
-      input.onThisDay ?? false,
+    title:
+      normalize(
+        input.title
+      ),
 
-    kingdomId,
+    gender:
+      normalize(
+        input.gender
+      ),
+
+    shortDescription:
+      normalize(
+        input.shortDescription
+      ),
+
+    biography:
+      normalize(
+        input.biography
+      ),
+
+    birthDate:
+      toDate(
+        input.birthDate
+      ),
+
+    deathDate:
+      toDate(
+        input.deathDate
+      ),
+
+    status:
+      input.status ??
+      "published",
+
+    imageIds:
+      imageObjectIds,
+
+    createdAt:
+      new Date(),
+
+    updatedAt:
+      new Date(),
+  };
+}
+
+/*
+ * ============================================================
+ * BUILD EVENT DOCUMENT
+ * ============================================================
+ */
+
+function buildEventDocument(
+  input: DatabaseWriterInput,
+  entityId: string,
+  locationObjectId:
+    | mongoose.Types.ObjectId
+    | null,
+  heroObjectIds:
+    mongoose.Types.ObjectId[],
+  historicalPeriodObjectId:
+    | mongoose.Types.ObjectId
+    | null,
+  imageObjectIds:
+    mongoose.Types.ObjectId[],
+  sourceObjectIds:
+    mongoose.Types.ObjectId[],
+  battleObjectIds:
+    mongoose.Types.ObjectId[],
+  placeObjectIds:
+    mongoose.Types.ObjectId[],
+  bookObjectIds:
+    mongoose.Types.ObjectId[]
+) {
+  return {
+    eventId:
+      entityId,
+
+    name:
+      input.entityName,
+
+    nativeName:
+      normalize(
+        input.nativeName
+      ),
+
+    eventDate:
+      toDate(
+        input.eventDate
+      ),
+
+    eventDateAccuracy:
+      normalize(
+        input.eventDateAccuracy
+      ) ??
+      "Unknown",
+
+    locationId:
+      locationObjectId,
+
+    heroIds:
+      heroObjectIds,
+
+    historicalPeriodId:
+      historicalPeriodObjectId,
+
+    type:
+      input.eventType ??
+      "Other",
+
+    isOnThisDayEligible:
+      input.onThisDay ??
+      false,
+
+    isPersonalMilestone:
+      false,
+
+    linkedEventId:
+      null,
+
+    description:
+      normalize(
+        input.description
+      ) ?? "",
+
+    shortDescription:
+      normalize(
+        input.shortDescription
+      ) ?? "",
+
+    details:
+      normalize(
+        input.details
+      ) ?? "",
+
+    significance:
+      normalize(
+        input.significance
+      ),
+
+    imageIds:
+      imageObjectIds.map(
+        (imageId) => ({
+          imageId,
+
+          relatedSection:
+            null,
+        })
+      ),
 
     sourceIds:
-      sourceId
-        ? [sourceId]
-        : [],
+      sourceObjectIds,
 
-    quoteIds: quotes,
+    tags:
+      [],
 
-    imageIds,
+    crossReferences: {
+      relatedHeroes:
+        heroObjectIds,
 
-    bookIds: books,
+      relatedPlaces:
+        placeObjectIds,
 
-    createdAt: new Date(),
-    updatedAt: new Date(),
+      relatedBattles:
+        battleObjectIds,
+
+      relatedBooks:
+        bookObjectIds,
+    },
+
+    searchFields: {
+      keywords: [],
+      nativeSpellings: [],
+      alternateSpellings: [],
+      aliases: [],
+    },
+
+    metadata: {
+      createdBy:
+        normalize(
+          input.createdBy
+        ) ?? "",
+
+      verifiedBy:
+        normalize(
+          input.verifiedBy
+        ) ?? "",
+
+      version: 1,
+    },
+
+    status:
+      input.status ??
+      "Draft",
+
+    createdAt:
+      new Date(),
+
+    updatedAt:
+      new Date(),
   };
 }
 
@@ -605,29 +1735,135 @@ function buildEntityDocument(
 async function writeEntity(
   input: DatabaseWriterInput,
   entityId: string,
-  sourceId: string | null,
-  kingdomId: string | null,
-  imageIds: string[]
-): Promise<void> {
-  const db = getDatabase();
+  relationships: {
+    kingdomObjectId:
+      | mongoose.Types.ObjectId
+      | null;
 
-  const config: IdConfig =
-    getIdConfig(
-      input.entityType
-    );
+    sourceObjectIds:
+      mongoose.Types.ObjectId[];
+
+    bookObjectIds:
+      mongoose.Types.ObjectId[];
+
+    quoteObjectIds:
+      mongoose.Types.ObjectId[];
+
+    placeObjectIds:
+      mongoose.Types.ObjectId[];
+
+    battleObjectIds:
+      mongoose.Types.ObjectId[];
+
+    heroObjectIds:
+      mongoose.Types.ObjectId[];
+
+    historicalPeriodObjectId:
+      | mongoose.Types.ObjectId
+      | null;
+
+    imageObjectIds:
+      mongoose.Types.ObjectId[];
+  }
+): Promise<void> {
+  const db =
+    await getDatabase();
+
+  if (
+    input.entityType ===
+    "hero"
+  ) {
+    const document =
+      buildHeroDocument(
+        input,
+
+        entityId,
+
+        relationships.kingdomObjectId,
+
+        relationships.sourceObjectIds,
+
+        relationships.quoteObjectIds,
+
+        relationships.bookObjectIds,
+
+        relationships.imageObjectIds,
+
+        relationships.historicalPeriodObjectId,
+
+        relationships.heroObjectIds,
+
+        relationships.battleObjectIds,
+
+        relationships.placeObjectIds
+      );
+
+    await db
+      .collection("heroes")
+      .insertOne(
+        document
+      );
+
+    return;
+  }
+
+  if (
+    input.entityType ===
+    "historicalPersonality"
+  ) {
+    const document =
+      buildHistoricalPersonalityDocument(
+        input,
+
+        entityId,
+
+        relationships.imageObjectIds
+      );
+
+    await db
+      .collection(
+        "historicalPersonalities"
+      )
+      .insertOne(
+        document
+      );
+
+    return;
+  }
+
+  const locationObjectId =
+    relationships
+      .placeObjectIds[0] ??
+    null;
 
   const document =
-    buildEntityDocument(
+    buildEventDocument(
       input,
+
       entityId,
-      sourceId,
-      kingdomId,
-      imageIds
+
+      locationObjectId,
+
+      relationships.heroObjectIds,
+
+      relationships.historicalPeriodObjectId,
+
+      relationships.imageObjectIds,
+
+      relationships.sourceObjectIds,
+
+      relationships.battleObjectIds,
+
+      relationships.placeObjectIds,
+
+      relationships.bookObjectIds
     );
 
   await db
-    .collection(config.collection)
-    .insertOne(document);
+    .collection("events")
+    .insertOne(
+      document
+    );
 }
 
 /*
@@ -639,18 +1875,23 @@ async function writeEntity(
 export async function writeVerifiedData(
   input: DatabaseWriterInput
 ): Promise<DatabaseWriterResult> {
-  validateInput(input);
+  validateInput(
+    input
+  );
 
-  const db = getDatabase();
+  const db =
+    await getDatabase();
 
   /*
    * ----------------------------------------------------------
-   * SAFETY CHECK
+   * SAFETY CHECK #1
    * ----------------------------------------------------------
    */
 
   const existingEntity =
-    await findExistingEntity(input);
+    await findExistingEntity(
+      input
+    );
 
   if (existingEntity) {
     throw new Error(
@@ -664,31 +1905,175 @@ export async function writeVerifiedData(
    * ----------------------------------------------------------
    */
 
-  let sourceId: string | null =
-    normalize(input.existingSourceId);
+  let sourcePublicId:
+    string | null =
+    normalize(
+      input.existingSourceId
+    );
 
-  let createdSourceId: string | null = null;
+  let createdSourceId:
+    string | null =
+    null;
 
-  if (input.createNewSource) {
-    sourceId = await createSource(input);
-    createdSourceId = sourceId;
+  if (
+    input.createNewSource
+  ) {
+    sourcePublicId =
+      await createSource(
+        input
+      );
+
+    createdSourceId =
+      sourcePublicId;
   }
 
   /*
    * ----------------------------------------------------------
-   * KINGDOM / POLITY
+   * RESOLVE SOURCE
    * ----------------------------------------------------------
    */
 
-  let kingdomId: string | null =
-    normalize(input.existingKingdomId);
+  const sourcePublicIds =
+    normalizeArray([
+      ...(input.selectedSourceIds ??
+        []),
 
-  let createdKingdomId: string | null = null;
+      ...(sourcePublicId
+        ? [sourcePublicId]
+        : []),
+    ]);
 
-  if (input.createNewKingdom) {
-    kingdomId = await createKingdom(input);
-    createdKingdomId = kingdomId;
+  const sourceObjectIds =
+    await resolvePublicIds(
+      "sources",
+      "sourceId",
+      sourcePublicIds
+    );
+
+  /*
+   * ----------------------------------------------------------
+   * KINGDOM
+   * ----------------------------------------------------------
+   */
+
+  let kingdomPublicId:
+    string | null =
+    normalize(
+      input.existingKingdomId
+    );
+
+  let createdKingdomId:
+    string | null =
+    null;
+
+  if (
+    input.createNewKingdom
+  ) {
+    kingdomPublicId =
+      await createKingdom(
+        input
+      );
+
+    createdKingdomId =
+      kingdomPublicId;
   }
+
+  /*
+   * ----------------------------------------------------------
+   * RESOLVE KINGDOM
+   * ----------------------------------------------------------
+   */
+
+  const kingdomPublicIds =
+    normalizeArray([
+      ...(input.selectedKingdomIds ??
+        []),
+
+      ...(kingdomPublicId
+        ? [kingdomPublicId]
+        : []),
+    ]);
+
+  const kingdomObjectIds =
+    await resolvePublicIds(
+      "kingdoms",
+      "kingdomId",
+      kingdomPublicIds
+    );
+
+  const kingdomObjectId =
+    kingdomObjectIds[0] ??
+    null;
+
+  /*
+   * ----------------------------------------------------------
+   * OTHER RELATIONSHIPS
+   * ----------------------------------------------------------
+   */
+
+  const bookObjectIds =
+    await resolvePublicIds(
+      "books",
+      "bookId",
+      input.selectedBookIds
+    );
+
+  const quoteObjectIds =
+    await resolvePublicIds(
+      "quotes",
+      "quoteId",
+      input.selectedQuoteIds
+    );
+
+  const placeObjectIds =
+    await resolvePublicIds(
+      "places",
+      "placeId",
+      input.selectedPlaceIds
+    );
+
+  const battleObjectIds =
+    await resolvePublicIds(
+      "battles",
+      "battleId",
+      input.selectedBattleIds
+    );
+
+  const heroObjectIds =
+    await resolvePublicIds(
+      "heroes",
+      "heroId",
+      input.selectedHeroIds
+    );
+
+  const historicalPeriodObjectIds =
+    await resolvePublicIds(
+      "historicalPeriods",
+      "periodId",
+      input.selectedHistoricalPeriodIds
+    );
+
+  /*
+   * Historical Personality relationships are
+   * currently NOT written because the current
+   * HistoricalPersonality schema has no such fields.
+   *
+   * We still resolve them if supplied so an invalid
+   * public ID cannot silently pass through the workflow.
+   */
+
+  const historicalPersonalityObjectIds =
+    await resolvePublicIds(
+      "historicalPersonalities",
+      "historicalPersonalityId",
+      input.selectedHistoricalPersonalityIds
+    );
+
+  void historicalPersonalityObjectIds;
+
+  const historicalPeriodObjectId =
+    historicalPeriodObjectIds[0] ??
+    null;
 
   /*
    * ----------------------------------------------------------
@@ -696,129 +2081,82 @@ export async function writeVerifiedData(
    * ----------------------------------------------------------
    */
 
+  const imageSourceObjectId =
+    sourceObjectIds[0] ??
+    null;
+
   const createdImageIds =
-    await createImages(input);
+    await createImages(
+      input,
+      imageSourceObjectId
+    );
 
   const linkedExistingImageIds =
     normalizeArray(
       input.selectedExistingImageIds
     );
 
-  const allImageIds = [
-    ...linkedExistingImageIds,
-    ...createdImageIds,
+  const existingImageObjectIds =
+    await resolvePublicIds(
+      "images",
+      "imageId",
+      linkedExistingImageIds
+    );
+
+  const createdImageObjectIds =
+    await resolvePublicIds(
+      "images",
+      "imageId",
+      createdImageIds
+    );
+
+  const allImageObjectIds = [
+    ...existingImageObjectIds,
+    ...createdImageObjectIds,
   ];
 
   /*
    * ----------------------------------------------------------
    * ENTITY ID
    * ----------------------------------------------------------
-   *
-   * Hero:
-   *   HERO0001
-   *
-   * Event:
-   *   EVT000001
-   *
-   * Historical Personality:
-   *   HP0001
-   *
-   * Historical Personality currently has no HP entry
-   * inside ID_PREFIXES, so we follow the existing
-   * application's HPxxxx format directly.
-   * ----------------------------------------------------------
    */
 
-  let entityId: string;
-
-  switch (input.entityType) {
-    case "hero": {
-      entityId =
-        await generateNextId("HERO");
-
-      break;
-    }
-
-    case "event": {
-      entityId =
-        await generateNextId("EVT");
-
-      break;
-    }
-
-    case "historicalPersonality": {
-      const latest =
-        await db
-          .collection(
-            "historicalPersonalities"
-          )
-          .findOne(
-            {},
-            {
-              sort: {
-                historicalPersonalityId: -1,
-              },
-
-              projection: {
-                historicalPersonalityId: 1,
-              },
-            }
-          );
-
-      let nextNumber = 1;
-
-      if (
-        latest &&
-        typeof latest.historicalPersonalityId ===
-          "string"
-      ) {
-        const match =
-          latest.historicalPersonalityId.match(
-            /^HP(\d+)$/
-          );
-
-        if (match) {
-          const currentNumber =
-            Number(match[1]);
-
-          if (
-            Number.isSafeInteger(
-              currentNumber
-            )
-          ) {
-            nextNumber =
-              currentNumber + 1;
-          }
-        }
-      }
-
-      entityId =
-        `HP${String(nextNumber).padStart(
-          4,
-          "0"
-        )}`;
-
-      break;
-    }
-
-    default:
-      throw new Error(
-        `Unsupported entity type: ${input.entityType}`
-      );
-  }
+  const entityId =
+    await generateEntityId(
+      input.entityType
+    );
 
   /*
    * ----------------------------------------------------------
-   * WRITE ENTITY
+   * WRITE
    * ----------------------------------------------------------
    */
 
   await writeEntity(
     input,
+
     entityId,
-    sourceId,
-    kingdomId,
-    allImageIds
+
+    {
+      kingdomObjectId,
+
+      sourceObjectIds,
+
+      bookObjectIds,
+
+      quoteObjectIds,
+
+      placeObjectIds,
+
+      battleObjectIds,
+
+      heroObjectIds,
+
+      historicalPeriodObjectId,
+
+      imageObjectIds:
+        allImageObjectIds,
+    }
   );
 
   /*
@@ -828,7 +2166,8 @@ export async function writeVerifiedData(
    */
 
   return {
-    success: true,
+    success:
+      true,
 
     entityType:
       input.entityType,
@@ -855,6 +2194,58 @@ export async function writeVerifiedData(
       normalizeArray(
         input.selectedQuoteIds
       ),
+
+    resolvedRelationshipIds: {
+      kingdoms:
+        kingdomObjectIds.map(
+          String
+        ),
+
+      sources:
+        sourceObjectIds.map(
+          String
+        ),
+
+      books:
+        bookObjectIds.map(
+          String
+        ),
+
+      quotes:
+        quoteObjectIds.map(
+          String
+        ),
+
+      places:
+        placeObjectIds.map(
+          String
+        ),
+
+      battles:
+        battleObjectIds.map(
+          String
+        ),
+
+      heroes:
+        heroObjectIds.map(
+          String
+        ),
+
+      historicalPersonalities:
+        historicalPersonalityObjectIds.map(
+          String
+        ),
+
+      historicalPeriods:
+        historicalPeriodObjectIds.map(
+          String
+        ),
+
+      images:
+        allImageObjectIds.map(
+          String
+        ),
+    },
   };
 }
 
@@ -865,61 +2256,66 @@ export async function writeVerifiedData(
  *
  * IMPORTANT:
  *
- * This test DOES NOT execute a database write.
+ * This does NOT write to MongoDB.
  *
- * It only validates the input structure.
- *
- * The actual writer should be called by the final
- * orchestrator after finalReview.ts returns success.
- *
+ * It only confirms that this module loads.
  * ============================================================
  */
 
-async function main() {
+async function main(): Promise<void> {
   console.log();
+
   console.log(
     "========================================"
   );
+
   console.log(
     "VEERBHARAT DATABASE WRITER"
   );
+
   console.log(
     "========================================"
   );
 
   console.log();
+
   console.log(
     "DATABASE WRITER MODULE LOADED."
   );
 
   console.log();
+
   console.log(
-    "No database write was performed."
+    "Schema-aware ObjectId relationship resolution is enabled."
   );
 
   console.log();
-  console.log(
-    "This module is ready to be called by"
-  );
 
   console.log(
-    "the final Phase 1 orchestrator."
+    "No database write was performed."
   );
 
   console.log();
 }
 
 if (
-  require.main === module
+  require.main ===
+  module
 ) {
-  main().catch((error) => {
-    console.error();
-    console.error(
-      "DATABASE WRITER TEST FAILED"
-    );
+  main().catch(
+    (error) => {
+      console.error();
 
-    console.error(error);
+      console.error(
+        "DATABASE WRITER TEST FAILED"
+      );
 
-    process.exitCode = 1;
-  });
+      console.error(
+        error
+      );
+
+      process.exitCode =
+        1;
+    }
+  );
 }

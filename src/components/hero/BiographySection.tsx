@@ -1,10 +1,18 @@
 "use client";
 
 import type { ReactNode } from "react";
+import Link from "next/link";
+
+interface HistoricalPersonalityReference {
+  historicalPersonalityId: string;
+  name: string;
+  alternativeNames?: string[];
+}
 
 interface BiographySectionProps {
   biography?: string;
   heroName: string;
+  historicalPersonalities?: HistoricalPersonalityReference[];
 }
 
 /* =====================================================
@@ -27,43 +35,200 @@ function cleanBiographyText(text: string): string {
 
 function highlightText(
   text: string,
-  heroName: string
+  heroName: string,
+  historicalPersonalities: HistoricalPersonalityReference[]
 ): ReactNode[] {
-  const escapedHeroName = heroName.replace(
-    /[.*+?^${}()|[\]\\]/g,
-    "\\$&"
+  const escapeRegExp = (value: string) =>
+    value.replace(
+      /[.*+?^${}()|[\]\\]/g,
+      "\\$&"
+    );
+
+  /*
+   * HERO NAME
+   */
+  const heroCandidate = heroName.trim();
+
+  /*
+   * HISTORICAL PERSONALITY NAMES + ALIASES
+   */
+  const personalityCandidates =
+    historicalPersonalities
+      .filter(
+        (person) =>
+          typeof person?.historicalPersonalityId === "string" &&
+          person.historicalPersonalityId.trim() !== "" &&
+          typeof person?.name === "string" &&
+          person.name.trim() !== ""
+      )
+      .flatMap((person) => {
+        const fullName = person.name.trim();
+
+        const candidates = [
+          {
+            person,
+            name: fullName,
+          },
+        ];
+
+        if (Array.isArray(person.alternativeNames)) {
+          for (const alternativeName of person.alternativeNames) {
+            const alias = alternativeName?.trim();
+
+            if (
+              alias &&
+              alias.toLowerCase() !==
+                fullName.toLowerCase()
+            ) {
+              candidates.push({
+                person,
+                name: alias,
+              });
+            }
+          }
+        }
+
+        return candidates;
+      })
+      .sort(
+        (a, b) =>
+          b.name.length - a.name.length
+      );
+
+  /*
+   * BUILD MATCHING PATTERN
+   *
+   * Longest names first prevents:
+   *
+   * "Muhammad Ali Jinnah"
+   *
+   * being partially matched as:
+   *
+   * "Ali Jinnah"
+   */
+  const names = [
+    heroCandidate,
+    ...personalityCandidates.map(
+      (candidate) => candidate.name
+    ),
+  ].filter(Boolean);
+
+  const uniqueNames = Array.from(
+    new Set(
+      names.map((name) =>
+        name.toLowerCase()
+      )
+    )
+  ).map((lowerName) =>
+    names.find(
+      (name) =>
+        name.toLowerCase() ===
+        lowerName
+    )!
   );
 
-  const pattern = new RegExp(
-    `(${escapedHeroName}|\\b(?:1[0-9]{3}|20[0-9]{2})\\b|\\b\\d{1,2}\\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\\s+\\d{4}\\b)`,
+  uniqueNames.sort(
+    (a, b) =>
+      b.length - a.length
+  );
+
+  const pattern = uniqueNames
+    .map(escapeRegExp)
+    .join("|");
+
+  /*
+   * DATES
+   */
+  const datePattern =
+    "\\b(?:1[0-9]{3}|20[0-9]{2})\\b|\\b\\d{1,2}\\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\\s+\\d{4}\\b";
+
+  const regex = new RegExp(
+    `(${pattern}|${datePattern})`,
     "gi"
   );
 
-  return text.split(pattern).map((part, index) => {
-    const isHero =
-      part.toLowerCase() === heroName.toLowerCase();
+  return text
+    .split(regex)
+    .map((part, index) => {
+      const normalizedPart =
+        part.trim().toLowerCase();
 
-    const isYear =
-      /^(?:1[0-9]{3}|20[0-9]{2})$/.test(part);
+      /*
+       * HERO NAME
+       */
+      if (
+        normalizedPart ===
+        heroCandidate.toLowerCase()
+      ) {
+        return (
+          <strong
+            key={index}
+            className="text-[#D4AF37] font-semibold"
+          >
+            {part}
+          </strong>
+        );
+      }
 
-    const isFullDate =
-      /^\d{1,2}\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}$/i.test(
-        part
-      );
+      /*
+       * HISTORICAL PERSONALITY
+       */
+      const personalityCandidate =
+        personalityCandidates.find(
+          (candidate) =>
+            candidate.name
+              .toLowerCase() ===
+            normalizedPart
+        );
 
-    if (isHero || isYear || isFullDate) {
+      if (personalityCandidate) {
+        return (
+          <Link
+            key={`person-${personalityCandidate.person.historicalPersonalityId}-${index}`}
+            href={`/historical-personalities/${encodeURIComponent(
+              personalityCandidate.person
+                .historicalPersonalityId
+            )}`}
+            className="text-[#D4AF37] hover:text-[#F0D878] underline underline-offset-4 decoration-[#D4AF37]/30 hover:decoration-[#D4AF37] transition-colors"
+          >
+            {part}
+          </Link>
+        );
+      }
+
+      /*
+       * YEAR
+       */
+      const isYear =
+        /^(?:1[0-9]{3}|20[0-9]{2})$/.test(
+          part
+        );
+
+      /*
+       * FULL DATE
+       */
+      const isFullDate =
+        /^\d{1,2}\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}$/i.test(
+          part
+        );
+
+      if (isYear || isFullDate) {
+        return (
+          <strong
+            key={index}
+            className="text-[#D4AF37] font-semibold"
+          >
+            {part}
+          </strong>
+        );
+      }
+
       return (
-        <strong
-          key={index}
-          className="text-[#D4AF37] font-semibold"
-        >
+        <span key={index}>
           {part}
-        </strong>
+        </span>
       );
-    }
-
-    return <span key={index}>{part}</span>;
-  });
+    });
 }
 
 /* =====================================================
@@ -184,6 +349,7 @@ function parseBiography(
 export function BiographySection({
   biography,
   heroName,
+  historicalPersonalities = [],
 }: BiographySectionProps) {
   const blocks = parseBiography(biography);
 
@@ -316,7 +482,8 @@ export function BiographySection({
             >
               {highlightText(
                 block.text,
-                heroName
+                heroName,
+                historicalPersonalities
               )}
             </p>
           );

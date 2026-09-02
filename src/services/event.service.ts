@@ -196,6 +196,7 @@ class EventService extends BaseService {
             select: `
               historicalPersonalityId
               name
+              alternativeNames
               nativeName
               title
               shortDescription
@@ -285,6 +286,7 @@ class EventService extends BaseService {
         select: `
           historicalPersonalityId
           name
+          alternativeNames
           nativeName
           title
           shortDescription
@@ -309,6 +311,19 @@ class EventService extends BaseService {
         "Event not found."
       );
     }
+
+    const relatedLinkedEvents = await Event.find({
+      linkedEventId: event._id,
+      _id: { $ne: event._id },
+    })
+      .select("eventId name")
+      .sort({ eventDate: 1, name: 1 })
+      .lean();
+
+    return {
+      ...event.toObject(),
+      relatedLinkedEvents,
+    };
 
     return event.toObject();
   }

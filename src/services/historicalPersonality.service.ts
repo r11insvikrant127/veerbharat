@@ -2,6 +2,8 @@ import HistoricalPersonality from "@/models/historicalPersonality";
 import "@/models/image";
 import ApiError from "@/lib/ApiError";
 import BaseService from "./base.service";
+import Event from "@/models/event";
+import Hero from "@/models/hero";
 
 import {
   getSearchRegex,
@@ -143,20 +145,75 @@ class HistoricalPersonalityService extends BaseService {
 
   async getHistoricalPersonalityById(
     historicalPersonalityId: string
-    ) {
+  ) {
     await this.connect();
 
     const historicalPersonality =
-        await HistoricalPersonality.findOne({
+      await HistoricalPersonality.findOne({
         historicalPersonalityId,
-        }).populate({
+      }).populate({
         path: "imageIds",
         select:
-            "imageId title url altText imageType",
-        });
+          "imageId title url altText imageType",
+      });
 
-    return historicalPersonality;
+    if (!historicalPersonality) {
+      throw new ApiError(
+        404,
+        "Historical personality not found."
+      );
     }
+
+    /*
+    * Find events connected to this historical personality.
+    *
+    * Example:
+    * HP000075
+    *    ↓
+    * EVT000098
+    *    ↓
+    * HER0126 + HER0135
+    */
+    const relatedEvents = await Event.find({
+      historicalPersonalityIds:
+        historicalPersonality._id,
+    })
+      .populate({
+        path: "heroIds",
+        model: Hero,
+        select: `
+          heroId
+          name
+        `,
+      })
+      .select(
+        "eventId name eventDate heroIds"
+      )
+      .lean();
+
+    /*
+    * Collect unique heroes from all related events.
+    */
+    const relatedHeroes = Array.from(
+      new Map(
+        relatedEvents
+          .flatMap(
+            (event) =>
+              event.heroIds || []
+          )
+          .map((hero: any) => [
+            String(hero._id),
+            hero,
+          ])
+      ).values()
+    );
+
+    return {
+      ...historicalPersonality.toObject(),
+      relatedEvents,
+      relatedHeroes,
+    };
+  }
 }
 
 const HistoricalPersonalityServiceInstance =

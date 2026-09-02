@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 
 import {
   ArrowLeft,
@@ -35,6 +35,7 @@ interface BattleReference {
 interface HistoricalPersonalityReference {
   historicalPersonalityId: string;
   name: string;
+  alternativeNames?: string[];
 }
 
 interface ImageData {
@@ -81,6 +82,7 @@ interface HistoricalEvent {
   _id: string;
   eventId: string;
   linkedEventId?: LinkedEventReference | null;
+  relatedLinkedEvents?: LinkedEventReference[];
   imageUrl?: string;
   name: string;
   nativeName?: string;
@@ -145,7 +147,6 @@ type HistoricalLinkCandidate =
 
 export default function EventDetailsPage() {
   const params = useParams();
-  const router = useRouter();
 
   const eventId = params.eventId as string;
 
@@ -193,24 +194,6 @@ export default function EventDetailsPage() {
           eventData
         );
 
-        /* =====================================================
-          LINKED EVENT REDIRECT
-        ===================================================== */
-
-        if (
-          eventData.linkedEventId &&
-          eventData.linkedEventId.eventId &&
-          eventData.linkedEventId.eventId !== eventData.eventId
-        ) {
-          router.replace(
-            `/events/${encodeURIComponent(
-              eventData.linkedEventId.eventId
-            )}`
-          );
-
-          return;
-        }
-
         setEvent(eventData);
         console.log(
           "EVENT HERO REFERENCES:",
@@ -256,7 +239,7 @@ export default function EventDetailsPage() {
     if (eventId) {
       fetchEvent();
     }
-  }, [eventId, router]);
+  }, [eventId]);
 
 
 
@@ -716,7 +699,77 @@ export default function EventDetailsPage() {
                 </div>
               </HistoricalCard>
             )}
+            {/* RELATED HISTORICAL EVENTS */}
+              {event.linkedEventId && (
+                <HistoricalCard
+                  eyebrow="Related History"
+                  title="Related Historical Event"
+                  icon={
+                    <ScrollText className="w-5 h-5 text-[#D4AF37]" />
+                  }
+                >
+                  <Link
+                    href={`/events/${encodeURIComponent(
+                      event.linkedEventId.eventId
+                    )}`}
+                    className="group block rounded-xl border border-[#D4AF37]/15 bg-[#17130F]/70 p-5 transition-all duration-300 hover:border-[#D4AF37]/40 hover:bg-[#1C1410]"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.2em] text-[#D4AF37]/60 mb-2">
+                          Historical Event
+                        </p>
 
+                        <h3 className="font-serif text-xl font-bold text-[#F8F5F0] group-hover:text-[#D4AF37] transition-colors">
+                          {event.linkedEventId.name}
+                        </h3>
+                      </div>
+
+                      <ScrollText className="w-4 h-4 shrink-0 text-[#D4AF37]/50 group-hover:text-[#D4AF37] transition-colors" />
+                    </div>
+                  </Link>
+                </HistoricalCard>
+              )}
+
+            {/* RELATED LINKED HISTORICAL EVENTS */}
+            {event.relatedLinkedEvents &&
+              event.relatedLinkedEvents.length > 0 && (
+                <HistoricalCard
+                  eyebrow="Related History"
+                  title="Related Historical Events"
+                  icon={
+                    <ScrollText className="w-5 h-5 text-[#D4AF37]" />
+                  }
+                >
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {event.relatedLinkedEvents.map(
+                      (relatedEvent) => (
+                        <Link
+                          key={relatedEvent.eventId}
+                          href={`/events/${encodeURIComponent(
+                            relatedEvent.eventId
+                          )}`}
+                          className="group rounded-xl border border-[#D4AF37]/15 bg-[#17130F]/70 p-5 transition-all duration-300 hover:border-[#D4AF37]/40 hover:bg-[#1C1410]"
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <p className="text-[10px] uppercase tracking-[0.2em] text-[#D4AF37]/60 mb-2">
+                                Historical Event
+                              </p>
+
+                              <h3 className="font-serif text-xl font-bold text-[#F8F5F0] group-hover:text-[#D4AF37] transition-colors">
+                                {relatedEvent.name}
+                              </h3>
+                            </div>
+
+                            <ScrollText className="w-4 h-4 shrink-0 text-[#D4AF37]/50 group-hover:text-[#D4AF37] transition-colors" />
+                          </div>
+                        </Link>
+                      )
+                    )}
+                  </div>
+                </HistoricalCard>
+              )}
             {/* RELATED BATTLES */}
 
             {event.crossReferences?.relatedBattles &&
@@ -1565,13 +1618,35 @@ function LinkedHistoricalText({
       .flatMap((person) => {
         const fullName = person.name.trim();
 
-        return [
+        const candidates: HistoricalPersonalityLinkCandidate[] = [
           {
-            type: "historicalPersonality" as const,
+            type: "historicalPersonality",
             person,
             name: fullName,
           },
         ];
+
+        if (
+          Array.isArray(person.alternativeNames)
+        ) {
+          for (const alternativeName of person.alternativeNames) {
+            const alias = alternativeName?.trim();
+
+            if (
+              alias &&
+              alias.toLowerCase() !==
+                fullName.toLowerCase()
+            ) {
+              candidates.push({
+                type: "historicalPersonality",
+                person,
+                name: alias,
+              });
+            }
+          }
+        }
+
+        return candidates;
       })
       .sort(
         (a, b) =>

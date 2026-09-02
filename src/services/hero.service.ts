@@ -7,6 +7,8 @@ import BaseService from "./base.service";
 import { getSearchRegex,escapeRegex,} from "@/helpers/search";
 import { getPagination } from "@/helpers/pagination";
 import { getSort } from "@/helpers/sorting";
+import Event from "@/models/event";
+import HistoricalPersonality from "@/models/historicalPersonality";
 
 import {
   CreateHeroInput,
@@ -149,8 +151,40 @@ class HeroService extends BaseService {
             "Hero not found."
             );
         }
+        const relatedEvents = await Event.find({
+        heroIds: hero._id,
+        })
+        .populate({
+            path: "historicalPersonalityIds",
+            model: HistoricalPersonality,
+            select: `
+            historicalPersonalityId
+            name
+            alternativeNames
+            `,
+        })
+        .select(
+            "eventId name historicalPersonalityIds"
+        )
+        .lean();
 
-        return hero;
+        const relatedHistoricalPersonalities = Array.from(
+        new Map(
+            relatedEvents
+            .flatMap(
+                (event) =>
+                event.historicalPersonalityIds || []
+            )
+            .map((person: any) => [
+                String(person._id),
+                person,
+            ])
+        ).values()
+        );
+        return {
+        ...hero.toObject(),
+        relatedHistoricalPersonalities,
+        };
         }
    
     async updateHero(

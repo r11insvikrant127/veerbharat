@@ -531,20 +531,41 @@ export async function runDataEntryWorkflow(): Promise<DataEntryWorkflowResult> {
 
   const relationshipApproval =
     await runRelationshipApproval({
-      entityType:
+        entityType:
         entity.entityType,
 
-      entityName:
+        entityName:
         entity.name,
 
-      sources:
+        kingdoms:
+        relationshipResearch.kingdoms,
+
+        sources:
         relationshipResearch.sources,
 
-      places:
+        books:
+        relationshipResearch.books,
+
+        quotes:
+        relationshipResearch.quotes,
+
+        places:
         relationshipResearch.places,
 
-      battles:
+        battles:
         relationshipResearch.battles,
+
+        heroes:
+        relationshipResearch.heroes,
+
+        historicalPersonalities:
+        relationshipResearch.historicalPersonalities,
+
+        historicalPeriods:
+        relationshipResearch.historicalPeriods,
+
+        images:
+        relationshipResearch.images,
     });
 
   if (
