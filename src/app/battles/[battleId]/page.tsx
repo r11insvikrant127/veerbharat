@@ -887,8 +887,13 @@ export default function BattleDetailPage() {
           icon={<BookOpen className="w-4 h-4" />}
         >
           <ReferenceGrid
-            items={refs?.relatedSources}
+            items={battle.sourceIds}
             type="Source"
+            hrefBuilder={(item) =>
+              item.sourceId
+                ? `/sources/${item.sourceId}`
+                : undefined
+            }
           />
         </Section>
 

@@ -211,7 +211,7 @@ class BattleService extends BaseService {
       {
         path: "crossReferences.relatedBooks",
         model: Book,
-        select: "_id name bookId",
+        select: "_id title bookId",
       },
 
       {
