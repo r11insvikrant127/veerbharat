@@ -64,23 +64,7 @@ interface HistoricalPersonality {
   legacy?: string;
 }
 
-interface EventsResponse {
-  data: HistoricalEvent[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
 
-interface HeroesResponse {
-  data: Hero[];
-}
-
-interface HistoricalPersonalitiesResponse {
-  data: HistoricalPersonality[];
-}
 
 interface Battle {
   _id: string;
@@ -93,16 +77,6 @@ interface Battle {
   description: string;
 }
 
-interface BattlesResponse {
-  data: Battle[];
-  pagination?: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
-
 interface OnThisDayItem {
   id: string;
   name: string;
@@ -113,6 +87,39 @@ interface OnThisDayItem {
 }
 
 export function OnThisDay() {
+
+  async function fetchAllPages<T>(
+    endpoint: string
+  ): Promise<T[]> {
+    const allData: T[] = [];
+
+    let page = 1;
+    let totalPages = 1;
+
+    do {
+      const response = await fetch(
+        `${endpoint}?page=${page}&limit=100`
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to fetch ${endpoint}: ${response.status}`
+        );
+      }
+
+      const result = await response.json();
+
+      allData.push(...(result.data || []));
+
+      totalPages =
+        result.pagination?.totalPages || 1;
+
+      page++;
+    } while (page <= totalPages);
+
+    return allData;
+  }
+
   const [items, setItems] =
     useState<OnThisDayItem[]>([]);
 
@@ -140,16 +147,16 @@ export function OnThisDay() {
         setLoading(true);
 
         const [
-          eventsResponse,
-          battlesResponse,
-          heroesResponse,
-          personalitiesResponse,
+          events,
+          battles,
+          heroes,
+          personalities,
         ] = await Promise.all([
-          fetch('/api/events?page=1&limit=100'),
-          fetch('/api/battles?page=1&limit=100'),
-          fetch('/api/heroes?page=1&limit=100'),
-          fetch(
-            '/api/historical-personalities?page=1&limit=100'
+          fetchAllPages<HistoricalEvent>('/api/events'),
+          fetchAllPages<Battle>('/api/battles'),
+          fetchAllPages<Hero>('/api/heroes'),
+          fetchAllPages<HistoricalPersonality>(
+            '/api/historical-personalities'
           ),
         ]);
 
@@ -158,11 +165,7 @@ export function OnThisDay() {
         /*
          * EVENTS
          */
-        if (eventsResponse.ok) {
-          const result: EventsResponse =
-            await eventsResponse.json();
-
-          result.data.forEach((event) => {
+        events.forEach((event) => {
           if (
             !isPublished(event.status) ||
             !event.isOnThisDayEligible ||
@@ -221,17 +224,13 @@ export function OnThisDay() {
               });
             }
           });
-        }
+
 
 
         /*
          * BATTLES
          */
-        if (battlesResponse.ok) {
-          const result: BattlesResponse =
-            await battlesResponse.json();
-
-          result.data.forEach((battle) => {
+        battles.forEach((battle) => {
             if (
               !isPublished(battle.status) ||
               !battle.battleDate
@@ -259,17 +258,13 @@ export function OnThisDay() {
                 type: 'battle',
               });
             }
-          });
-        }
+         });
+
 
         /*
          * HEROES
          */
-        if (heroesResponse.ok) {
-          const result: HeroesResponse =
-            await heroesResponse.json();
-
-          result.data.forEach((hero) => {
+        heroes.forEach((hero) => {
           if (!isPublished(hero.status)) {
             return;
           }
@@ -332,19 +327,13 @@ export function OnThisDay() {
                 });
               }
             }
-          });
-        }
+         });
+
 
         /*
          * HISTORICAL PERSONALITIES
          */
-        if (personalitiesResponse.ok) {
-          const result:
-            HistoricalPersonalitiesResponse =
-              await personalitiesResponse.json();
-
-          result.data.forEach(
-            (personality) => {
+        personalities.forEach((personality) => {
               if (
                 !isPublished(personality.status)
               ) {
@@ -410,9 +399,8 @@ export function OnThisDay() {
                   });
                 }
               }
-            }
-          );
-        }
+            });
+        
 
         /*
          * Sort oldest events first
