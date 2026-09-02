@@ -29,6 +29,18 @@ const BattleSchema = new Schema(
       },
     ],
 
+    type: {
+      type: String,
+      enum: [
+        "battle",
+        "siege",
+        "capture",
+        "engagement",
+      ],
+      required: true,
+      index: true,
+    },
+    
     battleDate: {
       type: Date,
       default: null,

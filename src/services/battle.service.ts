@@ -203,6 +203,12 @@ class BattleService extends BaseService {
       },
 
       {
+        path: "sourceIds",
+        model: Source,
+        select: "_id title sourceId type author year publisher url",
+      },
+
+      {
         path: "crossReferences.relatedBooks",
         model: Book,
         select: "_id name bookId",
@@ -213,7 +219,6 @@ class BattleService extends BaseService {
         model: Source,
         select: "_id title sourceId",
       },
-
       {
         path: "crossReferences.relatedWeapons",
         model: Weapon,
