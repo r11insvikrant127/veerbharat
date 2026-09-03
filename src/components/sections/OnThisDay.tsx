@@ -192,20 +192,6 @@ export function OnThisDay() {
                   event.name
                 );
 
-              /*
-              * If this is an On This Day entry linked
-              * to another event, open that event instead
-              * of creating/opening its own event page.
-              */
-              const linkedEvent =
-                event.linkedEventId;
-
-              const linkedEventHref =
-                typeof linkedEvent === 'object' &&
-                linkedEvent?.eventId
-                  ? `/events/${linkedEvent.eventId}`
-                  : null;
-
               allItems.push({
                 id: event._id,
                 name: event.name,
@@ -217,12 +203,11 @@ export function OnThisDay() {
 
                 href: isHeroFocusedEvent
                   ? `/heroes/${relatedHero.heroId}`
-                  : linkedEventHref ||
-                    `/events/${event.eventId}`,
+                  : `/events/${event.eventId}`,
 
                 type: 'event',
               });
-            }
+                          }
           });
 
 

@@ -137,6 +137,7 @@ interface HistoricalPersonalityLinkCandidate {
   name: string;
 }
 
+
 type HistoricalLinkCandidate =
   | HeroLinkCandidate
   | HistoricalPersonalityLinkCandidate;
@@ -612,6 +613,22 @@ export default function EventDetailsPage() {
                 heroes={heroes}
                 historicalPersonalities={historicalPersonalities}
               />
+
+              {event.linkedEventId && (
+                <div className="mt-8 pt-6 border-t border-[#D4AF37]/10">
+                  <p className="text-sm text-[#A09682]">
+                    Part of{" "}
+                    <Link
+                      href={`/events/${encodeURIComponent(
+                        event.linkedEventId.eventId
+                      )}`}
+                      className="text-[#D4AF37] hover:text-[#F0D878] underline underline-offset-4 decoration-[#D4AF37]/30 hover:decoration-[#D4AF37] transition-colors"
+                    >
+                      {event.linkedEventId.name}
+                    </Link>
+                  </p>
+                </div>
+              )}
             </HistoricalCard>
 
             {/* DETAILS WITHOUT HEADINGS */}
@@ -699,37 +716,7 @@ export default function EventDetailsPage() {
                 </div>
               </HistoricalCard>
             )}
-            {/* RELATED HISTORICAL EVENTS */}
-              {event.linkedEventId && (
-                <HistoricalCard
-                  eyebrow="Related History"
-                  title="Related Historical Event"
-                  icon={
-                    <ScrollText className="w-5 h-5 text-[#D4AF37]" />
-                  }
-                >
-                  <Link
-                    href={`/events/${encodeURIComponent(
-                      event.linkedEventId.eventId
-                    )}`}
-                    className="group block rounded-xl border border-[#D4AF37]/15 bg-[#17130F]/70 p-5 transition-all duration-300 hover:border-[#D4AF37]/40 hover:bg-[#1C1410]"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="text-[10px] uppercase tracking-[0.2em] text-[#D4AF37]/60 mb-2">
-                          Historical Event
-                        </p>
-
-                        <h3 className="font-serif text-xl font-bold text-[#F8F5F0] group-hover:text-[#D4AF37] transition-colors">
-                          {event.linkedEventId.name}
-                        </h3>
-                      </div>
-
-                      <ScrollText className="w-4 h-4 shrink-0 text-[#D4AF37]/50 group-hover:text-[#D4AF37] transition-colors" />
-                    </div>
-                  </Link>
-                </HistoricalCard>
-              )}
+            
 
             {/* RELATED LINKED HISTORICAL EVENTS */}
             {event.relatedLinkedEvents &&
@@ -1545,8 +1532,10 @@ function LinkedHistoricalText({
 }) {
   if (
     !text ||
-    (heroes.length === 0 &&
-      historicalPersonalities.length === 0)
+    (
+      heroes.length === 0 &&
+      historicalPersonalities.length === 0 
+    )
   ) {
     return <>{text}</>;
   }
@@ -1653,10 +1642,12 @@ function LinkedHistoricalText({
           b.name.length - a.name.length
       );
 
+
+
   const candidates: HistoricalLinkCandidate[] = [
     ...heroCandidates,
     ...historicalPersonalityCandidates,
-  ].sort(
+].sort(
     (a, b) =>
       b.name.length - a.name.length
   );
@@ -1709,17 +1700,25 @@ function LinkedHistoricalText({
             );
           }
 
-          return (
-            <Link
-              key={`person-${candidate.person.historicalPersonalityId}-${index}`}
-              href={`/historical-personalities/${encodeURIComponent(
-                candidate.person.historicalPersonalityId
-              )}`}
-              className="text-[#D4AF37] hover:text-[#F0D878] underline underline-offset-4 decoration-[#D4AF37]/30 hover:decoration-[#D4AF37] transition-colors"
-            >
-              {part}
-            </Link>
-          );
+          if (candidate.type === "historicalPersonality") {
+            return (
+              <Link
+                key={`person-${candidate.person.historicalPersonalityId}-${index}`}
+                href={`/historical-personalities/${encodeURIComponent(
+                  candidate.person.historicalPersonalityId
+                )}`}
+                className="text-[#D4AF37] hover:text-[#F0D878] underline underline-offset-4 decoration-[#D4AF37]/30 hover:decoration-[#D4AF37] transition-colors"
+              >
+                {part}
+              </Link>
+            );
+          }
+
+         return (
+          <span key={index}>
+            {part}
+          </span>
+        );
         }
       )}
     </>

@@ -155,6 +155,7 @@ class EventService extends BaseService {
           path: "linkedEventId",
           model: Event,
           select: `
+            _id
             eventId
             name
           `,
@@ -244,6 +245,7 @@ class EventService extends BaseService {
         path: "linkedEventId",
         model: Event,
         select: `
+          _id
           eventId
           name
         `,
@@ -312,11 +314,20 @@ class EventService extends BaseService {
       );
     }
 
+    const groupRootId = event.linkedEventId
+      ? event.linkedEventId._id
+      : event._id;
+
     const relatedLinkedEvents = await Event.find({
-      linkedEventId: event._id,
+      $or: [
+        { _id: groupRootId },
+        { linkedEventId: groupRootId },
+      ],
       _id: { $ne: event._id },
     })
-      .select("eventId name")
+      .select(
+        "eventId name shortDescription eventDate type imageUrl"
+      )
       .sort({ eventDate: 1, name: 1 })
       .lean();
 
@@ -325,7 +336,6 @@ class EventService extends BaseService {
       relatedLinkedEvents,
     };
 
-    return event.toObject();
   }
 
   async updateEvent(
