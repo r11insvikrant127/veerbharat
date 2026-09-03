@@ -46,6 +46,7 @@ interface Battle {
   alternativeNames?: string[];
 
   battleDate?: string | null;
+  battleEndDate?: string | null;
   battleDateAccuracy?: string;
 
   locationId?: Reference;
@@ -425,6 +426,12 @@ export default function BattleDetailPage() {
                 {formatDate(
                   battle.battleDate,
                   battle.battleDateAccuracy
+                )}
+                {battle.battleEndDate && (
+                  <>
+                    {" – "}
+                    {formatDate(battle.battleEndDate)}
+                  </>
                 )}
               </p>
             </div>
