@@ -198,6 +198,13 @@ const EventSchema = new Schema(
         },
       ],
 
+      relatedKingdoms: [
+        {
+          type: Schema.Types.ObjectId,
+          ref: "Kingdom",
+        },
+      ],
+
       relatedBooks: [
         {
           type: Schema.Types.ObjectId,

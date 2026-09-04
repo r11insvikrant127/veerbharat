@@ -32,6 +32,22 @@ interface BattleReference {
   shortDescription?: string;
 }
 
+interface PlaceReference {
+  placeId: string;
+  name: string;
+  nativeName?: string;
+  type?: string;
+  state?: string;
+  country?: string;
+}
+
+interface KingdomReference {
+  kingdomId: string;
+  name: string;
+  nativeName?: string;
+  alternativeNames?: string[];
+}
+
 interface HistoricalPersonalityReference {
   historicalPersonalityId: string;
   name: string;
@@ -105,6 +121,8 @@ interface HistoricalEvent {
 
   crossReferences?: {
     relatedBattles?: BattleReference[];
+    relatedPlaces?: PlaceReference[];
+    relatedKingdoms?: KingdomReference[];
   };
 
   imageIds?: EventImageRelation[];
@@ -800,9 +818,112 @@ export default function EventDetailsPage() {
                         </Link>
                       )
                     )}
-                  </div>
+                    </div>
                 </HistoricalCard>
               )}
+
+                    {/* RELATED PLACES */}
+
+                    {event.crossReferences?.relatedPlaces &&
+                      event.crossReferences.relatedPlaces.length > 0 && (
+                        <HistoricalCard
+                          eyebrow="Places"
+                          title="Related Places"
+                          icon={
+                            <MapPin className="w-5 h-5 text-[#D4AF37]" />
+                          }
+                        >
+                          <div className="grid gap-4 md:grid-cols-2">
+                            {event.crossReferences.relatedPlaces.map(
+                              (place) => (
+                                <Link
+                                  key={place.placeId}
+                                  href={`/places/${encodeURIComponent(
+                                    place.placeId
+                                  )}`}
+                                  className="group rounded-xl border border-[#D4AF37]/15 bg-[#17130F]/70 p-5 transition-all duration-300 hover:border-[#D4AF37]/40 hover:bg-[#1C1410]"
+                                >
+                                  <div className="flex items-start justify-between gap-4">
+                                    <div>
+                                      <p className="text-[10px] uppercase tracking-[0.2em] text-[#D4AF37]/60 mb-2">
+                                        Place
+                                      </p>
+
+                                      <h3 className="font-serif text-xl font-bold text-[#F8F5F0] group-hover:text-[#D4AF37] transition-colors">
+                                        {place.name}
+                                      </h3>
+
+                                      {place.nativeName && (
+                                        <p className="mt-2 text-sm text-[#A09682]">
+                                          {place.nativeName}
+                                        </p>
+                                      )}
+
+                                      {(place.state || place.country) && (
+                                        <p className="mt-3 text-sm text-[#A09682]">
+                                          {[place.state, place.country]
+                                            .filter(Boolean)
+                                            .join(", ")}
+                                        </p>
+                                      )}
+                                    </div>
+
+                                    <MapPin className="w-4 h-4 shrink-0 text-[#D4AF37]/50 group-hover:text-[#D4AF37] transition-colors" />
+                                  </div>
+                                </Link>
+                              )
+                            )}
+                          </div>
+                        </HistoricalCard>
+                      )}
+
+                      {/* RELATED KINGDOMS */}
+
+                      {event.crossReferences?.relatedKingdoms &&
+                        event.crossReferences.relatedKingdoms.length > 0 && (
+                          <HistoricalCard
+                            eyebrow="Kingdoms"
+                            title="Related Kingdoms"
+                            icon={
+                              <Landmark className="w-5 h-5 text-[#D4AF37]" />
+                            }
+                          >
+                            <div className="grid gap-4 md:grid-cols-2">
+                              {event.crossReferences.relatedKingdoms.map(
+                                (kingdom) => (
+                                  <Link
+                                    key={kingdom.kingdomId}
+                                    href={`/kingdoms/${encodeURIComponent(
+                                      kingdom.kingdomId
+                                    )}`}
+                                    className="group rounded-xl border border-[#D4AF37]/15 bg-[#17130F]/70 p-5 transition-all duration-300 hover:border-[#D4AF37]/40 hover:bg-[#1C1410]"
+                                  >
+                                    <div className="flex items-start justify-between gap-4">
+                                      <div>
+                                        <p className="text-[10px] uppercase tracking-[0.2em] text-[#D4AF37]/60 mb-2">
+                                          Kingdom
+                                        </p>
+
+                                        <h3 className="font-serif text-xl font-bold text-[#F8F5F0] group-hover:text-[#D4AF37] transition-colors">
+                                          {kingdom.name}
+                                        </h3>
+
+                                        {kingdom.nativeName && (
+                                          <p className="mt-2 text-sm text-[#A09682]">
+                                            {kingdom.nativeName}
+                                          </p>
+                                        )}
+                                      </div>
+
+                                      <Landmark className="w-4 h-4 shrink-0 text-[#D4AF37]/50 group-hover:text-[#D4AF37] transition-colors" />
+                                    </div>
+                                  </Link>
+                                )
+                              )}
+                            </div>
+                          </HistoricalCard>
+                        )}
+                  
 
             {/* TAGS */}
 

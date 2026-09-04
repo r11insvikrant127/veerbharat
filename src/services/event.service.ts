@@ -7,6 +7,8 @@ import Hero from "@/models/hero";
 import Image from "@/models/image";
 import Battle from "@/models/battle";
 import HistoricalPersonality from "@/models/historicalPersonality";
+import Place from "@/models/place";
+import Kingdom from "@/models/kingdom";
 
 import {
   buildSearchFilter,
@@ -215,6 +217,32 @@ class EventService extends BaseService {
               shortDescription
             `,
           })
+          .populate({
+            path: "crossReferences.relatedPlaces",
+            model: Place,
+            select: `
+              placeId
+              name
+              nativeName
+              alternativeNames
+              type
+              state
+              country
+              description
+            `,
+          })
+          .populate({
+            path: "crossReferences.relatedKingdoms",
+            model: Kingdom,
+            select: `
+              kingdomId
+              name
+              nativeName
+              alternativeNames
+              description
+              status
+            `,
+          })
           .sort(sortOption)
           .skip(skip)
           .limit(currentLimit),
@@ -304,6 +332,32 @@ class EventService extends BaseService {
           battleId
           name
           shortDescription
+        `,
+      })
+      .populate({
+        path: "crossReferences.relatedPlaces",
+        model: Place,
+        select: `
+          placeId
+          name
+          nativeName
+          alternativeNames
+          type
+          state
+          country
+          description
+        `,
+      })
+      .populate({
+        path: "crossReferences.relatedKingdoms",
+        model: Kingdom,
+        select: `
+          kingdomId
+          name
+          nativeName
+          alternativeNames
+          description
+          status
         `,
       });
 
