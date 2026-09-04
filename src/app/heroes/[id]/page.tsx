@@ -62,6 +62,13 @@ interface Hero {
 
   historicalNarratives?: HistoricalPerspective[];
   relatedHistoricalPersonalities?: HistoricalPersonalityReference[];
+
+  brothers?: {
+    _id: string;
+    heroId: string;
+    name: string;
+  }[];
+  
   historicalArtifacts?: {
     title: string;
     type: string;
@@ -623,7 +630,7 @@ export default function HeroDetailPage({
               </div>
             </div>
 
-            {/* ACHIEVEMENTS */}
+             {/* ACHIEVEMENTS */}
             <div className="section-card-hover p-8 md:p-10 mt-6">
               <p className="text-xs uppercase tracking-[0.25em] text-[#D4AF37]/60 mb-3">
                 Contributions
@@ -638,6 +645,32 @@ export default function HeroDetailPage({
                 items={hero.achievements}
               />
             </div>
+
+            {/* FAMILY */}
+            {hero.brothers && hero.brothers.length > 0 && (
+              <div className="section-card-hover p-8 md:p-10 mt-6">
+                <p className="text-xs uppercase tracking-[0.25em] text-[#D4AF37]/60 mb-3">
+                  Family
+                </p>
+
+                <h2 className="font-serif text-3xl font-bold mb-6">
+                  Brothers
+                </h2>
+
+                <div className="flex flex-wrap gap-3">
+                  {hero.brothers.map((brother) => (
+                    <Link
+                      key={brother._id}
+                      href={`/heroes/${brother.heroId}`}
+                      className="px-4 py-2 rounded-lg bg-[#1C1410] border border-[#D4AF37]/10 text-sm text-[#D7C9A5] hover:text-[#D4AF37] hover:border-[#D4AF37]/40 transition-colors"
+                    >
+                      {brother.name}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
           
 
             {/* LEGACY */}

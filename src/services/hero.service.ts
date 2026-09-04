@@ -135,57 +135,64 @@ class HeroService extends BaseService {
 
         const hero = await Hero.findOne({ heroId })
             .populate({
-            path: "imageIds",
-            select:
-                "imageId title url altText imageType",
+                path: "imageIds",
+                select:
+                    "imageId title url altText imageType",
             })
             .populate({
-            path: "historicalArtifacts.imageId",
-            select:
-                "imageId title url altText imageType description",
+                path: "historicalArtifacts.imageId",
+                select:
+                    "imageId title url altText imageType description",
+            })
+            .populate({
+                path: "brothers",
+                select:
+                    "heroId name",
             });
 
         if (!hero) {
             throw new ApiError(
-            404,
-            "Hero not found."
+                404,
+                "Hero not found."
             );
         }
+
         const relatedEvents = await Event.find({
-        heroIds: hero._id,
+            heroIds: hero._id,
         })
-        .populate({
-            path: "historicalPersonalityIds",
-            model: HistoricalPersonality,
-            select: `
-            historicalPersonalityId
-            name
-            alternativeNames
-            `,
-        })
-        .select(
-            "eventId name historicalPersonalityIds"
-        )
-        .lean();
+            .populate({
+                path: "historicalPersonalityIds",
+                model: HistoricalPersonality,
+                select: `
+                historicalPersonalityId
+                name
+                alternativeNames
+                `,
+            })
+            .select(
+                "eventId name historicalPersonalityIds"
+            )
+            .lean();
 
         const relatedHistoricalPersonalities = Array.from(
-        new Map(
-            relatedEvents
-            .flatMap(
-                (event) =>
-                event.historicalPersonalityIds || []
-            )
-            .map((person: any) => [
-                String(person._id),
-                person,
-            ])
-        ).values()
+            new Map(
+                relatedEvents
+                    .flatMap(
+                        (event) =>
+                            event.historicalPersonalityIds || []
+                    )
+                    .map((person: any) => [
+                        String(person._id),
+                        person,
+                    ])
+            ).values()
         );
+
         return {
-        ...hero.toObject(),
-        relatedHistoricalPersonalities,
+            ...hero.toObject(),
+            relatedHistoricalPersonalities,
         };
-        }
+    }
    
     async updateHero(
     heroId: string,
