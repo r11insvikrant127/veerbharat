@@ -72,6 +72,7 @@ interface Battle {
   name: string;
   status?: string;
   battleDate: string | null;
+  battleEndDate?: string | null;
   battleDateAccuracy?: string;
   shortDescription?: string;
   description: string;
@@ -210,40 +211,77 @@ export function OnThisDay() {
                           }
           });
 
-
-
         /*
-         * BATTLES
-         */
+        * BATTLES
+        *
+        * A battle is eligible for On This Day if today's
+        * month/day falls between its start and end dates.
+        */
         battles.forEach((battle) => {
-            if (
-              !isPublished(battle.status) ||
-              !battle.battleDate
-            ) {
-              return;
-            }
+          if (
+            !isPublished(battle.status) ||
+            !battle.battleDate
+          ) {
+            return;
+          }
 
-            const battleDate =
-              new Date(battle.battleDate);
+          const battleStart = new Date(
+            battle.battleDate
+          );
 
-            if (
-              battleDate.getDate() ===
-                today.getDate() &&
-              battleDate.getMonth() ===
-                today.getMonth()
-            ) {
-              allItems.push({
-                id: battle._id,
-                name: battle.name,
-                year: battleDate.getFullYear(),
-                description:
-                  battle.shortDescription || battle.description,
-                href:
-                  `/battles/${battle.battleId}`,
-                type: 'battle',
-              });
-            }
-         });
+          if (Number.isNaN(battleStart.getTime())) {
+            return;
+          }
+
+          const battleEnd = battle.battleEndDate
+            ? new Date(battle.battleEndDate)
+            : battleStart;
+
+          if (Number.isNaN(battleEnd.getTime())) {
+            return;
+          }
+
+          /*
+          * Convert month/day to a fixed leap year
+          * so historical years do not matter.
+          */
+          const startKey = Date.UTC(
+            2000,
+            battleStart.getMonth(),
+            battleStart.getDate()
+          );
+
+          const endKey = Date.UTC(
+            2000,
+            battleEnd.getMonth(),
+            battleEnd.getDate()
+          );
+
+          const todayKey = Date.UTC(
+            2000,
+            today.getMonth(),
+            today.getDate()
+          );
+
+          const isOnThisDay =
+            todayKey === startKey ||
+            todayKey === endKey;
+
+          if (isOnThisDay) {
+            allItems.push({
+              id: `battle-${battle.battleId}`,
+              name: battle.name,
+              year: battleStart.getFullYear(),
+              description:
+                battle.shortDescription ||
+                battle.description,
+              href:
+                `/battles/${battle.battleId}`,
+              type: 'battle',
+            });
+          }
+        });
+        
 
 
         /*
