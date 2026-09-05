@@ -25,6 +25,8 @@ import { Footer } from "@/components/layout/Footer";
 interface HeroReference {
   heroId: string;
   name: string;
+  title?: string;
+  shortDescription?: string;
 }
 interface BattleReference {
   battleId: string;
@@ -923,6 +925,65 @@ export default function EventDetailsPage() {
                             </div>
                           </HistoricalCard>
                         )}
+
+                      {/* RELATED HEROES */}
+                      {heroes.length > 0 && (
+                        <section className="mt-10">
+                          <div className="section-card-hover p-8 md:p-10">
+                            <p className="text-xs uppercase tracking-[0.25em] text-[#D4AF37]/60 mb-3">
+                              Historical Connections
+                            </p>
+
+                            <h2 className="font-serif text-3xl font-bold mb-8">
+                              Associated Heroes
+                            </h2>
+
+                            <div className="grid md:grid-cols-2 gap-5">
+                              {heroes.map((hero) => (
+                                <Link
+                                  key={hero.heroId}
+                                  href={`/heroes/${hero.heroId}`}
+                                  className="group block"
+                                >
+                                  <article className="rounded-xl border border-[#D4AF37]/15 bg-[#1C1410] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-[#D4AF37]/40 hover:bg-[#211811]">
+                                    <div className="flex items-center justify-between gap-4 mb-4">
+                                      <span className="text-xs tracking-wider text-[#D4AF37]/60">
+                                        {hero.heroId}
+                                      </span>
+
+                                      <span className="text-[10px] uppercase tracking-wider text-[#A09682]">
+                                        Hero
+                                      </span>
+                                    </div>
+
+                                    <h3 className="font-serif text-xl font-bold text-[#F8F5F0] group-hover:text-[#D4AF37] transition-colors">
+                                      {hero.name}
+                                    </h3>
+
+                                    {hero.title && (
+                                      <p className="mt-2 text-sm text-[#D4AF37]">
+                                        {hero.title}
+                                      </p>
+                                    )}
+
+                                    {hero.shortDescription && (
+                                      <p className="mt-3 text-sm leading-7 text-[#A09682]">
+                                        {hero.shortDescription}
+                                      </p>
+                                    )}
+
+                                    <div className="mt-5 pt-4 border-t border-[#D4AF37]/10">
+                                      <span className="text-xs uppercase tracking-[0.2em] text-[#D4AF37]/60 group-hover:text-[#D4AF37] transition-colors">
+                                        View Hero Record →
+                                      </span>
+                                    </div>
+                                  </article>
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
+                        </section>
+                      )}
                   
 
             {/* TAGS */}
@@ -1728,6 +1789,26 @@ function LinkedHistoricalText({
       .flatMap((person) => {
         const fullName = person.name.trim();
 
+        /*
+          Remove common titles/ranks from the beginning
+          of Historical Personality names.
+
+          Example:
+          "Sir James Outram"
+                ↓
+          "James Outram"
+
+          This allows text such as:
+          "Major General James Outram"
+          to dynamically link to the same personality.
+        */
+        const personalName = fullName
+          .replace(
+            /^(Field Marshal|General|Lieutenant General|Major General|Brigadier|Colonel|Lieutenant Colonel|Major|Captain|Commander|Lieutenant|Subedar Major|Subedar|Naik|Havildar|Mahatma|Pandit|Dr\.?|Sir)\s+/i,
+            ""
+          )
+          .trim();
+
         const candidates: HistoricalPersonalityLinkCandidate[] = [
           {
             type: "historicalPersonality",
@@ -1736,16 +1817,44 @@ function LinkedHistoricalText({
           },
         ];
 
+        /*
+          Add title-stripped name.
+
+          "Sir James Outram"
+                ↓
+          "James Outram"
+        */
+        if (
+          personalName &&
+          personalName.toLowerCase() !==
+            fullName.toLowerCase()
+        ) {
+          candidates.push({
+            type: "historicalPersonality",
+            person,
+            name: personalName,
+          });
+        }
+
+        /*
+          Also support explicitly stored alternative names.
+        */
         if (
           Array.isArray(person.alternativeNames)
         ) {
           for (const alternativeName of person.alternativeNames) {
             const alias = alternativeName?.trim();
 
+            if (!alias) {
+              continue;
+            }
+
             if (
-              alias &&
-              alias.toLowerCase() !==
-                fullName.toLowerCase()
+              !candidates.some(
+                (candidate) =>
+                  candidate.name.toLowerCase() ===
+                  alias.toLowerCase()
+              )
             ) {
               candidates.push({
                 type: "historicalPersonality",
@@ -1762,7 +1871,6 @@ function LinkedHistoricalText({
         (a, b) =>
           b.name.length - a.name.length
       );
-
 
 
   const candidates: HistoricalLinkCandidate[] = [

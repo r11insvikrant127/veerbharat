@@ -480,6 +480,10 @@ const HeroSchema = new Schema(
       type: [{ type: Schema.Types.ObjectId, ref: "Battle" }],
       default: [],
     },
+    relatedEvents: {
+      type: [{ type: Schema.Types.ObjectId, ref: "Event" }],
+      default: [],
+    },
 
     relatedPlaces: {
       type: [{ type: Schema.Types.ObjectId, ref: "Place" }],

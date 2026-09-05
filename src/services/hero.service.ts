@@ -170,8 +170,12 @@ class HeroService extends BaseService {
                 `,
             })
             .select(
-                "eventId name historicalPersonalityIds"
+                "eventId name shortDescription eventDate type historicalPersonalityIds"
             )
+            .sort({
+                eventDate: 1,
+                name: 1,
+            })
             .lean();
 
         const relatedHistoricalPersonalities = Array.from(
@@ -190,6 +194,19 @@ class HeroService extends BaseService {
 
         return {
             ...hero.toObject(),
+
+            relatedEvents: relatedEvents.map(
+                (event) => ({
+                    eventId: event.eventId,
+                    name: event.name,
+                    shortDescription:
+                        event.shortDescription,
+                    eventDate:
+                        event.eventDate,
+                    type: event.type,
+                })
+            ),
+
             relatedHistoricalPersonalities,
         };
     }

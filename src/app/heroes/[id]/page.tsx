@@ -67,9 +67,16 @@ interface Hero {
     name: string;
     alternativeNames?: string[];
   }[];
+
+  relatedEvents?: {
+    eventId: string;
+    name: string;
+    shortDescription?: string;
+    eventDate?: string | null;
+    type?: string;
+  }[];
+
   relatedHistoricalPersonalities?: HistoricalPersonalityReference[];
-
-
   
   historicalArtifacts?: {
     title: string;
@@ -543,6 +550,60 @@ export default function HeroDetailPage({
             <HistoricalArtifacts
               artifacts={hero.historicalArtifacts}
             />
+
+            {/* RELATED EVENTS */}
+            {hero.relatedEvents &&
+              hero.relatedEvents.length > 0 && (
+                <div className="section-card-hover p-8 md:p-10 mt-6">
+                  <p className="text-xs uppercase tracking-[0.25em] text-[#D4AF37]/60 mb-3">
+                    Historical Connections
+                  </p>
+
+                  <h2 className="font-serif text-3xl font-bold mb-8">
+                    Related Events
+                  </h2>
+
+                  <div className="grid md:grid-cols-2 gap-5">
+                    {hero.relatedEvents.map((event) => (
+                      <Link
+                        key={event.eventId}
+                        href={`/events/${event.eventId}`}
+                        className="group block"
+                      >
+                        <article className="rounded-xl border border-[#D4AF37]/15 bg-[#1C1410] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-[#D4AF37]/40 hover:bg-[#211811]">
+                          <div className="flex items-center justify-between gap-4 mb-4">
+                            <span className="text-xs tracking-wider text-[#D4AF37]/60">
+                              {event.eventId}
+                            </span>
+
+                            {event.type && (
+                              <span className="px-2.5 py-1 rounded-full border border-[#D4AF37]/15 text-[10px] uppercase tracking-wider text-[#A09682]">
+                                {event.type}
+                              </span>
+                            )}
+                          </div>
+
+                          <h3 className="font-serif text-xl font-bold text-[#F8F5F0] group-hover:text-[#D4AF37] transition-colors">
+                            {event.name}
+                          </h3>
+
+                          {event.shortDescription && (
+                            <p className="mt-3 text-sm leading-7 text-[#A09682]">
+                              {event.shortDescription}
+                            </p>
+                          )}
+
+                          <div className="mt-5 pt-4 border-t border-[#D4AF37]/10">
+                            <span className="text-xs uppercase tracking-[0.2em] text-[#D4AF37]/60 group-hover:text-[#D4AF37] transition-colors">
+                              View Historical Event →
+                            </span>
+                          </div>
+                        </article>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
 
             {/* PROFILE INFORMATION */}
             <div className="section-card-hover p-8 md:p-10 mt-6">
