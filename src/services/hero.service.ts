@@ -148,6 +148,10 @@ class HeroService extends BaseService {
                 path: "brothers",
                 select:
                     "heroId name",
+            })
+            .populate({
+            path: "relatedHeroes",
+            select: "heroId name alternativeNames",
             });
 
         if (!hero) {

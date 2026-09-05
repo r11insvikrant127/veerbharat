@@ -9,9 +9,16 @@ interface HistoricalPersonalityReference {
   alternativeNames?: string[];
 }
 
+interface HeroReference {
+  heroId: string;
+  name: string;
+  alternativeNames?: string[];
+}
+
 interface BiographySectionProps {
   biography?: string;
   heroName: string;
+  heroes?: HeroReference[];
   historicalPersonalities?: HistoricalPersonalityReference[];
 }
 
@@ -36,6 +43,7 @@ function cleanBiographyText(text: string): string {
 function highlightText(
   text: string,
   heroName: string,
+  heroes: HeroReference[],
   historicalPersonalities: HistoricalPersonalityReference[]
 ): ReactNode[] {
   const escapeRegExp = (value: string) =>
@@ -49,6 +57,41 @@ function highlightText(
    */
   const heroCandidate = heroName.trim();
 
+  const heroCandidates = heroes
+  .filter(
+    (hero) =>
+      typeof hero?.heroId === "string" &&
+      hero.heroId.trim() !== "" &&
+      typeof hero?.name === "string" &&
+      hero.name.trim() !== ""
+  )
+  .flatMap((hero) => {
+    const candidates = [
+      {
+        hero,
+        name: hero.name.trim(),
+      },
+    ];
+
+    if (Array.isArray(hero.alternativeNames)) {
+      for (const alternativeName of hero.alternativeNames) {
+        const alias = alternativeName?.trim();
+
+        if (
+          alias &&
+          alias.toLowerCase() !== hero.name.trim().toLowerCase()
+        ) {
+          candidates.push({
+            hero,
+            name: alias,
+          });
+        }
+      }
+    }
+
+    return candidates;
+  })
+  .sort((a, b) => b.name.length - a.name.length);
   /*
    * HISTORICAL PERSONALITY NAMES + ALIASES
    */
@@ -108,9 +151,8 @@ function highlightText(
    */
   const names = [
     heroCandidate,
-    ...personalityCandidates.map(
-      (candidate) => candidate.name
-    ),
+    ...heroCandidates.map((candidate) => candidate.name),
+    ...personalityCandidates.map((candidate) => candidate.name),
   ].filter(Boolean);
 
   const uniqueNames = Array.from(
@@ -167,6 +209,25 @@ function highlightText(
           >
             {part}
           </strong>
+        );
+      }
+
+      const heroCandidateMatch = heroCandidates.find(
+        (candidate) =>
+          candidate.name.toLowerCase() === normalizedPart
+      );
+
+      if (heroCandidateMatch) {
+        return (
+          <Link
+            key={`hero-${heroCandidateMatch.hero.heroId}-${index}`}
+            href={`/heroes/${encodeURIComponent(
+              heroCandidateMatch.hero.heroId
+            )}`}
+            className="text-[#D4AF37] hover:text-[#F0D878] underline underline-offset-4 decoration-[#D4AF37]/30 hover:decoration-[#D4AF37] transition-colors"
+          >
+            {part}
+          </Link>
         );
       }
 
@@ -349,6 +410,7 @@ function parseBiography(
 export function BiographySection({
   biography,
   heroName,
+  heroes = [],
   historicalPersonalities = [],
 }: BiographySectionProps) {
   const blocks = parseBiography(biography);
@@ -483,6 +545,7 @@ export function BiographySection({
               {highlightText(
                 block.text,
                 heroName,
+                heroes,
                 historicalPersonalities
               )}
             </p>

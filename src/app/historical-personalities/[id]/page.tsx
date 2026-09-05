@@ -93,8 +93,14 @@ interface HistoricalPersonality {
   status?: string;
 }
 
-interface HeroReference {
-  heroId: string;
+
+interface BattleReference {
+  battleId: string;
+  name: string;
+}
+
+interface EventReference {
+  eventId: string;
   name: string;
 }
 
@@ -797,14 +803,21 @@ function InfoRow({
 function LinkedHistoricalText({
   text,
   heroes,
+  battles = [],
+  events = [],
 }: {
   text: string;
   heroes: HeroReference[];
+  battles?: BattleReference[];
+  events?: EventReference[];
 }) {
   if (
     !text ||
-    !heroes ||
-    heroes.length === 0
+    (
+      heroes.length === 0 &&
+      battles.length === 0 &&
+      events.length === 0
+    )
   ) {
     return <>{text}</>;
   }
@@ -815,59 +828,118 @@ function LinkedHistoricalText({
       "\\$&"
     );
 
-  const heroCandidates: HeroLinkCandidate[] =
-    heroes
-      .filter(
-        (hero) =>
-          typeof hero?.heroId === "string" &&
-          hero.heroId.trim() !== "" &&
-          typeof hero?.name === "string" &&
-          hero.name.trim() !== ""
-      )
-      .flatMap((hero) => {
-        const fullName = hero.name.trim();
+  /*
+   * HERO CANDIDATES
+   */
+  const heroCandidates = heroes
+    .filter(
+      (hero) =>
+        typeof hero?.heroId === "string" &&
+        hero.heroId.trim() !== "" &&
+        typeof hero?.name === "string" &&
+        hero.name.trim() !== ""
+    )
+    .flatMap((hero) => {
+      const fullName = hero.name.trim();
 
-        /*
-         * Same title/rank removal logic
-         * used by the Event page.
-         */
-        const personalName = fullName
-          .replace(
-            /^(Field Marshal|General|Lieutenant General|Major General|Brigadier|Colonel|Lieutenant Colonel|Major|Captain|Commander|Lieutenant|Subedar Major|Subedar|Naik|Havildar|Mahatma|Pandit|Dr\.?|Sir)\s+/i,
-            ""
-          )
-          .trim();
+      const personalName = fullName
+        .replace(
+          /^(Field Marshal|General|Lieutenant General|Major General|Brigadier|Colonel|Lieutenant Colonel|Major|Captain|Commander|Lieutenant|Subedar Major|Subedar|Naik|Havildar|Mahatma|Pandit|Dr\.?|Sir)\s+/i,
+          ""
+        )
+        .trim();
 
-        const candidates: HeroLinkCandidate[] = [
-          {
-            hero,
-            name: fullName,
-          },
-        ];
+      const candidates: {
+        hero: HeroReference;
+        name: string;
+      }[] = [
+        {
+          hero,
+          name: fullName,
+        },
+      ];
 
-        if (
-          personalName &&
-          personalName.toLowerCase() !==
-            fullName.toLowerCase()
-        ) {
-          candidates.push({
-            hero,
-            name: personalName,
-          });
-        }
+      if (
+        personalName &&
+        personalName.toLowerCase() !==
+          fullName.toLowerCase()
+      ) {
+        candidates.push({
+          hero,
+          name: personalName,
+        });
+      }
 
-        return candidates;
-      })
-      .sort(
-        (a, b) =>
-          b.name.length - a.name.length
-      );
+      return candidates;
+    });
 
-  if (heroCandidates.length === 0) {
+  /*
+   * BATTLE CANDIDATES
+   */
+  const battleCandidates = battles
+    .filter(
+      (battle) =>
+        typeof battle?.battleId === "string" &&
+        battle.battleId.trim() !== "" &&
+        typeof battle?.name === "string" &&
+        battle.name.trim() !== ""
+    )
+    .map((battle) => ({
+      battle,
+      name: battle.name.trim(),
+    }));
+
+  /*
+   * EVENT CANDIDATES
+   */
+  const eventCandidates = events
+    .filter(
+      (event) =>
+        typeof event?.eventId === "string" &&
+        event.eventId.trim() !== "" &&
+        typeof event?.name === "string" &&
+        event.name.trim() !== ""
+    )
+    .map((event) => ({
+      event,
+      name: event.name.trim(),
+    }));
+
+  /*
+   * LONGEST NAMES FIRST
+   *
+   * Prevents:
+   *
+   * "Battle of Plassey"
+   *
+   * from being partially matched
+   * before a longer matching name.
+   */
+  const candidates = [
+    ...heroCandidates.map((candidate) => ({
+      type: "hero" as const,
+      ...candidate,
+    })),
+
+    ...battleCandidates.map((candidate) => ({
+      type: "battle" as const,
+      ...candidate,
+    })),
+
+    ...eventCandidates.map((candidate) => ({
+      type: "event" as const,
+      ...candidate,
+    })),
+  ].sort(
+    (a, b) =>
+      b.name.length - a.name.length
+  );
+
+  if (candidates.length === 0) {
     return <>{text}</>;
   }
 
-  const pattern = heroCandidates
+  const pattern = candidates
     .map((candidate) =>
       escapeRegExp(candidate.name)
     )
@@ -883,7 +955,7 @@ function LinkedHistoricalText({
       {text.split(regex).map(
         (part, index) => {
           const candidate =
-            heroCandidates.find(
+            candidates.find(
               (item) =>
                 item.name.toLowerCase() ===
                 part.trim().toLowerCase()
@@ -897,11 +969,48 @@ function LinkedHistoricalText({
             );
           }
 
+          /*
+           * HERO
+           */
+          if (candidate.type === "hero") {
+            return (
+              <Link
+                key={`hero-${candidate.hero.heroId}-${index}`}
+                href={`/heroes/${encodeURIComponent(
+                  candidate.hero.heroId
+                )}`}
+                className="text-[#D4AF37] hover:text-[#F0D878] underline underline-offset-4 decoration-[#D4AF37]/30 hover:decoration-[#D4AF37] transition-colors"
+              >
+                {part}
+              </Link>
+            );
+          }
+
+          /*
+           * BATTLE
+           */
+          if (candidate.type === "battle") {
+            return (
+              <Link
+                key={`battle-${candidate.battle.battleId}-${index}`}
+                href={`/battles/${encodeURIComponent(
+                  candidate.battle.battleId
+                )}`}
+                className="text-[#D4AF37] hover:text-[#F0D878] underline underline-offset-4 decoration-[#D4AF37]/30 hover:decoration-[#D4AF37] transition-colors"
+              >
+                {part}
+              </Link>
+            );
+          }
+
+          /*
+           * EVENT
+           */
           return (
             <Link
-              key={`hero-${candidate.hero.heroId}-${index}`}
-              href={`/heroes/${encodeURIComponent(
-                candidate.hero.heroId
+              key={`event-${candidate.event.eventId}-${index}`}
+              href={`/events/${encodeURIComponent(
+                candidate.event.eventId
               )}`}
               className="text-[#D4AF37] hover:text-[#F0D878] underline underline-offset-4 decoration-[#D4AF37]/30 hover:decoration-[#D4AF37] transition-colors"
             >

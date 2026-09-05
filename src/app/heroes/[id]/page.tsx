@@ -61,6 +61,12 @@ interface Hero {
   shortDescription: string;
 
   historicalNarratives?: HistoricalPerspective[];
+
+  relatedHeroes?: {
+    heroId: string;
+    name: string;
+    alternativeNames?: string[];
+  }[];
   relatedHistoricalPersonalities?: HistoricalPersonalityReference[];
 
   brothers?: {
@@ -528,6 +534,7 @@ export default function HeroDetailPage({
             <BiographySection
               biography={hero.biography}
               heroName={hero.name}
+              heroes={hero.relatedHeroes ?? []}
               historicalPersonalities={
                 hero.relatedHistoricalPersonalities ?? []
               }
