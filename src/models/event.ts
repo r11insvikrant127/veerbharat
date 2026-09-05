@@ -100,12 +100,7 @@ const EventSchema = new Schema(
       index: true,
     },
 
-    isOnThisDayEligible: {
-      type: Boolean,
-      required: true,
-      default: false,
-      index: true,
-    },
+    
 
     isPersonalMilestone: {
       type: Boolean,

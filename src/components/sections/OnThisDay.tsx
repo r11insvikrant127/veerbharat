@@ -169,7 +169,6 @@ export function OnThisDay() {
         events.forEach((event) => {
           if (
             !isPublished(event.status) ||
-            !event.isOnThisDayEligible ||
             !event.eventDate
           ) {
             return;
