@@ -50,8 +50,14 @@ export function FeaturedHeroes() {
       try {
         setLoading(true);
 
+        const allHeroes: Hero[] = [];
+
+let page = 1;
+let totalPages = 1;
+
+while (page <= totalPages) {
         const response = await fetch(
-          '/api/heroes?page=1&limit=100&status=Published'
+          `/api/heroes?page=${page}&limit=100&status=Published`
         );
 
         if (!response.ok) {
@@ -61,6 +67,12 @@ export function FeaturedHeroes() {
         const result: HeroesResponse =
           await response.json();
 
+        allHeroes.push(...result.data);
+
+        totalPages = result.pagination.totalPages;
+        page++;
+      }
+
         /*
          * FEATURE HEROES BASED ON
          * BIRTH OR DEATH/MARTYRDOM ANNIVERSARY.
@@ -68,7 +80,7 @@ export function FeaturedHeroes() {
          * Only the day and month are compared.
          * The year is intentionally ignored.
          */
-        const todaysHeroes = result.data.filter((hero) => {
+        const todaysHeroes = allHeroes.filter((hero: Hero) => {
           const isBirthday =
             hero.birthDate &&
             (() => {
