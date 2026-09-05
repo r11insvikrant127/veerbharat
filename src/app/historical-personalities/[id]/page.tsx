@@ -41,6 +41,8 @@ interface HistoricalPersonality {
 
   alternativeNames?: string[];
   relatedHeroes?: HeroReference[];
+  relatedBattles?: BattleReference[];
+  relatedEvents?: EventReference[];
   title?: string;
   shortDescription?: string;
 
@@ -559,6 +561,8 @@ export default function HistoricalPersonalityDetailPage({
                     <LinkedHistoricalText
                       text={personality.biography}
                       heroes={personality.relatedHeroes ?? []}
+                      battles={personality.relatedBattles ?? []}
+                      events={personality.relatedEvents ?? []}
                     />
                   </p>
                 </div>
@@ -708,6 +712,8 @@ export default function HistoricalPersonalityDetailPage({
                   <LinkedHistoricalText
                     text={personality.classificationReason}
                     heroes={personality.relatedHeroes ?? []}
+                    battles={personality.relatedBattles ?? []}
+                    events={personality.relatedEvents ?? []}
                   />
                 </p>
               </div>
@@ -729,6 +735,8 @@ export default function HistoricalPersonalityDetailPage({
                   <LinkedHistoricalText
                     text={personality.legacy}
                     heroes={personality.relatedHeroes ?? []}
+                    battles={personality.relatedBattles ?? []}
+                    events={personality.relatedEvents ?? []}
                   />
                 </p>
               </div>

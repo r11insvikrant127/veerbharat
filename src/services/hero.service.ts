@@ -144,11 +144,7 @@ class HeroService extends BaseService {
                 select:
                     "imageId title url altText imageType description",
             })
-            .populate({
-                path: "brothers",
-                select:
-                    "heroId name",
-            })
+
             .populate({
             path: "relatedHeroes",
             select: "heroId name alternativeNames",

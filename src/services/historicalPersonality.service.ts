@@ -4,6 +4,7 @@ import ApiError from "@/lib/ApiError";
 import BaseService from "./base.service";
 import Event from "@/models/event";
 import Hero from "@/models/hero";
+import Battle from "@/models/battle";
 
 import {
   getSearchRegex,
@@ -164,16 +165,9 @@ class HistoricalPersonalityService extends BaseService {
       );
     }
 
-    /*
-    * Find events connected to this historical personality.
-    *
-    * Example:
-    * HP000075
-    *    ↓
-    * EVT000098
-    *    ↓
-    * HER0126 + HER0135
-    */
+      /*
+     * Find events connected to this historical personality.
+     */
     const relatedEvents = await Event.find({
       historicalPersonalityIds:
         historicalPersonality._id,
@@ -182,18 +176,47 @@ class HistoricalPersonalityService extends BaseService {
         path: "heroIds",
         model: Hero,
         select: `
+          _id
           heroId
           name
         `,
       })
       .select(
-        "eventId name eventDate heroIds"
+        "_id eventId name eventDate heroIds"
       )
       .lean();
 
     /*
-    * Collect unique heroes from all related events.
-    */
+     * Find battles connected to this historical personality.
+     *
+     * A Historical Personality can appear in a battle as:
+     * - commander personality
+     * - opposing commander personality
+     */
+    const relatedBattles = await Battle.find({
+      $or: [
+        {
+          commanderPersonalityIds:
+            historicalPersonality._id,
+        },
+        {
+          opposingCommanderPersonalityIds:
+            historicalPersonality._id,
+        },
+        {
+          "crossReferences.relatedHistoricalPersonalities":
+            historicalPersonality._id,
+        },
+      ],
+    })
+      .select(
+        "_id battleId name"
+      )
+      .lean();
+
+    /*
+     * Collect unique heroes from all related events.
+     */
     const relatedHeroes = Array.from(
       new Map(
         relatedEvents
@@ -211,6 +234,7 @@ class HistoricalPersonalityService extends BaseService {
     return {
       ...historicalPersonality.toObject(),
       relatedEvents,
+      relatedBattles,
       relatedHeroes,
     };
   }
