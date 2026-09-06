@@ -9,6 +9,7 @@ import Battle from "@/models/battle";
 import HistoricalPersonality from "@/models/historicalPersonality";
 import Place from "@/models/place";
 import Kingdom from "@/models/kingdom";
+import Source from "@/models/source";
 
 import {
   buildSearchFilter,
@@ -192,6 +193,23 @@ class EventService extends BaseService {
               model: Image,
               select: "imageId title url altText imageType",
             },
+          })
+
+          .populate({
+            path: "sourceIds",
+            model: Source,
+            select: `
+              sourceId
+              title
+              author
+              type
+              year
+              publisher
+              description
+              reliability
+              url
+              status
+            `,
           })
           .populate({
             path: "historicalPersonalityIds",
