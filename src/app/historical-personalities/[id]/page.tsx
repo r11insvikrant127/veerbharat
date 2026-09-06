@@ -46,7 +46,23 @@ interface HistoricalPersonality {
   title?: string;
   shortDescription?: string;
 
-  biography?: string;
+  biography?:
+  | string
+  | {
+      shortDescription?: string;
+      earlyLife?: string;
+      education?: string;
+      family?: string;
+      militaryCareer?: string;
+      politicalCareer?: string;
+      administrativeCareer?: string;
+      campaignAgainstShivaji?: string;
+      siegeOfPurandar?: string;
+      treatyOfPurandar?: string;
+      majorAchievements?: string;
+      historicalSignificance?: string;
+      laterLife?: string;
+    };
   category?: string;
 
   roles?: string[];
@@ -65,6 +81,7 @@ interface HistoricalPersonality {
 
   deathPlace?: {
     name?: string;
+    region?: string;
     presentDayLocation?: string;
   };
 
@@ -547,16 +564,17 @@ export default function HistoricalPersonalityDetailPage({
             </div>
             {/* BIOGRAPHY */}
 
-              {personality.biography && (
-                <div className="section-card-hover p-8 md:p-10 mt-6">
-                  <p className="text-xs uppercase tracking-[0.25em] text-[#D4AF37]/60 mb-3">
-                    Historical Biography
-                  </p>
+            {personality.biography && (
+              <div className="section-card-hover p-8 md:p-10 mt-6">
+                <p className="text-xs uppercase tracking-[0.25em] text-[#D4AF37]/60 mb-3">
+                  Historical Biography
+                </p>
 
-                  <h2 className="font-serif text-3xl font-bold mb-6">
-                    Biography
-                  </h2>
+                <h2 className="font-serif text-3xl font-bold mb-8">
+                  Biography
+                </h2>
 
+                {typeof personality.biography === "string" ? (
                   <p className="text-[#D7C9A5] leading-8 whitespace-pre-line">
                     <LinkedHistoricalText
                       text={personality.biography}
@@ -565,8 +583,54 @@ export default function HistoricalPersonalityDetailPage({
                       events={personality.relatedEvents ?? []}
                     />
                   </p>
-                </div>
-              )}                       
+                ) : (
+                  <div className="space-y-7">
+                    {Object.entries(
+                      personality.biography
+                    ).map(([key, value]) => {
+                      if (
+                        typeof value !== "string" ||
+                        !value.trim()
+                      ) {
+                        return null;
+                      }
+
+                      const label = key
+                        .replace(
+                          /([A-Z])/g,
+                          " $1"
+                        )
+                        .replace(/^./, (char) =>
+                          char.toUpperCase()
+                        );
+
+                      return (
+                        <div key={key}>
+                          <h3 className="font-serif text-xl font-semibold text-[#F8F5F0] mb-2">
+                            {label}
+                          </h3>
+
+                          <p className="text-[#D7C9A5] leading-8 whitespace-pre-line">
+                            <LinkedHistoricalText
+                              text={value}
+                              heroes={
+                                personality.relatedHeroes ?? []
+                              }
+                              battles={
+                                personality.relatedBattles ?? []
+                              }
+                              events={
+                                personality.relatedEvents ?? []
+                              }
+                            />
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}                   
             {/* KNOWN FOR */}
 
             {personality.knownFor &&

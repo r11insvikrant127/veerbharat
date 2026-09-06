@@ -14,16 +14,109 @@ interface HistoricalPersonality {
 
   historicalPersonalityId?: string;
 
-  // Fallback in case your existing documents
-  // still use heroId after being moved from Heroes.
-  heroId?: string;
-
   name: string;
+
   nativeName?: string;
+
+  alternativeNames?: string[];
+
   title?: string;
+
   gender?: string;
+
+  category?: string;
+
+  roles?: string[];
+
+  birthDate?: string;
+
+  birthDateAccuracy?: string;
+
+  birthplace?: {
+    name?: string;
+    region?: string;
+    presentDayLocation?: string;
+  };
+
+  deathDate?: string;
+
+  deathDateAccuracy?: string;
+
+  deathPlace?: {
+    name?: string;
+    region?: string;
+    presentDayLocation?: string;
+  };
+
+  dynasty?: string;
+
+  kingdom?: string;
+
+  allegiance?: {
+    entity: string;
+    role?: string;
+  }[];
+
+  knownFor?: string[];
+
   shortDescription?: string;
-  biography?: string;
+
+  biography?:
+    | string
+    | Record<string, unknown>;
+
+  majorEvents?: {
+    name: string;
+    year?: number;
+    date?: string;
+    role?: string;
+    description?: string;
+  }[];
+
+  legacy?: string;
+
+  classificationReason?: string;
+
+  period?: string;
+
+  era?: string;
+
+  achievements?: string[];
+
+  controversies?: string[];
+
+  tags?: string[];
+
+  searchFields?: string[];
+
+  notes?: string;
+
+  sources?: {
+    title?: string;
+    author?: string;
+    url?: string;
+    publication?: string;
+    year?: number;
+    accessedAt?: string;
+    sourceId?: string;
+  }[];
+
+  verification?: {
+    isVerified?: boolean;
+    verifiedBy?: string;
+    verifiedAt?: string;
+    verificationNotes?: string;
+  };
+
+  imageIds?: {
+    _id: string;
+    imageId: string;
+    title: string;
+    url: string;
+    altText: string;
+    imageType: string;
+  }[];
+
   status?: string;
 }
 
@@ -296,7 +389,6 @@ export default function HistoricalPersonalitiesPage() {
                 {personalities.map((personality) => {
                   const personalityId =
                     personality.historicalPersonalityId ||
-                    personality.heroId ||
                     personality._id;
 
                   return (
@@ -364,7 +456,18 @@ export default function HistoricalPersonalitiesPage() {
                             personality.biography) && (
                             <p className="mt-5 text-sm leading-relaxed text-[#A09682] line-clamp-3">
                               {personality.shortDescription ||
-                                personality.biography}
+                                (
+                                  typeof personality.biography === "string"
+                                    ? personality.biography
+                                    : Object.values(
+                                        personality.biography ?? {}
+                                      )
+                                        .filter(
+                                          (value): value is string =>
+                                            typeof value === "string"
+                                        )
+                                        .join(" ")
+                                )}
                             </p>
                           )}
 
