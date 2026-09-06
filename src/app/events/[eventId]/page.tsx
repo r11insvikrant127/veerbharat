@@ -50,6 +50,14 @@ interface KingdomReference {
   alternativeNames?: string[];
 }
 
+interface SourceReference {
+  sourceId: string;
+  title: string;
+  author?: string;
+  type?: string;
+  year?: number;
+}
+
 interface HistoricalPersonalityReference {
   historicalPersonalityId: string;
   name: string;
@@ -120,6 +128,7 @@ interface HistoricalEvent {
 
   heroIds?: HeroReference[];
   historicalPersonalityIds?: HistoricalPersonalityReference[];
+  sourceIds?: SourceReference[];
 
   crossReferences?: {
     relatedBattles?: BattleReference[];
@@ -980,6 +989,135 @@ export default function EventDetailsPage() {
                                   </article>
                                 </Link>
                               ))}
+                            </div>
+                          </div>
+                        </section>
+                      )}
+
+                      
+                      {/* =====================================================
+                            RELATED HISTORICAL PERSONALITIES
+                        ===================================================== */}
+
+                        {historicalPersonalities.length > 0 && (
+                          <section className="mt-10">
+                            <div className="section-card-hover p-8 md:p-10">
+
+                              <p className="text-xs uppercase tracking-[0.25em] text-[#D4AF37]/60 mb-3">
+                                Historical Connections
+                              </p>
+
+                              <h2 className="font-serif text-3xl font-bold mb-8">
+                                Related Historical Personalities
+                              </h2>
+
+                              <div className="grid md:grid-cols-2 gap-5">
+
+                                {historicalPersonalities.map((person) => (
+                                  <Link
+                                    key={person.historicalPersonalityId}
+                                    href={`/historical-personalities/${person.historicalPersonalityId}`}
+                                    className="group block"
+                                  >
+                                    <article className="rounded-xl border border-[#D4AF37]/15 bg-[#1C1410] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-[#D4AF37]/40 hover:bg-[#211811]">
+
+                                      <div className="flex items-center justify-between gap-4 mb-4">
+
+                                        <span className="text-xs tracking-wider text-[#D4AF37]/60">
+                                          {person.historicalPersonalityId}
+                                        </span>
+
+                                        <span className="text-[10px] uppercase tracking-wider text-[#A09682]">
+                                          Historical Personality
+                                        </span>
+
+                                      </div>
+
+                                      <h3 className="font-serif text-xl font-bold text-[#F8F5F0] group-hover:text-[#D4AF37] transition-colors">
+                                        {person.name}
+                                      </h3>
+
+                                      {person.alternativeNames &&
+                                        person.alternativeNames.length > 0 && (
+                                          <p className="mt-2 text-sm text-[#A09682]">
+                                            {person.alternativeNames.join(" • ")}
+                                          </p>
+                                        )}
+
+                                      <div className="mt-5 pt-4 border-t border-[#D4AF37]/10">
+
+                                        <span className="text-xs uppercase tracking-[0.2em] text-[#D4AF37]/60 group-hover:text-[#D4AF37] transition-colors">
+                                          View Historical Personality →
+                                        </span>
+
+                                      </div>
+
+                                    </article>
+                                  </Link>
+                                ))}
+
+                              </div>
+                            </div>
+                          </section>
+                        )}
+
+                      {/* =====================================================
+                          SOURCES
+                      ===================================================== */}
+
+                      {event.sourceIds && event.sourceIds.length > 0 && (
+                        <section className="mt-10">
+                          <div className="section-card-hover p-8 md:p-10">
+
+                            <p className="text-xs uppercase tracking-[0.25em] text-[#D4AF37]/60 mb-3">
+                              Historical Sources
+                            </p>
+
+                            <h2 className="font-serif text-3xl font-bold mb-8">
+                              Sources
+                            </h2>
+
+                            <div className="grid md:grid-cols-2 gap-5">
+
+                              {event.sourceIds.map((source) => (
+                                <article
+                                  key={source.sourceId}
+                                  className="rounded-xl border border-[#D4AF37]/15 bg-[#1C1410] p-6"
+                                >
+
+                                  <div className="flex items-center justify-between gap-4 mb-4">
+
+                                    <span className="text-xs tracking-wider text-[#D4AF37]/60">
+                                      {source.sourceId}
+                                    </span>
+
+                                    {source.type && (
+                                      <span className="text-[10px] uppercase tracking-wider text-[#A09682]">
+                                        {source.type}
+                                      </span>
+                                    )}
+
+                                  </div>
+
+                                  <h3 className="font-serif text-xl font-bold text-[#F8F5F0]">
+                                    {source.title}
+                                  </h3>
+
+                                  {source.author && (
+                                    <p className="mt-2 text-sm text-[#D4AF37]">
+                                      {source.author}
+                                    </p>
+                                  )}
+
+                                  {source.year && (
+                                    <p className="mt-2 text-sm text-[#A09682]">
+                                      {source.year}
+                                    </p>
+                                  )}
+
+                                </article>
+                              ))}
+
                             </div>
                           </div>
                         </section>
