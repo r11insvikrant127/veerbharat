@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { BattleCard } from "@/components/cards/BattleCard";
 import {
   ArrowLeft,
   Shield,
@@ -66,6 +67,16 @@ interface Hero {
     heroId: string;
     name: string;
     alternativeNames?: string[];
+  }[];
+
+  relatedBattles?: {
+    battleId: string;
+    name: string;
+    battleDate?: string | null;
+    battleEndDate?: string | null;
+    description?: string;
+    shortDescription?: string;
+    locationId?: string;
   }[];
 
   relatedEvents?: {
@@ -550,6 +561,45 @@ export default function HeroDetailPage({
             <HistoricalArtifacts
               artifacts={hero.historicalArtifacts}
             />
+            
+            {/* RELATED BATTLES */}
+            {hero.relatedBattles &&
+              hero.relatedBattles.length > 0 && (
+                <div className="section-card-hover p-8 md:p-10 mt-6">
+                  <p className="text-xs uppercase tracking-[0.25em] text-[#D4AF37]/60 mb-3">
+                    Military Connections
+                  </p>
+
+                  <h2 className="font-serif text-3xl font-bold mb-8">
+                    Related Battles
+                  </h2>
+
+                  <div className="grid md:grid-cols-2 gap-5">
+                    {hero.relatedBattles.map((battle, index) => (
+                      <Link
+                        key={battle.battleId}
+                        href={`/battles/${encodeURIComponent(battle.battleId)}`}
+                        className="block"
+                      >
+                        <BattleCard
+                          battle={{
+                            ...battle,
+                            year: battle.battleDate
+                              ? new Date(battle.battleDate).getFullYear()
+                              : "",
+                            location: "",
+                            description:
+                              battle.shortDescription ||
+                              battle.description ||
+                              "",
+                          }}
+                          index={index}
+                        />
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
 
             {/* RELATED EVENTS */}
             {hero.relatedEvents &&

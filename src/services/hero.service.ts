@@ -148,7 +148,20 @@ class HeroService extends BaseService {
             .populate({
             path: "relatedHeroes",
             select: "heroId name alternativeNames",
-            });
+            })
+
+            .populate({
+                path: "relatedBattles",
+                select: `
+                    battleId
+                    name
+                    battleDate
+                    battleEndDate
+                    description
+                    shortDescription
+                    locationId
+                `,
+                });
 
         if (!hero) {
             throw new ApiError(
