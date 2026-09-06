@@ -584,9 +584,15 @@ export default function HeroDetailPage({
                         <BattleCard
                           battle={{
                             ...battle,
-                            year: battle.battleDate
-                              ? new Date(battle.battleDate).getFullYear()
-                              : "",
+                            year:
+                              battle.battleDate !== null &&
+                              battle.battleDate !== undefined
+                                ? String(
+                                    new Date(
+                                      battle.battleDate
+                                    ).getFullYear()
+                                  )
+                                : "Unknown",
                             location: "",
                             description:
                               battle.shortDescription ||

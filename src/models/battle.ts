@@ -191,6 +191,7 @@ const BattleSchema = new Schema(
       type: String,
       trim: true,
     },
+    
     shortDescription: {
       type: String,
       trim: true,
@@ -201,6 +202,27 @@ const BattleSchema = new Schema(
       required: true,
       trim: true,
     },
+
+    battleSections: [
+      {
+        title: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+
+        content: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+
+        order: {
+          type: Number,
+          required: true,
+        },
+      },
+    ],
 
     aftermath: {
       type: String,
