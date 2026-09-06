@@ -344,6 +344,22 @@ class EventService extends BaseService {
         `,
       })
       .populate({
+        path: "sourceIds",
+        model: Source,
+        select: `
+          sourceId
+          title
+          type
+          author
+          year
+          publisher
+          description
+          reliability
+          url
+          status
+        `,
+      })
+      .populate({
         path: "crossReferences.relatedBattles",
         model: Battle,
         select: `

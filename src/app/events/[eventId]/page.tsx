@@ -56,6 +56,7 @@ interface SourceReference {
   author?: string;
   type?: string;
   year?: number;
+  url?: string;
 }
 
 interface HistoricalPersonalityReference {
@@ -1079,9 +1080,9 @@ export default function EventDetailsPage() {
 
                             <div className="grid md:grid-cols-2 gap-5">
 
-                              {event.sourceIds.map((source) => (
+                              {event.sourceIds.map((source, index) => (
                                 <article
-                                  key={source.sourceId}
+                                  key={source.sourceId || `source-${index}`}
                                   className="rounded-xl border border-[#D4AF37]/15 bg-[#1C1410] p-6"
                                 >
 
@@ -1100,7 +1101,18 @@ export default function EventDetailsPage() {
                                   </div>
 
                                   <h3 className="font-serif text-xl font-bold text-[#F8F5F0]">
-                                    {source.title}
+                                    {source.url ? (
+                                      <a
+                                        href={source.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="hover:text-[#D4AF37] transition-colors underline-offset-4 hover:underline"
+                                      >
+                                        {source.title}
+                                      </a>
+                                    ) : (
+                                      source.title
+                                    )}
                                   </h3>
 
                                   {source.author && (
