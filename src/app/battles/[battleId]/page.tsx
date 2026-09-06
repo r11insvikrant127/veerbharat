@@ -562,17 +562,6 @@ export default function BattleDetailPage() {
             }
           />
 
-          <div className="mt-5">
-            <ReferenceGrid
-              items={refs?.relatedKingdoms}
-              type="Related Kingdom"
-              hrefBuilder={(item) =>
-                item.kingdomId
-                  ? `/kingdoms/${item.kingdomId}`
-                  : undefined
-              }
-            />
-          </div>
         </Section>
         
         {/* FORCES */}
