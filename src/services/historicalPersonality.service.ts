@@ -66,11 +66,17 @@ class HistoricalPersonalityService extends BaseService {
       nextNumber = currentNumber + 1;
     }
 
-    // Generate ID: HP001, HP002, HP003...
+    // Generate ID: HP0001, HP0002, HP0003...
     const historicalPersonalityId = `HP${String(
       nextNumber
     ).padStart(4, "0")}`;
 
+    // Create the Historical Personality.
+    //
+    // The validation schema already accepts the complete
+    // Historical Personality structure, and the Mongoose model
+    // supports those fields, so spread the complete validated
+    // object into the document.
     const historicalPersonality =
       await HistoricalPersonality.create({
         ...data,
@@ -95,11 +101,27 @@ class HistoricalPersonalityService extends BaseService {
 
     const filter: Record<string, unknown> = {};
 
-    // Search by name
+    /*
+     * Search across the important Historical Personality fields.
+     *
+     * Previously this searched only `name`, which meant that
+     * native names, alternative names, tags, dynasty, kingdom,
+     * category, etc. could not be found through the API search.
+     */
     const regex = getSearchRegex(search);
 
     if (regex) {
-      filter.name = regex;
+      filter.$or = [
+        { name: regex },
+        { nativeName: regex },
+        { alternativeNames: regex },
+        { shortDescription: regex },
+        { tags: regex },
+        { searchFields: regex },
+        { dynasty: regex },
+        { kingdom: regex },
+        { category: regex },
+      ];
     }
 
     // Filter by status
@@ -165,7 +187,7 @@ class HistoricalPersonalityService extends BaseService {
       );
     }
 
-      /*
+    /*
      * Find events connected to this historical personality.
      */
     const relatedEvents = await Event.find({
@@ -192,6 +214,7 @@ class HistoricalPersonalityService extends BaseService {
      * A Historical Personality can appear in a battle as:
      * - commander personality
      * - opposing commander personality
+     * - related historical personality
      */
     const relatedBattles = await Battle.find({
       $or: [
