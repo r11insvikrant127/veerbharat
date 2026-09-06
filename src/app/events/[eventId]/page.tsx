@@ -1100,14 +1100,8 @@ export default function EventDetailsPage() {
                                     )}
 
                                   </div>
-
                                   <h3 className="font-serif text-xl font-bold text-[#F8F5F0]">
-                                    <Link
-                                      href={`/sources/${encodeURIComponent(source.sourceId)}`}
-                                      className="hover:text-[#D4AF37] transition-colors underline-offset-4 hover:underline"
-                                    >
-                                      {source.title}
-                                    </Link>
+                                        {source.title}
                                   </h3>
 
                                   {source.author && (
