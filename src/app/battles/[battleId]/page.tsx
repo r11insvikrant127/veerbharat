@@ -278,7 +278,9 @@ function getImagesForSection(
 
   if (!sectionKey) return [];
 
-  // 1. Exact relatedSection match always wins
+  /*
+   * 1. Exact relatedSection match
+   */
   const exactMatches = images.filter(
     (image) =>
       image.relatedSection &&
@@ -289,8 +291,40 @@ function getImagesForSection(
     return exactMatches;
   }
 
-  // 2. Only images WITHOUT an explicit section can use
-  // keyword/tag fallback matching
+  /*
+   * 2. Partial relatedSection match
+   *
+   * Example:
+   * "High-Altitude Warfare"
+   * matches
+   * "High Altitude Warfare"
+   */
+  const relatedSectionMatches = images.filter(
+    (image) => {
+      if (!image.relatedSection) {
+        return false;
+      }
+
+      const imageSectionKey =
+        normalizeImageKey(image.relatedSection);
+
+      return (
+        imageSectionKey.includes(sectionKey) ||
+        sectionKey.includes(imageSectionKey)
+      );
+    }
+  );
+
+  if (relatedSectionMatches.length > 0) {
+    return relatedSectionMatches;
+  }
+
+  /*
+   * 3. Keyword/tag fallback
+   *
+   * Only images without an explicit relatedSection
+   * are allowed here.
+   */
   const sectionWords = new Set(
     sectionKey
       .split(" ")
@@ -691,12 +725,6 @@ function BattleNarrative({
                               paragraph
                             )
                           ) {
-                            const timelineImages =
-                              getImagesForSection(
-                                paragraph,
-                                images
-                              );
-
                             return (
                               <div
                                 key={
@@ -709,12 +737,6 @@ function BattleNarrative({
                                 <h4 className="inline font-serif text-lg md:text-xl lg:text-[22px] font-bold leading-relaxed text-[#D4AF37] border-b border-[#D4AF37]/35 pb-1">
                                   {paragraph}
                                 </h4>
-
-                                {timelineImages.length > 0 && (
-                                  <SectionImages
-                                    images={timelineImages}
-                                  />
-                                )}
                               </div>
                             );
                           }
@@ -1135,27 +1157,22 @@ export default function BattleDetailPage() {
     (image, index, array) =>
       array.findIndex(
         (item) =>
-          (item._id &&
-            item._id === image._id) ||
-          (item.imageId &&
-            item.imageId === image.imageId)
+          (item._id && item._id === image._id) ||
+          (item.imageId && item.imageId === image.imageId)
       ) === index
   );
 
   const primaryImage = battleImages[0];
 
-  const galleryImages =
-    battleImages.slice(1);
+  const galleryImages = battleImages.slice(1);
 
-  const sectionImages =
-    galleryImages.filter(
-      (image) => image.relatedSection
-    );
+  const sectionImages = galleryImages.filter(
+    (image) => !!image.relatedSection
+  );
 
-  const generalImages =
-    galleryImages.filter(
-      (image) => !image.relatedSection
-    );
+  const generalImages = galleryImages.filter(
+    (image) => !image.relatedSection
+  );
 
   const relatedBattles =
     refs?.relatedBattles?.filter(
