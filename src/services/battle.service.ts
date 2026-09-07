@@ -166,6 +166,7 @@ class BattleService extends BaseService {
       );
 
     await battle.populate([
+
       {
         path: "crossReferences.relatedHeroes",
         model: Hero,
@@ -228,7 +229,15 @@ class BattleService extends BaseService {
       {
         path: "crossReferences.relatedImages",
         model: Image,
-        select: "_id name imageId",
+        select:
+          "_id imageId title url altText imageType description relatedSection period license copyright photographer artist yearCreated tags searchFields",
+      },
+
+      {
+        path: "imageIds",
+        model: Image,
+        select:
+          "_id imageId title url altText imageType description relatedSection period license copyright photographer artist yearCreated tags searchFields",
       },
       
       {

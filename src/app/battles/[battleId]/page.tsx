@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
   ArrowLeft,
+  ArrowRight,
   CalendarDays,
   MapPin,
   Swords,
@@ -16,10 +17,19 @@ import {
   Users,
   Landmark,
   ExternalLink,
+  Image as ImageIcon,
+  Clock3,
+  Flag,
+  Target,
+  ChevronRight,
 } from "lucide-react";
 
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+
+/* =========================================================
+   TYPES
+========================================================= */
 
 interface Reference {
   _id?: string;
@@ -36,6 +46,25 @@ interface Reference {
   weaponId?: string;
   placeId?: string;
   imageId?: string;
+
+  url?: string;
+  altText?: string;
+  imageType?: string;
+  description?: string;
+  relatedSection?: string;
+  period?: string;
+  license?: string;
+  copyright?: string;
+  photographer?: string;
+
+  tags?: string[];
+
+  searchFields?: {
+    keywords?: string[];
+    nativeSpellings?: string[];
+    alternateSpellings?: string[];
+    aliases?: string[];
+  };
 }
 
 interface BattleSection {
@@ -88,17 +117,14 @@ interface Battle {
   };
 
   weapons?: string[];
-
   tactics?: string[];
 
   terrain?: string;
-
   outcome?: string;
 
   keyEvents?: string[];
 
   significance?: string;
-
   aftermath?: string;
 
   imageIds?: Reference[];
@@ -122,13 +148,15 @@ interface Battle {
   status: string;
 }
 
+/* =========================================================
+   HELPERS
+========================================================= */
+
 function formatDate(
   date?: string | null,
   accuracy?: string
 ) {
-  if (!date) {
-    return "Date Unknown";
-  }
+  if (!date) return "Date Unknown";
 
   const parsed = new Date(date);
 
@@ -152,13 +180,27 @@ function formatDate(
   return formatted;
 }
 
+function formatShortDate(date?: string | null) {
+  if (!date) return "Unknown";
+
+  const parsed = new Date(date);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return "Unknown";
+  }
+
+  return parsed.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 function getDuration(
   start?: string | null,
   end?: string | null
 ) {
-  if (!start || !end) {
-    return null;
-  }
+  if (!start || !end) return null;
 
   const startDate = new Date(start);
   const endDate = new Date(end);
@@ -178,12 +220,196 @@ function getDuration(
       difference / (1000 * 60 * 60 * 24)
     ) + 1;
 
-  if (days <= 1) {
-    return "1 day";
+  return days <= 1
+    ? "1 day"
+    : `${days} days`;
+}
+
+function splitParagraphs(text?: string) {
+  if (!text) return [];
+
+  return text
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+}
+
+/*
+ * Removes old Markdown heading markers if any
+ * still remain in database records.
+ */
+function cleanHeading(text: string) {
+  return text.replace(/^#{1,6}\s*/, "").trim();
+}
+
+function isTimelineHeading(text: string) {
+  const cleaned = cleanHeading(text);
+
+  /*
+   * Examples:
+   *
+   * 3 May 1999 — Initial Discovery
+   * Early May 1999 — Patrols...
+   * 11–12 December 1971 — Rapid Advance
+   * June 1999 — Major Ground Battles
+   */
+  return (
+    /\b(18|19|20)\d{2}\b/.test(cleaned) &&
+    cleaned.length <= 150
+  );
+}
+function normalizeImageKey(value?: string) {
+  if (!value) return "";
+
+  return value
+    .toLowerCase()
+    .replace(/^#{1,6}\s*/, "")
+    .replace(/[—–-]/g, " ")
+    .replace(/[^a-z0-9\s]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getImagesForSection(
+  sectionTitle: string,
+  images: Reference[]
+) {
+  const sectionKey = normalizeImageKey(sectionTitle);
+
+  if (!sectionKey) return [];
+
+  // 1. Exact relatedSection match always wins
+  const exactMatches = images.filter(
+    (image) =>
+      image.relatedSection &&
+      normalizeImageKey(image.relatedSection) === sectionKey
+  );
+
+  if (exactMatches.length > 0) {
+    return exactMatches;
   }
 
-  return `${days} days`;
+  // 2. Only images WITHOUT an explicit section can use
+  // keyword/tag fallback matching
+  const sectionWords = new Set(
+    sectionKey
+      .split(" ")
+      .filter((word) => word.length >= 4)
+  );
+
+  return images.filter((image) => {
+    if (image.relatedSection) {
+      return false;
+    }
+
+    const keywords = [
+      ...(image.searchFields?.keywords || []),
+      ...(image.tags || []),
+    ].map(normalizeImageKey);
+
+    return keywords.some(
+      (keyword) =>
+        keyword === sectionKey ||
+        sectionWords.has(keyword) ||
+        sectionKey.includes(keyword) ||
+        keyword.includes(sectionKey)
+    );
+  });
 }
+
+/* =========================================================
+   GENERIC SECTION HEADER
+========================================================= */
+
+function Section({
+  title,
+  eyebrow,
+  icon,
+  children,
+}: {
+  title: string;
+  eyebrow?: string;
+  icon: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section className="mt-20">
+      <div className="mb-8">
+        <div className="flex items-center gap-4">
+          <div className="w-11 h-11 shrink-0 rounded-xl border border-[#D4AF37]/20 bg-[#D4AF37]/5 flex items-center justify-center text-[#D4AF37]">
+            {icon}
+          </div>
+
+          <div>
+            {eyebrow && (
+              <p className="mb-1 text-[10px] uppercase tracking-[0.3em] text-[#D4AF37]/50">
+                {eyebrow}
+              </p>
+            )}
+
+            <h2 className="font-serif text-2xl md:text-3xl font-bold text-[#F8F5F0]">
+              {title}
+            </h2>
+          </div>
+        </div>
+
+        <div className="mt-5 flex items-center gap-3">
+          <div className="h-px w-16 bg-[#D4AF37]/40" />
+          <div className="w-1.5 h-1.5 rotate-45 bg-[#D4AF37]/50" />
+          <div className="h-px flex-1 bg-gradient-to-r from-[#D4AF37]/15 to-transparent" />
+        </div>
+      </div>
+
+      {children}
+    </section>
+  );
+}
+
+/* =========================================================
+   FACT CARD
+========================================================= */
+
+function FactCard({
+  label,
+  value,
+  subValue,
+  icon,
+}: {
+  label: string;
+  value: ReactNode;
+  subValue?: ReactNode;
+  icon: ReactNode;
+}) {
+  return (
+    <div className="group relative overflow-hidden rounded-2xl border border-[#D4AF37]/10 bg-gradient-to-br from-[#1C1410]/90 to-[#12100E]/80 p-5 transition-all duration-300 hover:-translate-y-1 hover:border-[#D4AF37]/30 hover:shadow-[0_18px_45px_rgba(0,0,0,0.25)]">
+      <div className="absolute -top-10 -right-10 w-28 h-28 rounded-full bg-[#D4AF37]/5 blur-2xl group-hover:bg-[#D4AF37]/10 transition-colors" />
+
+      <div className="relative">
+        <div className="w-10 h-10 rounded-xl border border-[#D4AF37]/10 bg-[#D4AF37]/5 flex items-center justify-center text-[#D4AF37] mb-5">
+          {icon}
+        </div>
+
+        <p className="text-[9px] uppercase tracking-[0.24em] text-[#A09682]">
+          {label}
+        </p>
+
+        <div className="mt-2 font-serif text-base leading-snug text-[#F8F5F0]">
+          {value}
+        </div>
+
+        {subValue && (
+          <div className="mt-1 text-[11px] text-[#A09682]">
+            {subValue}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   REFERENCE CARDS
+========================================================= */
 
 function ReferenceCard({
   item,
@@ -195,59 +421,42 @@ function ReferenceCard({
   type: string;
 }) {
   const content = (
-    <div className="group rounded-xl border border-[#D4AF37]/10 bg-[#1C1410]/60 p-5 transition-all duration-300 hover:border-[#D4AF37]/30 hover:bg-[#1C1410]">
-      <p className="text-[10px] uppercase tracking-[0.2em] text-[#D4AF37]/50 mb-2">
-        {type}
-      </p>
+    <article className="group relative h-full overflow-hidden rounded-2xl border border-[#D4AF37]/10 bg-[#17120F]/80 p-6 transition-all duration-300 hover:-translate-y-1 hover:border-[#D4AF37]/30 hover:bg-[#1C1410]">
+      <div className="absolute top-0 right-0 w-28 h-28 rounded-full bg-[#D4AF37]/5 blur-3xl" />
 
-      <div className="flex items-center justify-between gap-3">
-        <p className="font-serif text-lg leading-snug text-[#F8F5F0] group-hover:text-[#D4AF37] transition-colors">
+      <div className="relative">
+        <div className="flex items-center justify-between gap-4 mb-4">
+          <p className="text-[9px] uppercase tracking-[0.25em] text-[#D4AF37]/50">
+            {type}
+          </p>
+
+          {href && (
+            <ExternalLink className="w-3.5 h-3.5 text-[#D4AF37]/30 group-hover:text-[#D4AF37] transition-colors" />
+          )}
+        </div>
+
+        <h3 className="font-serif text-lg md:text-xl leading-snug text-[#F8F5F0] group-hover:text-[#D4AF37] transition-colors">
           {item.name ||
             item.title ||
             "Unnamed record"}
-        </p>
+        </h3>
 
         {href && (
-          <ExternalLink className="w-4 h-4 shrink-0 text-[#D4AF37]/40 group-hover:text-[#D4AF37]" />
+          <div className="mt-5 pt-4 border-t border-[#D4AF37]/10 flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#A09682] group-hover:text-[#D4AF37] transition-colors">
+            Open archive
+            <ArrowRight className="w-3 h-3" />
+          </div>
         )}
       </div>
-    </div>
+    </article>
   );
 
-  if (!href) {
-    return content;
-  }
+  if (!href) return content;
 
   return (
-    <Link href={href} className="block">
+    <Link href={href} className="block h-full">
       {content}
     </Link>
-  );
-}
-
-function Section({
-  title,
-  icon,
-  children,
-}: {
-  title: string;
-  icon: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <section className="mt-14">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-9 h-9 shrink-0 rounded-full border border-[#D4AF37]/20 bg-[#D4AF37]/5 flex items-center justify-center text-[#D4AF37]">
-          {icon}
-        </div>
-
-        <h2 className="font-serif text-2xl md:text-3xl font-bold text-[#F8F5F0]">
-          {title}
-        </h2>
-      </div>
-
-      {children}
-    </section>
   );
 }
 
@@ -287,16 +496,9 @@ function ReferenceGrid({
   );
 }
 
-function splitParagraphs(text?: string) {
-  if (!text) {
-    return [];
-  }
-
-  return text
-    .split(/\n\s*\n/)
-    .map((paragraph) => paragraph.trim())
-    .filter(Boolean);
-}
+/* =========================================================
+   STANDARD NARRATIVE
+========================================================= */
 
 function NarrativeBlock({
   text,
@@ -310,8 +512,10 @@ function NarrativeBlock({
   }
 
   return (
-    <div className="section-card p-7 md:p-9">
-      <div className="max-w-4xl space-y-6">
+    <div className="relative overflow-hidden rounded-2xl border border-[#D4AF37]/10 bg-[#15110E]/80 p-7 md:p-10">
+      <div className="absolute top-0 right-0 w-72 h-72 rounded-full bg-[#D4AF37]/5 blur-3xl pointer-events-none" />
+
+      <div className="relative max-w-4xl space-y-6">
         {paragraphs.map(
           (paragraph, index) => (
             <p
@@ -327,16 +531,83 @@ function NarrativeBlock({
   );
 }
 
+/* =========================================================
+   BATTLE NARRATIVE / TIMELINE
+========================================================= */
+function SectionImages({
+  images,
+}: {
+  images: Reference[];
+}) {
+  if (!images.length) return null;
+
+  return (
+    <div className="mt-8 grid gap-6 md:grid-cols-2">
+      {images.map((image, index) => (
+        <figure
+          key={
+            image._id ||
+            image.imageId ||
+            index
+          }
+          className="group overflow-hidden rounded-2xl border border-[#D4AF37]/20 bg-[#100E0C] shadow-[0_18px_50px_rgba(0,0,0,0.28)]"
+        >
+          {image.url && (
+            <div className="relative overflow-hidden bg-black">
+              <img
+                src={image.url}
+                alt={
+                  image.altText ||
+                  image.title ||
+                  "Historical image"
+                }
+                className="block w-full h-auto object-contain transition-transform duration-700 group-hover:scale-[1.015]"
+              />
+
+              <div className="pointer-events-none absolute inset-0 border border-[#D4AF37]/10 rounded-2xl" />
+            </div>
+          )}
+
+          <figcaption className="p-5">
+            <p className="text-[9px] uppercase tracking-[0.25em] text-[#D4AF37]/55 mb-2">
+              Historical Image
+            </p>
+
+            <h4 className="font-serif text-lg font-bold text-[#F8F5F0]">
+              {image.title ||
+                "Historical Image"}
+            </h4>
+
+            {image.description && (
+              <p className="mt-3 text-sm leading-7 text-[#A09682]">
+                {image.description}
+              </p>
+            )}
+
+            {image.relatedSection && (
+              <p className="mt-4 text-[10px] uppercase tracking-[0.18em] text-[#D4AF37]/45">
+                Related to:{" "}
+                {image.relatedSection}
+              </p>
+            )}
+          </figcaption>
+        </figure>
+      ))}
+    </div>
+  );
+}
+
 function BattleNarrative({
   sections,
   fallbackDescription,
+  images = [],
 }: {
   sections?: BattleSection[];
   fallbackDescription?: string;
+  images?: Reference[];
 }) {
   const sortedSections =
-    sections &&
-    sections.length > 0
+    sections && sections.length > 0
       ? [...sections].sort(
           (a, b) => a.order - b.order
         )
@@ -351,51 +622,384 @@ function BattleNarrative({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {sortedSections.map(
-        (section, index) => (
-          <article
-            key={`${section.order}-${section.title}`}
-            className="section-card p-7 md:p-9"
-          >
-            <div className="flex items-start gap-4">
-              <div className="shrink-0 w-9 h-9 rounded-full border border-[#D4AF37]/20 bg-[#D4AF37]/5 flex items-center justify-center text-[#D4AF37] font-serif text-sm">
-                {String(index + 1).padStart(
-                  2,
-                  "0"
-                )}
-              </div>
+        (section, index) => {
+          const paragraphs = splitParagraphs(
+            section.content
+          );
+          const sectionImages =
+            getImagesForSection(
+              section.title,
+              images
+            );
 
-              <div className="min-w-0 flex-1">
-                <h3 className="font-serif text-xl md:text-2xl font-bold text-[#F8F5F0] mb-5">
-                  {section.title}
-                </h3>
+          const isTimeline =
+            section.title
+              .toLowerCase()
+              .includes("timeline");
 
-                <div className="space-y-5">
-                  {splitParagraphs(
-                    section.content
-                  ).map(
-                    (paragraph, paragraphIndex) => (
-                      <p
-                        key={paragraphIndex}
-                        className="text-base md:text-lg leading-8 text-[#D7C9A5]"
-                      >
-                        {paragraph}
+          /* =================================================
+             TIMELINE SECTION
+          ================================================= */
+
+          if (isTimeline) {
+            return (
+              <article
+                key={`${section.order}-${section.title}`}
+                className="relative overflow-hidden rounded-3xl border border-[#D4AF37]/25 bg-gradient-to-br from-[#1C1410] via-[#16110E] to-[#0F0D0B] p-7 md:p-11"
+              >
+                <div className="absolute top-0 right-0 w-[420px] h-[420px] rounded-full bg-[#D4AF37]/5 blur-3xl pointer-events-none" />
+
+                <div className="absolute bottom-0 left-0 w-72 h-72 rounded-full bg-[#8B1E1E]/5 blur-3xl pointer-events-none" />
+
+                <div className="relative">
+                  <div className="flex items-start gap-4 md:gap-5 mb-10">
+                    <div className="w-12 h-12 shrink-0 rounded-xl border border-[#D4AF37]/30 bg-[#D4AF37]/10 flex items-center justify-center text-[#D4AF37]">
+                      <Clock3 className="w-5 h-5" />
+                    </div>
+
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.32em] text-[#D4AF37]/55 mb-2">
+                        Chronological Record
                       </p>
-                    )
+
+                      <h3 className="font-serif text-2xl md:text-4xl font-bold text-[#D4AF37]">
+                        {section.title}
+                      </h3>
+
+                      <div className="mt-4 h-px w-32 bg-gradient-to-r from-[#D4AF37]/70 to-transparent" />
+                    </div>
+                  </div>
+
+                  <div className="relative md:ml-3">
+                    <div className="absolute left-[7px] md:left-[9px] top-3 bottom-5 w-px bg-gradient-to-b from-[#D4AF37]/70 via-[#D4AF37]/25 to-transparent" />
+
+                    <div className="space-y-8">
+                      {paragraphs.map(
+                        (
+                          rawParagraph,
+                          paragraphIndex
+                        ) => {
+                          const paragraph =
+                            cleanHeading(
+                              rawParagraph
+                            );
+
+                          if (
+                            isTimelineHeading(
+                              paragraph
+                            )
+                          ) {
+                            const timelineImages =
+                              getImagesForSection(
+                                paragraph,
+                                images
+                              );
+
+                            return (
+                              <div
+                                key={
+                                  paragraphIndex
+                                }
+                                className="relative pl-9 md:pl-12 pt-1"
+                              >
+                                <div className="absolute left-0 md:left-[2px] top-[10px] w-[15px] h-[15px] rounded-full border-2 border-[#D4AF37] bg-[#15110E] shadow-[0_0_18px_rgba(212,175,55,0.35)]" />
+
+                                <h4 className="inline font-serif text-lg md:text-xl lg:text-[22px] font-bold leading-relaxed text-[#D4AF37] border-b border-[#D4AF37]/35 pb-1">
+                                  {paragraph}
+                                </h4>
+
+                                {timelineImages.length > 0 && (
+                                  <SectionImages
+                                    images={timelineImages}
+                                  />
+                                )}
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div
+                              key={
+                                paragraphIndex
+                              }
+                              className="relative pl-9 md:pl-12"
+                            >
+                              <p className="max-w-4xl text-base md:text-lg leading-8 text-[#D7C9A5]">
+                                {paragraph}
+                              </p>
+                            </div>
+                          );
+                        }
+                      )}
+                    </div>
+                    
+                  </div>
+                </div>
+              </article>
+            );
+          }
+
+          /* =================================================
+             NORMAL ARCHIVE SECTION
+          ================================================= */
+
+          return (
+            <article
+              key={`${section.order}-${section.title}`}
+              className="group relative overflow-hidden rounded-2xl border border-[#D4AF37]/10 bg-[#15110E]/75 p-7 md:p-10 transition-all duration-300 hover:border-[#D4AF37]/20"
+            >
+              <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-[#D4AF37]/[0.035] blur-3xl pointer-events-none" />
+
+              <div className="relative flex gap-5 md:gap-7">
+                <div className="hidden sm:flex shrink-0 flex-col items-center">
+                  <div className="w-11 h-11 rounded-xl border border-[#D4AF37]/20 bg-[#D4AF37]/5 flex items-center justify-center font-serif text-sm font-bold text-[#D4AF37]">
+                    {String(index + 1).padStart(
+                      2,
+                      "0"
+                    )}
+                  </div>
+
+                  <div className="mt-3 w-px flex-1 bg-gradient-to-b from-[#D4AF37]/15 to-transparent" />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="mb-6">
+                    <p className="text-[9px] uppercase tracking-[0.28em] text-[#D4AF37]/45 mb-2">
+                      Battle Record
+                    </p>
+
+                    <h3 className="font-serif text-xl md:text-2xl font-bold text-[#F8F5F0]">
+                      {section.title}
+                    </h3>
+                  </div>
+
+                  <div className="max-w-4xl space-y-6">
+                    {paragraphs.map(
+                      (
+                        paragraph,
+                        paragraphIndex
+                      ) => (
+                        <p
+                          key={
+                            paragraphIndex
+                          }
+                          className="text-base md:text-lg leading-8 text-[#D7C9A5]"
+                        >
+                          {cleanHeading(
+                            paragraph
+                          )}
+                        </p>
+                      )
+                    )}
+                  </div>
+                  {sectionImages.length > 0 && (
+                    <SectionImages
+                      images={sectionImages}
+                    />
                   )}
                 </div>
               </div>
-            </div>
-          </article>
-        )
+            </article>
+          );
+        }
       )}
     </div>
   );
 }
 
+/* =========================================================
+   TWO-SIDE INFORMATION PANEL
+========================================================= */
+
+function TwoSidePanel({
+  leftLabel,
+  leftValue,
+  rightLabel,
+  rightValue,
+}: {
+  leftLabel: string;
+  leftValue?: string;
+  rightLabel: string;
+  rightValue?: string;
+}) {
+  return (
+    <div className="grid md:grid-cols-2 overflow-hidden rounded-2xl border border-[#D4AF37]/10 bg-[#15110E]/80">
+      {leftValue && (
+        <div className="relative p-7 md:p-8 border-b md:border-b-0 md:border-r border-[#D4AF37]/10">
+          <p className="text-[10px] uppercase tracking-[0.25em] text-[#A09682] mb-4">
+            {leftLabel}
+          </p>
+
+          <p className="text-base md:text-lg leading-8 text-[#D7C9A5]">
+            {leftValue}
+          </p>
+        </div>
+      )}
+
+      {rightValue && (
+        <div className="relative p-7 md:p-8">
+          <p className="text-[10px] uppercase tracking-[0.25em] text-[#A09682] mb-4">
+            {rightLabel}
+          </p>
+
+          <p className="text-base md:text-lg leading-8 text-[#D7C9A5]">
+            {rightValue}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* =========================================================
+   PILL LIST
+========================================================= */
+
+function PillList({
+  items,
+}: {
+  items?: string[];
+}) {
+  if (!items || items.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-3">
+      {items.map((item, index) => (
+        <span
+          key={`${item}-${index}`}
+          className="rounded-full border border-[#D4AF37]/15 bg-[#D4AF37]/5 px-4 py-2 text-sm text-[#D7C9A5] transition-all duration-300 hover:border-[#D4AF37]/35 hover:bg-[#D4AF37]/10 hover:text-[#F8F5F0]"
+        >
+          {item}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function HistoricalImages({
+  images,
+}: {
+  images?: Reference[];
+}) {
+  if (!images || images.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="mt-16">
+      <div className="flex items-center gap-3 mb-7">
+        <div className="w-10 h-10 rounded-full border border-[#D4AF37]/20 bg-[#D4AF37]/5 flex items-center justify-center text-[#D4AF37]">
+          <ImageIcon className="w-5 h-5" />
+        </div>
+
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.25em] text-[#D4AF37]/50 mb-1">
+            Visual Record
+          </p>
+
+          <h2 className="font-serif text-2xl md:text-3xl font-bold text-[#F8F5F0]">
+            Historical Images
+          </h2>
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        {images.map((image, index) => (
+          <figure
+            key={
+              image._id ||
+              image.imageId ||
+              index
+            }
+            className="group overflow-hidden rounded-2xl border border-[#D4AF37]/10 bg-[#17120F]"
+          >
+            {image.url && (
+              <div className="relative overflow-hidden rounded-xl bg-black border border-[#D4AF37]/10">
+                <img
+                  src={image.url}
+                  alt={
+                    image.altText ||
+                    image.title ||
+                    "Historical image"
+                  }
+                  className="block w-full h-auto object-contain transition-transform duration-700 group-hover:scale-[1.015]"
+                />
+
+                <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
+              </div>
+            )}
+
+            <figcaption className="p-6">
+              <h3 className="font-serif text-xl font-bold text-[#F8F5F0]">
+                {image.title || "Historical Image"}
+              </h3>
+
+              {image.description && (
+                <p className="mt-3 text-sm leading-7 text-[#A09682]">
+                  {image.description}
+                </p>
+              )}
+
+              <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-[10px] uppercase tracking-[0.16em] text-[#D4AF37]/50">
+                {image.imageType && (
+                  <span>{image.imageType}</span>
+                )}
+
+                {image.period && (
+                  <span>{image.period}</span>
+                )}
+
+                {image.relatedSection && (
+                  <span>
+                    {image.relatedSection}
+                  </span>
+                )}
+              </div>
+
+              {(image.photographer ||
+                image.copyright ||
+                image.license) && (
+                <div className="mt-5 pt-4 border-t border-[#D4AF37]/10 text-xs leading-6 text-[#7F776A]">
+                  {image.photographer && (
+                    <p>
+                      Photographer:{" "}
+                      {image.photographer}
+                    </p>
+                  )}
+
+                  {image.copyright && (
+                    <p>
+                      Copyright:{" "}
+                      {image.copyright}
+                    </p>
+                  )}
+
+                  {image.license && (
+                    <p>
+                      License: {image.license}
+                    </p>
+                  )}
+                </div>
+              )}
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* =========================================================
+   PAGE
+========================================================= */
+
 export default function BattleDetailPage() {
   const params = useParams();
+
   const battleId =
     params?.battleId as string;
 
@@ -409,9 +1013,7 @@ export default function BattleDetailPage() {
     useState("");
 
   useEffect(() => {
-    if (!battleId) {
-      return;
-    }
+    if (!battleId) return;
 
     async function fetchBattle() {
       try {
@@ -451,16 +1053,26 @@ export default function BattleDetailPage() {
     fetchBattle();
   }, [battleId]);
 
+  /* =========================================================
+     LOADING
+  ========================================================= */
+
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#0F0F0F] text-[#F8F5F0]">
+      <main className="min-h-screen bg-[#0B0B0B] text-[#F8F5F0]">
         <Navbar />
 
-        <div className="min-h-[70vh] flex flex-col items-center justify-center px-6">
-          <div className="w-10 h-10 rounded-full border-2 border-[#D4AF37]/20 border-t-[#D4AF37] animate-spin" />
+        <div className="min-h-[75vh] flex flex-col items-center justify-center px-6">
+          <div className="relative">
+            <div className="w-14 h-14 rounded-full border border-[#D4AF37]/15" />
 
-          <p className="mt-5 text-[#A09682] text-center">
-            Opening the battlefield archives...
+            <div className="absolute inset-0 w-14 h-14 rounded-full border-2 border-transparent border-t-[#D4AF37] animate-spin" />
+
+            <Swords className="absolute inset-0 m-auto w-5 h-5 text-[#D4AF37]/70" />
+          </div>
+
+          <p className="mt-6 text-[11px] uppercase tracking-[0.25em] text-[#A09682] text-center">
+            Opening Battlefield Archives
           </p>
         </div>
 
@@ -469,26 +1081,36 @@ export default function BattleDetailPage() {
     );
   }
 
+  /* =========================================================
+     ERROR
+  ========================================================= */
+
   if (error || !battle) {
     return (
-      <main className="min-h-screen bg-[#0F0F0F] text-[#F8F5F0]">
+      <main className="min-h-screen bg-[#0B0B0B] text-[#F8F5F0]">
         <Navbar />
 
-        <div className="min-h-[70vh] flex flex-col items-center justify-center px-6 text-center">
-          <Swords className="w-12 h-12 text-[#D4AF37] mb-5" />
+        <div className="min-h-[75vh] flex flex-col items-center justify-center px-6 text-center">
+          <div className="w-16 h-16 rounded-2xl border border-[#D4AF37]/20 bg-[#D4AF37]/5 flex items-center justify-center mb-6">
+            <Swords className="w-7 h-7 text-[#D4AF37]" />
+          </div>
 
-          <h1 className="font-serif text-3xl font-bold mb-3">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-[#D4AF37]/60 mb-3">
+            VeerBharat Archives
+          </p>
+
+          <h1 className="font-serif text-3xl md:text-4xl font-bold mb-4">
             Battle Not Found
           </h1>
 
-          <p className="text-[#A09682] mb-7 max-w-md">
+          <p className="text-[#A09682] mb-8 max-w-md leading-7">
             {error ||
               "This battle record does not exist."}
           </p>
 
           <Link
             href="/battles"
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-full border border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 transition"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 transition"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Battles
@@ -500,7 +1122,40 @@ export default function BattleDetailPage() {
     );
   }
 
+  /* =========================================================
+     DERIVED DATA
+  ========================================================= */
+
   const refs = battle.crossReferences;
+
+  const battleImages = [
+    ...(battle.imageIds || []),
+    ...(refs?.relatedImages || []),
+  ].filter(
+    (image, index, array) =>
+      array.findIndex(
+        (item) =>
+          (item._id &&
+            item._id === image._id) ||
+          (item.imageId &&
+            item.imageId === image.imageId)
+      ) === index
+  );
+
+  const primaryImage = battleImages[0];
+
+  const galleryImages =
+    battleImages.slice(1);
+
+  const sectionImages =
+    galleryImages.filter(
+      (image) => image.relatedSection
+    );
+
+  const generalImages =
+    galleryImages.filter(
+      (image) => !image.relatedSection
+    );
 
   const relatedBattles =
     refs?.relatedBattles?.filter(
@@ -513,17 +1168,15 @@ export default function BattleDetailPage() {
     battle.battleEndDate
   );
 
-  const hasForces =
-    !!(
-      battle.armySizes?.attackers ||
-      battle.armySizes?.defenders
-    );
+  const hasForces = !!(
+    battle.armySizes?.attackers ||
+    battle.armySizes?.defenders
+  );
 
-  const hasCasualties =
-    !!(
-      battle.casualties?.attackers ||
-      battle.casualties?.defenders
-    );
+  const hasCasualties = !!(
+    battle.casualties?.attackers ||
+    battle.casualties?.defenders
+  );
 
   const hasWeapons =
     !!(
@@ -542,8 +1195,7 @@ export default function BattleDetailPage() {
     ) ||
     !!(
       battle.commanderPersonalityIds &&
-      battle.commanderPersonalityIds.length >
-        0
+      battle.commanderPersonalityIds.length > 0
     );
 
   const hasOpposingCommanders =
@@ -557,454 +1209,452 @@ export default function BattleDetailPage() {
         .length > 0
     );
 
-  const hasKingdoms =
-    !!(
-      battle.kingdomIds &&
-      battle.kingdomIds.length > 0
-    );
+  const hasKingdoms = !!(
+    battle.kingdomIds &&
+    battle.kingdomIds.length > 0
+  );
 
-  const hasTactics =
-    !!(
-      battle.tactics &&
-      battle.tactics.length > 0
-    );
+  const hasTactics = !!(
+    battle.tactics &&
+    battle.tactics.length > 0
+  );
 
-  const hasKeyEvents =
-    !!(
-      battle.keyEvents &&
-      battle.keyEvents.length > 0
-    );
+  const hasKeyEvents = !!(
+    battle.keyEvents &&
+    battle.keyEvents.length > 0
+  );
 
-  const hasRelatedEvents =
-    !!(
-      refs?.relatedEvents &&
-      refs.relatedEvents.length > 0
-    );
+  const hasRelatedEvents = !!(
+    refs?.relatedEvents &&
+    refs.relatedEvents.length > 0
+  );
 
-  const hasRelatedBattles =
-    !!(
-      relatedBattles &&
-      relatedBattles.length > 0
-    );
+  const hasRelatedBattles = !!(
+    relatedBattles &&
+    relatedBattles.length > 0
+  );
 
-  const hasRelatedHeroes =
-    !!(
-      refs?.relatedHeroes &&
-      refs.relatedHeroes.length > 0
-    );
+  const hasRelatedHeroes = !!(
+    refs?.relatedHeroes &&
+    refs.relatedHeroes.length > 0
+  );
 
-  const hasRelatedPersonalities =
-    !!(
-      refs?.relatedHistoricalPersonalities &&
-      refs.relatedHistoricalPersonalities.length >
-        0
-    );
+  const hasRelatedPersonalities = !!(
+    refs?.relatedHistoricalPersonalities &&
+    refs.relatedHistoricalPersonalities.length >
+      0
+  );
 
-  const hasRelatedPlaces =
-    !!(
-      refs?.relatedPlaces &&
-      refs.relatedPlaces.length > 0
-    );
+  const hasRelatedPlaces = !!(
+    refs?.relatedPlaces &&
+    refs.relatedPlaces.length > 0
+  );
 
-  const hasRelatedBooks =
-    !!(
-      refs?.relatedBooks &&
-      refs.relatedBooks.length > 0
-    );
+  const hasRelatedBooks = !!(
+    refs?.relatedBooks &&
+    refs.relatedBooks.length > 0
+  );
 
-  const hasSources =
-    !!(
-      battle.sourceIds &&
-      battle.sourceIds.length > 0
-    );
+  const hasSources = !!(
+    battle.sourceIds &&
+    battle.sourceIds.length > 0
+  );
+
+  const startYear = battle.battleDate
+    ? new Date(
+        battle.battleDate
+      ).getFullYear()
+    : null;
+
+  /* =========================================================
+     RENDER
+  ========================================================= */
 
   return (
-    <main className="min-h-screen bg-[#0F0F0F] text-[#F8F5F0]">
+    <main className="min-h-screen overflow-hidden bg-[#0B0B0B] text-[#F8F5F0]">
       <Navbar />
 
-      {/* =========================================================
-            HERO
-        ========================================================= */}
-        <section className="relative pt-32 md:pt-36 pb-12 overflow-hidden">
-          {/* Background atmosphere */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full bg-[#D4AF37]/5 blur-3xl" />
+      {/* =====================================================
+          HERO / BATTLE DOSSIER
+      ===================================================== */}
 
-            <div className="absolute top-24 left-0 w-80 h-80 rounded-full bg-[#8B1E1E]/10 blur-3xl" />
+      <section className="relative pt-28 md:pt-36 pb-16 md:pb-20 overflow-hidden border-b border-[#D4AF37]/10">
+        {/* Atmospheric background */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[1100px] h-[650px] rounded-full bg-[#D4AF37]/[0.055] blur-3xl" />
 
-            <div className="absolute top-20 right-0 w-80 h-80 rounded-full bg-[#D4AF37]/5 blur-3xl" />
-          </div>
+          <div className="absolute top-20 -left-40 w-[500px] h-[500px] rounded-full bg-[#8B1E1E]/10 blur-3xl" />
 
-          <div className="relative container mx-auto px-6">
-            {/* Breadcrumb */}
+          <div className="absolute bottom-[-250px] right-[-100px] w-[600px] h-[600px] rounded-full bg-[#D4AF37]/[0.035] blur-3xl" />
+
+          {/* faint horizontal archive lines */}
+          <div className="absolute inset-0 opacity-[0.035] bg-[linear-gradient(to_bottom,#D4AF37_1px,transparent_1px)] bg-[length:100%_80px]" />
+        </div>
+
+        <div className="relative container mx-auto px-6 max-w-6xl">
+          {/* Breadcrumb */}
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-12">
             <Link
               href="/battles"
-              className="inline-flex items-center gap-2 text-sm text-[#A09682] hover:text-[#D4AF37] transition-colors mb-9"
+              className="group inline-flex items-center gap-2 text-sm text-[#A09682] hover:text-[#D4AF37] transition-colors"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
               Battles Archive
             </Link>
 
-            <div className="max-w-5xl">
-              {/* ID + STATUS */}
-              <div className="flex flex-wrap items-center gap-3 mb-5">
-                <Swords className="w-4 h-4 text-[#D4AF37]" />
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]" />
 
-                <span className="text-[11px] uppercase tracking-[0.35em] text-[#D4AF37]/70">
+              <span className="text-[9px] uppercase tracking-[0.28em] text-[#A09682]">
+                Historical Military Record
+              </span>
+            </div>
+          </div>
+
+          <div className="max-w-5xl">
+            {/* Archive metadata */}
+            <div className="flex flex-wrap items-center gap-3 mb-6">
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#D4AF37]/20 bg-[#D4AF37]/5 px-4 py-2">
+                <Swords className="w-3.5 h-3.5 text-[#D4AF37]" />
+
+                <span className="text-[10px] uppercase tracking-[0.28em] text-[#D4AF37]">
                   {battle.battleId}
                 </span>
+              </div>
 
-                <span className="px-3 py-1 rounded-full border border-[#D4AF37]/20 bg-[#D4AF37]/5 text-[10px] uppercase tracking-[0.15em] text-[#D7C9A5]">
+              <div className="rounded-full border border-[#D4AF37]/10 bg-[#17120F]/80 px-4 py-2">
+                <span className="text-[9px] uppercase tracking-[0.2em] text-[#A09682]">
                   {battle.status}
                 </span>
               </div>
 
-              {/* TITLE */}
-              <h1 className="max-w-4xl font-serif text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.02] tracking-tight">
-                {battle.name}
-              </h1>
+              {battle.type && (
+                <div className="rounded-full border border-[#D4AF37]/10 bg-[#17120F]/80 px-4 py-2">
+                  <span className="text-[9px] uppercase tracking-[0.2em] text-[#A09682]">
+                    {battle.type}
+                  </span>
+                </div>
+              )}
+            </div>
 
-              {/* NATIVE NAME */}
-              {battle.nativeName && (
-                <p className="mt-4 text-xl text-[#A09682]">
+            {/* Title */}
+            <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-[84px] font-bold leading-[0.98] tracking-tight text-[#F8F5F0]">
+              {battle.name}
+            </h1>
+
+            {primaryImage?.url && (
+              <figure className="mt-12 group">
+                <div className="relative mx-auto max-w-5xl">
+
+                  {/* Outer decorative frame */}
+                  <div className="relative rounded-[28px] border border-[#D4AF37]/35 bg-gradient-to-br from-[#D4AF37]/10 via-[#17120F] to-[#8B1E1E]/10 p-[5px] shadow-[0_25px_80px_rgba(0,0,0,0.45)]">
+
+                    {/* Inner decorative frame */}
+                    <div className="relative rounded-[23px] border border-[#D4AF37]/15 bg-[#0F0D0B] p-2">
+
+                      {/* Corner ornaments */}
+                      <div className="absolute -top-2 -left-2 w-7 h-7 border-l-2 border-t-2 border-[#D4AF37]/70 rounded-tl-lg pointer-events-none" />
+                      <div className="absolute -top-2 -right-2 w-7 h-7 border-r-2 border-t-2 border-[#D4AF37]/70 rounded-tr-lg pointer-events-none" />
+                      <div className="absolute -bottom-2 -left-2 w-7 h-7 border-l-2 border-b-2 border-[#D4AF37]/70 rounded-bl-lg pointer-events-none" />
+                      <div className="absolute -bottom-2 -right-2 w-7 h-7 border-r-2 border-b-2 border-[#D4AF37]/70 rounded-br-lg pointer-events-none" />
+
+                      {/* Full image — NO CROPPING */}
+                      <div className="relative overflow-hidden rounded-[18px] bg-black">
+                        <img
+                          src={primaryImage.url}
+                          alt={
+                            primaryImage.altText ||
+                            primaryImage.title ||
+                            battle.name
+                          }
+                          className="block w-full h-auto object-contain transition-transform duration-700 group-hover:scale-[1.015]"
+                        />
+
+                        {/* subtle bottom gradient */}
+                        <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/75 via-black/20 to-transparent pointer-events-none" />
+
+                        {/* Image title */}
+                        <div className="absolute bottom-5 left-6 right-6 md:left-8 md:right-8">
+                          <p className="text-[9px] uppercase tracking-[0.28em] text-[#D4AF37] mb-1">
+                            Historical Image
+                          </p>
+
+                          <h2 className="font-serif text-xl md:text-2xl font-bold text-white">
+                            {primaryImage.title || "Kargil War"}
+                          </h2>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Caption */}
+                  {primaryImage.description && (
+                    <figcaption className="mt-4 px-2 text-sm leading-7 text-[#8F877A] text-center">
+                      {primaryImage.description}
+                    </figcaption>
+                  )}
+                </div>
+              </figure>
+            )}
+
+            {battle.nativeName &&
+              battle.nativeName !== battle.name && (
+                <p className="mt-5 font-serif text-xl md:text-2xl text-[#D4AF37]/65">
                   {battle.nativeName}
                 </p>
               )}
 
-              {/* ALTERNATIVE NAMES */}
-              {battle.alternativeNames &&
-                battle.alternativeNames.length > 0 && (
-                  <p className="mt-3 text-sm text-[#A09682]">
-                    Also known as{" "}
-                    {battle.alternativeNames.join(", ")}
-                  </p>
-                )}
+            {battle.alternativeNames &&
+              battle.alternativeNames.length >
+                0 && (
+                <div className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-[#A09682]">
+                  <span className="text-[#D4AF37]/45">
+                    Also recorded as
+                  </span>
 
-              {/* Decorative divider */}
-              <div className="flex items-center gap-3 my-7 max-w-3xl">
-                <div className="h-px flex-1 bg-gradient-to-r from-[#D4AF37]/40 to-transparent" />
-                <div className="w-1.5 h-1.5 rotate-45 bg-[#D4AF37]/60" />
-              </div>
+                  <span>
+                    {battle.alternativeNames.join(
+                      " · "
+                    )}
+                  </span>
+                </div>
+              )}
 
-              {/* SHORT DESCRIPTION */}
-              <p className="max-w-4xl text-lg md:text-xl leading-8 text-[#D7C9A5]">
-                {battle.shortDescription ||
-                  "A historical military engagement recorded in the VeerBharat archives."}
-              </p>
+            {/* Date line */}
+            <div className="my-9 flex items-center max-w-3xl">
+              <div className="h-px flex-1 bg-gradient-to-r from-[#D4AF37]/60 to-[#D4AF37]/10" />
+
+              <div className="mx-4 w-2 h-2 rotate-45 border border-[#D4AF37]/70 bg-[#0B0B0B]" />
+
+              <span className="shrink-0 font-serif text-sm md:text-base text-[#D4AF37]/80">
+                {startYear || "Historical Record"}
+              </span>
+
+              <div className="mx-4 w-2 h-2 rotate-45 border border-[#D4AF37]/70 bg-[#0B0B0B]" />
+
+              <div className="h-px flex-1 bg-gradient-to-l from-[#D4AF37]/60 to-[#D4AF37]/10" />
             </div>
-          </div>
-        </section>
 
+            {/* Description */}
+            <p className="max-w-4xl text-lg md:text-xl leading-8 md:leading-9 text-[#D7C9A5]">
+              {battle.shortDescription ||
+                "A historical military engagement preserved in the VeerBharat archives."}
+            </p>
 
-        {/* =========================================================
-              QUICK FACTS
-          ========================================================= */}
-          <section className="pb-14">
-            <div className="container mx-auto px-6">
-              {/* Section header */}
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-8 h-8 rounded-full border border-[#D4AF37]/20 bg-[#D4AF37]/5 flex items-center justify-center">
-                  <Swords className="w-3.5 h-3.5 text-[#D4AF37]" />
-                </div>
-                <h2 className="text-xs uppercase tracking-[0.25em] text-[#A09682] font-medium">
-                  Quick Facts
-                </h2>
-                <div className="h-px flex-1 bg-gradient-to-r from-[#D4AF37]/20 to-transparent" />
+            {/* Date / Location mini dossier */}
+            <div className="mt-10 flex flex-wrap gap-x-10 gap-y-6">
+              <div>
+                <p className="text-[9px] uppercase tracking-[0.25em] text-[#A09682] mb-2">
+                  Campaign Period
+                </p>
+
+                <p className="font-serif text-base md:text-lg text-[#F8F5F0]">
+                  {formatShortDate(
+                    battle.battleDate
+                  )}
+
+                  {battle.battleEndDate &&
+                    ` — ${formatShortDate(
+                      battle.battleEndDate
+                    )}`}
+                </p>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
-                
-                {/* DATE */}
-                <div className="group relative overflow-hidden rounded-xl border border-[#D4AF37]/10 bg-gradient-to-br from-[#1C1410]/80 to-[#1C1410]/40 p-5 transition-all duration-300 hover:border-[#D4AF37]/30 hover:shadow-lg hover:shadow-[#D4AF37]/5 hover:-translate-y-0.5">
-                  <div className="absolute top-0 right-0 w-20 h-20 rounded-full bg-[#D4AF37]/5 blur-2xl group-hover:bg-[#D4AF37]/10 transition-colors" />
-                  
-                  <div className="relative">
-                    <div className="w-9 h-9 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center mb-3 group-hover:bg-[#D4AF37]/20 transition-colors">
-                      <CalendarDays className="w-4 h-4 text-[#D4AF37]" />
-                    </div>
-                    
-                    <p className="text-[9px] uppercase tracking-[0.2em] text-[#A09682] font-medium">
-                      Battle Date
-                    </p>
-                    
-                    <p className="mt-2 text-sm font-serif text-[#F8F5F0] leading-snug">
-                      {battle.battleDate
-                        ? battle.battleEndDate
-                          ? `${new Date(battle.battleDate).toLocaleDateString("en-IN", {
-                              day: "numeric",
-                              month: "short",
-                            })} – ${new Date(battle.battleEndDate).toLocaleDateString("en-IN", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            })}`
-                          : formatDate(battle.battleDate, battle.battleDateAccuracy)
-                        : "Date Unknown"}
-                    </p>
-                    
-                    {battle.battleDate && !battle.battleEndDate && (
-                      <p className="mt-1 text-[10px] text-[#A09682]">
-                        {new Date(battle.battleDate).getFullYear()}
-                      </p>
-                    )}
-                  </div>
-                </div>
+              <div className="hidden sm:block w-px bg-[#D4AF37]/15" />
 
-                {/* LOCATION */}
-                <div className="group relative overflow-hidden rounded-xl border border-[#D4AF37]/10 bg-gradient-to-br from-[#1C1410]/80 to-[#1C1410]/40 p-5 transition-all duration-300 hover:border-[#D4AF37]/30 hover:shadow-lg hover:shadow-[#D4AF37]/5 hover:-translate-y-0.5">
-                  <div className="absolute top-0 right-0 w-20 h-20 rounded-full bg-[#D4AF37]/5 blur-2xl group-hover:bg-[#D4AF37]/10 transition-colors" />
-                  
-                  <div className="relative">
-                    <div className="w-9 h-9 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center mb-3 group-hover:bg-[#D4AF37]/20 transition-colors">
-                      <MapPin className="w-4 h-4 text-[#D4AF37]" />
-                    </div>
-                    
-                    <p className="text-[9px] uppercase tracking-[0.2em] text-[#A09682] font-medium">
-                      Location
-                    </p>
-                    
-                    <p className="mt-2 text-sm font-serif text-[#F8F5F0] leading-snug">
-                      {battle.locationId?.name || "—"}
-                    </p>
-                    
-                    
-                  </div>
-                </div>
+              <div>
+                <p className="text-[9px] uppercase tracking-[0.25em] text-[#A09682] mb-2">
+                  Theatre
+                </p>
 
-                {/* HISTORICAL PERIOD */}
-                <div className="group relative overflow-hidden rounded-xl border border-[#D4AF37]/10 bg-gradient-to-br from-[#1C1410]/80 to-[#1C1410]/40 p-5 transition-all duration-300 hover:border-[#D4AF37]/30 hover:shadow-lg hover:shadow-[#D4AF37]/5 hover:-translate-y-0.5">
-                  <div className="absolute top-0 right-0 w-20 h-20 rounded-full bg-[#D4AF37]/5 blur-2xl group-hover:bg-[#D4AF37]/10 transition-colors" />
-                  
-                  <div className="relative">
-                    <div className="w-9 h-9 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center mb-3 group-hover:bg-[#D4AF37]/20 transition-colors">
-                      <Shield className="w-4 h-4 text-[#D4AF37]" />
-                    </div>
-                    
-                    <p className="text-[9px] uppercase tracking-[0.2em] text-[#A09682] font-medium">
-                      Period
-                    </p>
-                    
-                    <p className="mt-2 text-sm font-serif text-[#F8F5F0] leading-snug">
-                      {battle.historicalPeriodId?.name || "—"}
-                    </p>
-                    
-                    {battle.type && (
-                      <p className="mt-1 text-[10px] text-[#A09682] capitalize">
-                        {battle.type}
-                      </p>
-                    )}
-                  </div>
-                </div>
+                <p className="font-serif text-base md:text-lg text-[#F8F5F0]">
+                  {battle.locationId?.name ||
+                    "Location not recorded"}
+                </p>
+              </div>
 
-                {/* VICTOR */}
-                <div className="group relative overflow-hidden rounded-xl border border-[#D4AF37]/10 bg-gradient-to-br from-[#1C1410]/80 to-[#1C1410]/40 p-5 transition-all duration-300 hover:border-[#D4AF37]/30 hover:shadow-lg hover:shadow-[#D4AF37]/5 hover:-translate-y-0.5">
-                  <div className="absolute top-0 right-0 w-20 h-20 rounded-full bg-[#D4AF37]/5 blur-2xl group-hover:bg-[#D4AF37]/10 transition-colors" />
-                  
-                  <div className="relative">
-                    <div className="w-9 h-9 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center mb-3 group-hover:bg-[#D4AF37]/20 transition-colors">
-                      <Crown className="w-4 h-4 text-[#D4AF37]" />
-                    </div>
-                    
-                    <p className="text-[9px] uppercase tracking-[0.2em] text-[#A09682] font-medium">
-                      Victor
-                    </p>
-                    
-                    <p className="mt-2 text-sm font-serif text-[#F8F5F0] leading-snug">
-                      {battle.victorId?.name || "—"}
-                    </p>
-                    
-                    {battle.victorModel && (
-                      <p className="mt-1 text-[10px] text-[#A09682]">
-                        {battle.victorModel}
-                      </p>
-                    )}
-                  </div>
-                </div>
+              {duration && (
+                <>
+                  <div className="hidden sm:block w-px bg-[#D4AF37]/15" />
 
-                {/* DURATION */}
-                <div className="group relative overflow-hidden rounded-xl border border-[#D4AF37]/10 bg-gradient-to-br from-[#1C1410]/80 to-[#1C1410]/40 p-5 transition-all duration-300 hover:border-[#D4AF37]/30 hover:shadow-lg hover:shadow-[#D4AF37]/5 hover:-translate-y-0.5">
-                  <div className="absolute top-0 right-0 w-20 h-20 rounded-full bg-[#D4AF37]/5 blur-2xl group-hover:bg-[#D4AF37]/10 transition-colors" />
-                  
-                  <div className="relative">
-                    <div className="w-9 h-9 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center mb-3 group-hover:bg-[#D4AF37]/20 transition-colors">
-                      <CalendarDays className="w-4 h-4 text-[#D4AF37]" />
-                    </div>
-                    
-                    <p className="text-[9px] uppercase tracking-[0.2em] text-[#A09682] font-medium">
+                  <div>
+                    <p className="text-[9px] uppercase tracking-[0.25em] text-[#A09682] mb-2">
                       Duration
                     </p>
-                    
-                    <p className="mt-2 text-sm font-serif text-[#F8F5F0] leading-snug">
-                      {duration || "—"}
+
+                    <p className="font-serif text-base md:text-lg text-[#F8F5F0]">
+                      {duration}
                     </p>
-                    
-                    {battle.battleDate && (
-                      <p className="mt-1 text-[10px] text-[#A09682]">
-                        {new Date(battle.battleDate).getFullYear()}
-                      </p>
-                    )}
                   </div>
-                </div>
-
-              </div>
+                </>
+              )}
             </div>
-          </section>
+          </div>
+        </div>
+      </section>
 
-      {/* =========================================================
-          MAIN CONTENT
-      ========================================================= */}
-      <div className="container mx-auto px-6 pb-24 max-w-6xl">
+      
+      {/* =====================================================
+          MAIN ARCHIVE
+      ===================================================== */}
+      <div className="container mx-auto px-6 pb-28 max-w-6xl">
 
-        {/* =======================================================
-            BATTLE NARRATIVE
-        ======================================================= */}
-        {(battle.battleSections &&
+      
+
+      
+        {/* ===================================================
+            NARRATIVE
+        =================================================== */}
+
+        {((battle.battleSections &&
           battle.battleSections.length > 0) ||
-        battle.description ? (
+          battle.description) && (
           <Section
             title="Battle Narrative"
+            eyebrow="Campaign Record"
             icon={
               <ScrollText className="w-4 h-4" />
             }
           >
             <BattleNarrative
-              sections={
-                battle.battleSections
-              }
+              sections={battle.battleSections}
               fallbackDescription={
                 battle.description
               }
+              images={galleryImages}
             />
           </Section>
-        ) : null}
+        )}
 
-        {/* =======================================================
-            COMMANDERS
-        ======================================================= */}
-        {hasCommanders && (
+        {/* ===================================================
+            COMMAND
+        =================================================== */}
+
+        {(hasCommanders ||
+          hasOpposingCommanders) && (
           <Section
-            title="Commanders"
+            title="Command Structure"
+            eyebrow="Leadership"
             icon={
               <Users className="w-4 h-4" />
             }
           >
-            {battle.commanderIds &&
-              battle.commanderIds.length >
-                0 && (
-                <ReferenceGrid
-                  items={battle.commanderIds}
-                  type="Commander"
-                  hrefBuilder={(item) =>
-                    item.heroId
-                      ? `/heroes/${encodeURIComponent(
-                          item.heroId
-                        )}`
-                      : undefined
-                  }
-                />
-              )}
+            <div className="space-y-8">
+              {hasCommanders && (
+                <div>
+                  <div className="flex items-center gap-3 mb-5">
+                    <Flag className="w-4 h-4 text-[#D4AF37]" />
 
-            {battle.commanderPersonalityIds &&
-              battle.commanderPersonalityIds
-                .length > 0 && (
-                <div
-                  className={
-                    battle.commanderIds &&
-                    battle.commanderIds.length >
-                      0
-                      ? "mt-5"
-                      : ""
-                  }
-                >
+                    <h3 className="font-serif text-xl font-bold">
+                      Commanders
+                    </h3>
+                  </div>
+
                   <ReferenceGrid
-                    items={
-                      battle.commanderPersonalityIds
-                    }
-                    type="Historical Personality"
+                    items={battle.commanderIds}
+                    type="Commander"
                     hrefBuilder={(item) =>
-                      item.historicalPersonalityId
-                        ? `/historical-personalities/${encodeURIComponent(
-                            item.historicalPersonalityId
+                      item.heroId
+                        ? `/heroes/${encodeURIComponent(
+                            item.heroId
                           )}`
                         : undefined
                     }
                   />
+
+                  {battle.commanderPersonalityIds &&
+                    battle
+                      .commanderPersonalityIds
+                      .length > 0 && (
+                      <div className="mt-4">
+                        <ReferenceGrid
+                          items={
+                            battle.commanderPersonalityIds
+                          }
+                          type="Historical Personality"
+                          hrefBuilder={(
+                            item
+                          ) =>
+                            item.historicalPersonalityId
+                              ? `/historical-personalities/${encodeURIComponent(
+                                  item.historicalPersonalityId
+                                )}`
+                              : undefined
+                          }
+                        />
+                      </div>
+                    )}
                 </div>
               )}
-          </Section>
-        )}
 
-        {/* =======================================================
-            OPPOSING COMMANDERS
-        ======================================================= */}
-        {hasOpposingCommanders && (
-          <Section
-            title="Opposing Commanders"
-            icon={
-              <Shield className="w-4 h-4" />
-            }
-          >
-            {battle.opposingCommanderIds &&
-              battle.opposingCommanderIds.length >
-                0 && (
-                <ReferenceGrid
-                  items={
-                    battle.opposingCommanderIds
-                  }
-                  type="Opposing Commander"
-                  hrefBuilder={(item) =>
-                    item.heroId
-                      ? `/heroes/${encodeURIComponent(
-                          item.heroId
-                        )}`
-                      : undefined
-                  }
-                />
-              )}
+              {hasOpposingCommanders && (
+                <div>
+                  <div className="flex items-center gap-3 mb-5">
+                    <Shield className="w-4 h-4 text-[#D4AF37]" />
 
-            {battle.opposingCommanderPersonalityIds &&
-              battle.opposingCommanderPersonalityIds
-                .length > 0 && (
-                <div
-                  className={
-                    battle.opposingCommanderIds &&
-                    battle.opposingCommanderIds
-                      .length > 0
-                      ? "mt-5"
-                      : ""
-                  }
-                >
+                    <h3 className="font-serif text-xl font-bold">
+                      Opposing Commanders
+                    </h3>
+                  </div>
+
                   <ReferenceGrid
                     items={
-                      battle.opposingCommanderPersonalityIds
+                      battle.opposingCommanderIds
                     }
-                    type="Historical Personality"
+                    type="Opposing Commander"
                     hrefBuilder={(item) =>
-                      item.historicalPersonalityId
-                        ? `/historical-personalities/${encodeURIComponent(
-                            item.historicalPersonalityId
+                      item.heroId
+                        ? `/heroes/${encodeURIComponent(
+                            item.heroId
                           )}`
                         : undefined
                     }
                   />
+
+                  {battle
+                    .opposingCommanderPersonalityIds &&
+                    battle
+                      .opposingCommanderPersonalityIds
+                      .length > 0 && (
+                      <div className="mt-4">
+                        <ReferenceGrid
+                          items={
+                            battle.opposingCommanderPersonalityIds
+                          }
+                          type="Historical Personality"
+                          hrefBuilder={(
+                            item
+                          ) =>
+                            item.historicalPersonalityId
+                              ? `/historical-personalities/${encodeURIComponent(
+                                  item.historicalPersonalityId
+                                )}`
+                              : undefined
+                          }
+                        />
+                      </div>
+                    )}
                 </div>
               )}
+            </div>
           </Section>
         )}
 
-        {/* =======================================================
-            KINGDOMS
-        ======================================================= */}
+        {/* ===================================================
+            KINGDOMS / POWERS
+        =================================================== */}
+
         {hasKingdoms && (
           <Section
             title="Kingdoms and Powers"
+            eyebrow="Belligerents"
             icon={
               <Landmark className="w-4 h-4" />
             }
           >
             <ReferenceGrid
               items={battle.kingdomIds}
-              type="Kingdom"
+              type="Kingdom / Power"
               hrefBuilder={(item) =>
                 item.kingdomId
                   ? `/kingdoms/${encodeURIComponent(
@@ -1016,50 +1666,39 @@ export default function BattleDetailPage() {
           </Section>
         )}
 
-        {/* =======================================================
+        {/* ===================================================
             FORCES
-        ======================================================= */}
+        =================================================== */}
+
         {hasForces && (
           <Section
-            title="Forces"
+            title="Forces in the Field"
+            eyebrow="Strength"
             icon={
               <Users className="w-4 h-4" />
             }
           >
-            <div className="grid gap-4 md:grid-cols-2">
-              {battle.armySizes?.attackers && (
-                <div className="section-card p-6">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-[#A09682] mb-3">
-                    Attackers
-                  </p>
-
-                  <p className="text-[#D7C9A5] leading-relaxed">
-                    {battle.armySizes.attackers}
-                  </p>
-                </div>
-              )}
-
-              {battle.armySizes?.defenders && (
-                <div className="section-card p-6">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-[#A09682] mb-3">
-                    Defenders
-                  </p>
-
-                  <p className="text-[#D7C9A5] leading-relaxed">
-                    {battle.armySizes.defenders}
-                  </p>
-                </div>
-              )}
-            </div>
+            <TwoSidePanel
+              leftLabel="Attackers"
+              leftValue={
+                battle.armySizes?.attackers
+              }
+              rightLabel="Defenders"
+              rightValue={
+                battle.armySizes?.defenders
+              }
+            />
           </Section>
         )}
 
-        {/* =======================================================
+        {/* ===================================================
             TERRAIN
-        ======================================================= */}
+        =================================================== */}
+
         {battle.terrain && (
           <Section
             title="Battlefield and Terrain"
+            eyebrow="Theatre of Operations"
             icon={
               <MapPin className="w-4 h-4" />
             }
@@ -1070,88 +1709,85 @@ export default function BattleDetailPage() {
           </Section>
         )}
 
-        {/* =======================================================
+        {/* ===================================================
             TACTICS
-        ======================================================= */}
+        =================================================== */}
+
         {hasTactics && (
           <Section
             title="Tactics"
+            eyebrow="Operational Methods"
             icon={
-              <Swords className="w-4 h-4" />
+              <Target className="w-4 h-4" />
             }
           >
-            <div className="flex flex-wrap gap-3">
-              {battle.tactics!.map(
-                (tactic, index) => (
-                  <span
-                    key={`${tactic}-${index}`}
-                    className="px-4 py-2 rounded-full border border-[#D4AF37]/15 bg-[#D4AF37]/5 text-sm text-[#D7C9A5]"
-                  >
-                    {tactic}
-                  </span>
-                )
-              )}
+            <div className="rounded-2xl border border-[#D4AF37]/10 bg-[#15110E]/70 p-6 md:p-8">
+              <PillList
+                items={battle.tactics}
+              />
             </div>
           </Section>
         )}
 
-        {/* =======================================================
+        {/* ===================================================
             KEY EVENTS
-        ======================================================= */}
+        =================================================== */}
+
         {hasKeyEvents && (
           <Section
             title="Key Events"
+            eyebrow="Campaign Highlights"
             icon={
               <Swords className="w-4 h-4" />
             }
           >
-            <div className="space-y-3">
-              {battle.keyEvents!.map(
-                (event, index) => (
-                  <div
-                    key={`${event}-${index}`}
-                    className="section-card p-5 flex gap-4"
-                  >
-                    <span className="shrink-0 text-[#D4AF37] font-serif text-lg">
-                      {String(index + 1).padStart(
-                        2,
-                        "0"
-                      )}
-                    </span>
+            <div className="relative">
+              <div className="absolute left-[19px] top-5 bottom-5 w-px bg-gradient-to-b from-[#D4AF37]/30 to-transparent" />
 
-                    <p className="text-[#D7C9A5] leading-relaxed">
-                      {event}
-                    </p>
-                  </div>
-                )
-              )}
+              <div className="space-y-4">
+                {battle.keyEvents!.map(
+                  (event, index) => (
+                    <div
+                      key={`${event}-${index}`}
+                      className="group relative flex gap-5"
+                    >
+                      <div className="relative z-10 shrink-0 w-10 h-10 rounded-full border border-[#D4AF37]/25 bg-[#11100E] flex items-center justify-center text-[#D4AF37] font-serif text-xs">
+                        {String(
+                          index + 1
+                        ).padStart(2, "0")}
+                      </div>
+
+                      <div className="flex-1 rounded-2xl border border-[#D4AF37]/10 bg-[#15110E]/70 p-5 md:p-6 transition-all duration-300 group-hover:border-[#D4AF37]/25">
+                        <p className="text-[#D7C9A5] leading-8">
+                          {event}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                )}
+              </div>
             </div>
           </Section>
         )}
 
-        {/* =======================================================
+        {/* ===================================================
             WEAPONS
-        ======================================================= */}
+        =================================================== */}
+
         {hasWeapons && (
           <Section
             title="Weapons and Military Technology"
+            eyebrow="Arms & Equipment"
             icon={
               <Swords className="w-4 h-4" />
             }
           >
             {battle.weapons &&
               battle.weapons.length > 0 && (
-                <div className="flex flex-wrap gap-3">
-                  {battle.weapons.map(
-                    (weapon, index) => (
-                      <span
-                        key={`${weapon}-${index}`}
-                        className="px-4 py-2 rounded-full border border-[#D4AF37]/15 bg-[#D4AF37]/5 text-sm text-[#D7C9A5]"
-                      >
-                        {weapon}
-                      </span>
-                    )
-                  )}
+                <div className="rounded-2xl border border-[#D4AF37]/10 bg-[#15110E]/70 p-6 md:p-8">
+                  <PillList
+                    items={battle.weapons}
+                  />
                 </div>
               )}
 
@@ -1177,68 +1813,81 @@ export default function BattleDetailPage() {
           </Section>
         )}
 
-        {/* =======================================================
+        {/* ===================================================
             CASUALTIES
-        ======================================================= */}
+        =================================================== */}
+
         {hasCasualties && (
           <Section
             title="Casualties"
+            eyebrow="Human Cost"
             icon={
               <Shield className="w-4 h-4" />
             }
           >
-            <div className="grid gap-4 md:grid-cols-2">
-              {battle.casualties?.attackers && (
-                <div className="section-card p-6">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-[#A09682] mb-3">
-                    Attackers
-                  </p>
-
-                  <p className="text-[#D7C9A5] leading-relaxed">
-                    {battle.casualties.attackers}
-                  </p>
-                </div>
-              )}
-
-              {battle.casualties?.defenders && (
-                <div className="section-card p-6">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-[#A09682] mb-3">
-                    Defenders
-                  </p>
-
-                  <p className="text-[#D7C9A5] leading-relaxed">
-                    {battle.casualties.defenders}
-                  </p>
-                </div>
-              )}
-            </div>
+            <TwoSidePanel
+              leftLabel="Attackers"
+              leftValue={
+                battle.casualties?.attackers
+              }
+              rightLabel="Defenders"
+              rightValue={
+                battle.casualties?.defenders
+              }
+            />
           </Section>
         )}
 
-        {/* =======================================================
+        {/* ===================================================
             OUTCOME
-        ======================================================= */}
+        =================================================== */}
+
         {battle.outcome && (
           <Section
             title="Outcome"
+            eyebrow="Result of Battle"
             icon={
               <Crown className="w-4 h-4" />
             }
           >
-            <div className="rounded-xl border border-[#D4AF37]/20 bg-[#D4AF37]/5 p-7 md:p-8">
-              <p className="text-[#F0E7D0] text-base md:text-lg leading-8 whitespace-pre-line">
-                {battle.outcome}
-              </p>
+            <div className="relative overflow-hidden rounded-3xl border border-[#D4AF37]/30 bg-gradient-to-br from-[#20180F] via-[#18130F] to-[#11100E] p-8 md:p-11">
+              <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-[#D4AF37]/10 blur-3xl pointer-events-none" />
+
+              <div className="relative">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-full border border-[#D4AF37]/30 bg-[#D4AF37]/10 flex items-center justify-center">
+                    <Crown className="w-4 h-4 text-[#D4AF37]" />
+                  </div>
+
+                  <div>
+                    <p className="text-[9px] uppercase tracking-[0.3em] text-[#D4AF37]/55">
+                      Final Result
+                    </p>
+
+                    {battle.victorId?.name && (
+                      <p className="mt-1 font-serif text-lg text-[#D4AF37]">
+                        {battle.victorId.name}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <p className="max-w-4xl whitespace-pre-line text-lg md:text-xl leading-9 text-[#F0E7D0]">
+                  {battle.outcome}
+                </p>
+              </div>
             </div>
           </Section>
         )}
 
-        {/* =======================================================
+        {/* ===================================================
             AFTERMATH
-        ======================================================= */}
+        =================================================== */}
+
         {battle.aftermath && (
           <Section
             title="Aftermath"
+            eyebrow="What Followed"
             icon={
               <ScrollText className="w-4 h-4" />
             }
@@ -1249,174 +1898,189 @@ export default function BattleDetailPage() {
           </Section>
         )}
 
-        {/* =======================================================
+        {/* ===================================================
             SIGNIFICANCE
-        ======================================================= */}
+        =================================================== */}
+
         {battle.significance && (
           <Section
             title="Historical Significance"
+            eyebrow="Legacy of the Campaign"
             icon={
               <Landmark className="w-4 h-4" />
             }
           >
-            <NarrativeBlock
-              text={battle.significance}
-            />
+            <div className="relative overflow-hidden rounded-3xl border border-[#D4AF37]/15 bg-gradient-to-br from-[#17120F] to-[#100E0C] p-8 md:p-10">
+              <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#D4AF37]/70 via-[#D4AF37]/20 to-transparent" />
+
+              <div className="max-w-4xl space-y-6">
+                {splitParagraphs(
+                  battle.significance
+                ).map(
+                  (
+                    paragraph,
+                    index
+                  ) => (
+                    <p
+                      key={index}
+                      className="text-base md:text-lg leading-8 text-[#D7C9A5]"
+                    >
+                      {paragraph}
+                    </p>
+                  )
+                )}
+              </div>
+            </div>
           </Section>
         )}
 
-        {/* =======================================================
-            RELATED EVENTS
-        ======================================================= */}
-        {hasRelatedEvents && (
-          <Section
-            title="Related Historical Events"
-            icon={
-              <ScrollText className="w-4 h-4" />
-            }
-          >
-            <ReferenceGrid
-              items={refs?.relatedEvents}
-              type="Event"
-              hrefBuilder={(item) =>
-                item.eventId
-                  ? `/events/${encodeURIComponent(
-                      item.eventId
-                    )}`
-                  : undefined
-              }
-            />
-          </Section>
-        )}
+        {/* ===================================================
+            RELATED ARCHIVES
+        =================================================== */}
 
-        {/* =======================================================
-            RELATED BATTLES
-        ======================================================= */}
-        {hasRelatedBattles && (
+        {(hasRelatedEvents ||
+          hasRelatedBattles ||
+          hasRelatedHeroes ||
+          hasRelatedPersonalities ||
+          hasRelatedPlaces ||
+          hasRelatedBooks) && (
           <Section
-            title="Related Battles"
-            icon={
-              <Swords className="w-4 h-4" />
-            }
-          >
-            <ReferenceGrid
-              items={relatedBattles}
-              type="Battle"
-              hrefBuilder={(item) =>
-                item.battleId
-                  ? `/battles/${encodeURIComponent(
-                      item.battleId
-                    )}`
-                  : undefined
-              }
-            />
-          </Section>
-        )}
-
-        {/* =======================================================
-            RELATED HEROES
-        ======================================================= */}
-        {hasRelatedHeroes && (
-          <Section
-            title="Related Heroes"
-            icon={
-              <Users className="w-4 h-4" />
-            }
-          >
-            <ReferenceGrid
-              items={refs?.relatedHeroes}
-              type="Hero"
-              hrefBuilder={(item) =>
-                item.heroId
-                  ? `/heroes/${encodeURIComponent(
-                      item.heroId
-                    )}`
-                  : undefined
-              }
-            />
-          </Section>
-        )}
-
-        {/* =======================================================
-            RELATED PERSONALITIES
-        ======================================================= */}
-        {hasRelatedPersonalities && (
-          <Section
-            title="Related Historical Personalities"
-            icon={
-              <Users className="w-4 h-4" />
-            }
-          >
-            <ReferenceGrid
-              items={
-                refs?.relatedHistoricalPersonalities
-              }
-              type="Historical Personality"
-              hrefBuilder={(item) =>
-                item.historicalPersonalityId
-                  ? `/historical-personalities/${encodeURIComponent(
-                      item.historicalPersonalityId
-                    )}`
-                  : undefined
-              }
-            />
-          </Section>
-        )}
-
-        {/* =======================================================
-            PLACES
-        ======================================================= */}
-        {hasRelatedPlaces && (
-          <Section
-            title="Related Places"
-            icon={
-              <MapPin className="w-4 h-4" />
-            }
-          >
-            <ReferenceGrid
-              items={refs?.relatedPlaces}
-              type="Place"
-              hrefBuilder={(item) =>
-                item.placeId
-                  ? `/places/${encodeURIComponent(
-                      item.placeId
-                    )}`
-                  : undefined
-              }
-            />
-          </Section>
-        )}
-
-        {/* =======================================================
-            BOOKS
-        ======================================================= */}
-        {hasRelatedBooks && (
-          <Section
-            title="Related Books"
+            title="Connected Archives"
+            eyebrow="Explore Further"
             icon={
               <BookOpen className="w-4 h-4" />
             }
           >
-            <ReferenceGrid
-              items={refs?.relatedBooks}
-              type="Book"
-              hrefBuilder={(item) =>
-                item.bookId
-                  ? `/books/${encodeURIComponent(
+            <div className="space-y-12">
+              {hasRelatedEvents && (
+                <div>
+                  <ArchiveSubheading title="Related Historical Events" />
+
+                  <ReferenceGrid
+                    items={
+                      refs?.relatedEvents
+                    }
+                    type="Historical Event"
+                    hrefBuilder={(item) =>
+                      item.eventId
+                        ? `/events/${encodeURIComponent(
+                            item.eventId
+                          )}`
+                        : undefined
+                    }
+                  />
+                </div>
+              )}
+
+              {hasRelatedBattles && (
+                <div>
+                  <ArchiveSubheading title="Related Battles" />
+
+                  <ReferenceGrid
+                    items={relatedBattles}
+                    type="Battle"
+                    hrefBuilder={(item) =>
+                      item.battleId
+                        ? `/battles/${encodeURIComponent(
+                            item.battleId
+                          )}`
+                        : undefined
+                    }
+                  />
+                </div>
+              )}
+
+              {hasRelatedHeroes && (
+                <div>
+                  <ArchiveSubheading title="Related Heroes" />
+
+                  <ReferenceGrid
+                    items={
+                      refs?.relatedHeroes
+                    }
+                    type="Hero"
+                    hrefBuilder={(item) =>
+                      item.heroId
+                        ? `/heroes/${encodeURIComponent(
+                            item.heroId
+                          )}`
+                        : undefined
+                    }
+                  />
+                </div>
+              )}
+
+              {hasRelatedPersonalities && (
+                <div>
+                  <ArchiveSubheading title="Historical Personalities" />
+
+                  <ReferenceGrid
+                    items={
+                      refs?.relatedHistoricalPersonalities
+                    }
+                    type="Historical Personality"
+                    hrefBuilder={(item) =>
+                      item.historicalPersonalityId
+                        ? `/historical-personalities/${encodeURIComponent(
+                            item.historicalPersonalityId
+                          )}`
+                        : undefined
+                    }
+                  />
+                </div>
+              )}
+
+              {hasRelatedPlaces && (
+                <div>
+                  <ArchiveSubheading title="Related Places" />
+
+                  <ReferenceGrid
+                    items={
+                      refs?.relatedPlaces
+                    }
+                    type="Place"
+                    hrefBuilder={(item) =>
+                      item.placeId
+                        ? `/places/${encodeURIComponent(
+                            item.placeId
+                          )}`
+                        : undefined
+                    }
+                  />
+                </div>
+              )}
+
+              {hasRelatedBooks && (
+                <div>
+                  <ArchiveSubheading title="Books & Publications" />
+
+                  <ReferenceGrid
+                    items={
+                      refs?.relatedBooks
+                    }
+                    type="Book"
+                    hrefBuilder={(item) =>
                       item.bookId
-                    )}`
-                  : undefined
-              }
-            />
+                        ? `/books/${encodeURIComponent(
+                            item.bookId
+                          )}`
+                        : undefined
+                    }
+                  />
+                </div>
+              )}
+            </div>
           </Section>
         )}
 
-        {/* =======================================================
+        {/* ===================================================
             SOURCES
-        ======================================================= */}
+        =================================================== */}
+
         {hasSources && (
           <Section
             title="Sources"
+            eyebrow="Historical Record"
             icon={
               <BookOpen className="w-4 h-4" />
             }
@@ -1435,31 +2099,90 @@ export default function BattleDetailPage() {
           </Section>
         )}
 
-        {/* =======================================================
+        {/* ===================================================
             TAGS
-        ======================================================= */}
+        =================================================== */}
+
         {battle.tags &&
           battle.tags.length > 0 && (
-            <section className="mt-14 pt-8 border-t border-[#D4AF37]/10">
-              <p className="text-[10px] uppercase tracking-[0.25em] text-[#A09682] mb-4">
-                Archive Tags
-              </p>
+            <section className="mt-20 pt-9 border-t border-[#D4AF37]/10">
+              <div className="flex flex-wrap items-center justify-between gap-5 mb-6">
+                <div>
+                  <p className="text-[9px] uppercase tracking-[0.3em] text-[#D4AF37]/45 mb-2">
+                    VeerBharat Classification
+                  </p>
+
+                  <h2 className="font-serif text-xl font-bold text-[#F8F5F0]">
+                    Archive Tags
+                  </h2>
+                </div>
+
+                <span className="text-[10px] tracking-[0.2em] text-[#A09682]">
+                  {battle.battleId}
+                </span>
+              </div>
 
               <div className="flex flex-wrap gap-2">
-                {battle.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-3 py-1.5 rounded-full border border-[#D4AF37]/15 bg-[#D4AF37]/5 text-xs text-[#D4AF37]/70"
-                  >
-                    {tag}
-                  </span>
-                ))}
+                {battle.tags.map(
+                  (tag) => (
+                    <span
+                      key={tag}
+                      className="px-3.5 py-2 rounded-full border border-[#D4AF37]/15 bg-[#D4AF37]/5 text-xs text-[#D4AF37]/70 hover:border-[#D4AF37]/30 hover:text-[#D4AF37] transition-colors"
+                    >
+                      {tag}
+                    </span>
+                  )
+                )}
               </div>
             </section>
           )}
+
+        {/* ===================================================
+            END OF RECORD
+        =================================================== */}
+
+        <div className="mt-24 flex items-center gap-4">
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent to-[#D4AF37]/15" />
+
+          <div className="flex items-center gap-3 text-[#D4AF37]/40">
+            <div className="w-1.5 h-1.5 rotate-45 border border-current" />
+
+            <Swords className="w-4 h-4" />
+
+            <div className="w-1.5 h-1.5 rotate-45 border border-current" />
+          </div>
+
+          <div className="h-px flex-1 bg-gradient-to-l from-transparent to-[#D4AF37]/15" />
+        </div>
+
+        <p className="mt-5 text-center text-[9px] uppercase tracking-[0.35em] text-[#A09682]/60">
+          End of Battle Record · {battle.battleId}
+        </p>
       </div>
 
       <Footer />
     </main>
+  );
+}
+
+/* =========================================================
+   SMALL SUBHEADING
+========================================================= */
+
+function ArchiveSubheading({
+  title,
+}: {
+  title: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 mb-5">
+      <ChevronRight className="w-4 h-4 text-[#D4AF37]" />
+
+      <h3 className="font-serif text-xl md:text-2xl font-bold text-[#F8F5F0]">
+        {title}
+      </h3>
+
+      <div className="h-px flex-1 bg-gradient-to-r from-[#D4AF37]/15 to-transparent" />
+    </div>
   );
 }
