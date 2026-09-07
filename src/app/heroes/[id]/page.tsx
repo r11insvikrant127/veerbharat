@@ -79,6 +79,19 @@ interface Hero {
     locationId?: string;
   }[];
 
+  relatedBooks?: {
+    bookId: string;
+    title: string;
+    bookType?: string;
+    author?: string;
+    language?: string;
+    period?: string;
+    description?: string;
+    subjects?: string[];
+    pdfUrl?: string;
+    tags?: string[];
+  }[];
+
   relatedEvents?: {
     eventId: string;
     name: string;
@@ -660,6 +673,68 @@ export default function HeroDetailPage({
                   </div>
                 </div>
               )}
+
+              {/* RELATED BOOKS */}
+              {hero.relatedBooks &&
+                hero.relatedBooks.length > 0 && (
+                  <div className="section-card-hover p-8 md:p-10 mt-6">
+                    <p className="text-xs uppercase tracking-[0.25em] text-[#D4AF37]/60 mb-3">
+                      Literary Connections
+                    </p>
+
+                    <h2 className="font-serif text-3xl font-bold mb-8">
+                      Books & Publications
+                    </h2>
+
+                    <div className="grid md:grid-cols-2 gap-5">
+                      {hero.relatedBooks.map((book) => (
+                        <Link
+                          key={book.bookId}
+                          href={`/books/${encodeURIComponent(book.bookId)}`}
+                          className="group block"
+                        >
+                          <article className="rounded-xl border border-[#D4AF37]/15 bg-[#1C1410] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-[#D4AF37]/40 hover:bg-[#211811]">
+
+                            <div className="flex items-center justify-between gap-4 mb-4">
+                              <span className="text-xs tracking-wider text-[#D4AF37]/60">
+                                {book.bookId}
+                              </span>
+
+                              {book.bookType && (
+                                <span className="px-2.5 py-1 rounded-full border border-[#D4AF37]/15 text-[10px] uppercase tracking-wider text-[#A09682]">
+                                  {book.bookType}
+                                </span>
+                              )}
+                            </div>
+
+                            <h3 className="font-serif text-xl font-bold text-[#F8F5F0] group-hover:text-[#D4AF37] transition-colors">
+                              {book.title}
+                            </h3>
+
+                            {book.author && (
+                              <p className="mt-2 text-sm text-[#D7C9A5]">
+                                {book.author}
+                              </p>
+                            )}
+
+                            {book.description && (
+                              <p className="mt-3 text-sm leading-7 text-[#A09682]">
+                                {book.description}
+                              </p>
+                            )}
+
+                            <div className="mt-5 pt-4 border-t border-[#D4AF37]/10">
+                              <span className="text-xs uppercase tracking-[0.2em] text-[#D4AF37]/60 group-hover:text-[#D4AF37] transition-colors">
+                                View Book →
+                              </span>
+                            </div>
+
+                          </article>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
             {/* PROFILE INFORMATION */}
             <div className="section-card-hover p-8 md:p-10 mt-6">

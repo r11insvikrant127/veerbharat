@@ -134,35 +134,49 @@ class HeroService extends BaseService {
         await this.connect();
 
         const hero = await Hero.findOne({ heroId })
-            .populate({
-                path: "imageIds",
-                select:
-                    "imageId title url altText imageType",
-            })
-            .populate({
-                path: "historicalArtifacts.imageId",
-                select:
-                    "imageId title url altText imageType description",
-            })
+        .populate({
+            path: "imageIds",
+            select: "imageId title url altText imageType",
+        })
+        .populate({
+            path: "historicalArtifacts.imageId",
+            select:
+                "imageId title url altText imageType description",
+        })
 
-            .populate({
+        .populate({
             path: "relatedHeroes",
             select: "heroId name alternativeNames",
-            })
+        })
 
-            .populate({
-                path: "relatedBattles",
-                select: `
-                    battleId
-                    name
-                    battleDate
-                    battleEndDate
-                    description
-                    shortDescription
-                    locationId
-                `,
-                });
+        .populate({
+            path: "relatedBattles",
+            select: `
+                battleId
+                name
+                battleDate
+                battleEndDate
+                description
+                shortDescription
+                locationId
+            `,
+        })
 
+        .populate({
+            path: "relatedBooks",
+            select: `
+                bookId
+                title
+                bookType
+                author
+                language
+                period
+                description
+                subjects
+                pdfUrl
+                tags
+            `,
+        });
         if (!hero) {
             throw new ApiError(
                 404,
