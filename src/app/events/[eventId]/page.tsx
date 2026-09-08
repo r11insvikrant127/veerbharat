@@ -1733,6 +1733,8 @@ function HistoricalContent({
   const blocks =
     parseContentBlocks(content);
 
+  let cardCounter = 0;
+
   return (
     <div className="text-[#D7C9A5]">
       {blocks.map(
@@ -1830,6 +1832,50 @@ function HistoricalContent({
               </ol>
             );
           }
+          if (block.type === "cards") {
+          return (
+            <div
+              key={index}
+              className="clear-both w-full"
+            >
+              {block.items.map((item, itemIndex) => {
+                const cardNumber = ++cardCounter;
+
+                return (
+                  <article
+                    key={`${item.title}-${itemIndex}`}
+                    className="w-full mb-6 rounded-xl border border-[#D4AF37]/20 bg-[#17130F]/70 p-6"
+                  >
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full border border-[#D4AF37]/30 text-xs text-[#D4AF37]">
+                        {cardNumber}
+                      </span>
+
+                      <span className="text-[10px] uppercase tracking-[0.25em] text-[#D4AF37]/60">
+                        Punishment and Executions
+                      </span>
+                    </div>
+
+                    <h3 className="font-serif text-2xl font-bold text-[#F8F5F0]">
+                      {item.title}
+                    </h3>
+
+                    <div className="mt-4 pt-4 border-t border-[#D4AF37]/10">
+                      <p className="text-[#D7C9A5] text-sm md:text-base leading-7">
+                        <LinkedHistoricalText
+                          text={item.description}
+                          heroes={heroes}
+                          historicalPersonalities={historicalPersonalities}
+                        />
+                      </p>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          );
+        }
+
 
           return null;
         }
@@ -2110,6 +2156,13 @@ type ContentBlock =
   | {
       type: "numbered";
       items: string[];
+    }
+  | {
+      type: "cards";
+      items: {
+        title: string;
+        description: string;
+      }[];
     };
 
 /* =====================================================
@@ -2119,33 +2172,25 @@ type ContentBlock =
 function parseContentBlocks(
   content: string
 ): ContentBlock[] {
-  const lines =
-    content.split("\n");
+  const lines = content.split("\n");
 
-  const blocks:
-    ContentBlock[] = [];
+  const blocks: ContentBlock[] = [];
 
-  let paragraph:
-    string[] = [];
+  let paragraph: string[] = [];
+  let bullets: string[] = [];
+  let numbered: string[] = [];
 
-  let bullets:
-    string[] = [];
-
-  let numbered:
-    string[] = [];
+  let cards: {
+    title: string;
+    description: string;
+  }[] = [];
 
   function saveParagraph() {
-    if (
-      paragraph.length > 0
-    ) {
-      const text =
-        paragraph
-          .join(" ")
-          .replace(
-            /\s+/g,
-            " "
-          )
-          .trim();
+    if (paragraph.length > 0) {
+      const text = paragraph
+        .join(" ")
+        .replace(/\s+/g, " ")
+        .trim();
 
       if (text) {
         blocks.push({
@@ -2159,9 +2204,7 @@ function parseContentBlocks(
   }
 
   function saveBullets() {
-    if (
-      bullets.length > 0
-    ) {
+    if (bullets.length > 0) {
       blocks.push({
         type: "bullets",
         items: bullets,
@@ -2172,9 +2215,7 @@ function parseContentBlocks(
   }
 
   function saveNumbered() {
-    if (
-      numbered.length > 0
-    ) {
+    if (numbered.length > 0) {
       blocks.push({
         type: "numbered",
         items: numbered,
@@ -2184,34 +2225,72 @@ function parseContentBlocks(
     }
   }
 
-  lines.forEach((line) => {
-  const trimmed =
-    line.trim();
+  function saveCards() {
+    if (cards.length > 0) {
+      blocks.push({
+        type: "cards",
+        items: cards,
+      });
 
-  // Ignore Markdown horizontal rules such as ---
-  if (/^-{3,}$/.test(trimmed)) {
+      cards = [];
+    }
+  }
+
+  function saveAll() {
     saveParagraph();
     saveBullets();
     saveNumbered();
-
-    return;
+    saveCards();
   }
 
-  if (!trimmed) {
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+
+    /*
+      Ignore Markdown horizontal rules
+    */
+    if (/^-{3,}$/.test(trimmed)) {
+      saveAll();
+      return;
+    }
+
+    /*
+      CARD FORMAT
+
+      [CARD] Name | Description
+    */
+    const cardMatch = trimmed.match(
+      /^\[CARD\]\s*(.+?)\s*\|\s*(.+)$/
+    );
+
+    if (cardMatch) {
       saveParagraph();
       saveBullets();
       saveNumbered();
 
+      cards.push({
+        title: cardMatch[1].trim(),
+        description: cardMatch[2].trim(),
+      });
+
       return;
     }
 
-    if (
-      /^[-*]\s+/.test(
-        trimmed
-      )
-    ) {
+    /*
+      Blank line
+    */
+    if (!trimmed) {
+      saveAll();
+      return;
+    }
+
+    /*
+      Bullet
+    */
+    if (/^[-*]\s+/.test(trimmed)) {
       saveParagraph();
       saveNumbered();
+      saveCards();
 
       bullets.push(
         trimmed.replace(
@@ -2223,13 +2302,13 @@ function parseContentBlocks(
       return;
     }
 
-    if (
-      /^\d+\.\s+/.test(
-        trimmed
-      )
-    ) {
+    /*
+      Numbered list
+    */
+    if (/^\d+\.\s+/.test(trimmed)) {
       saveParagraph();
       saveBullets();
+      saveCards();
 
       numbered.push(
         trimmed.replace(
@@ -2241,15 +2320,17 @@ function parseContentBlocks(
       return;
     }
 
+    /*
+      Normal paragraph
+    */
     saveBullets();
     saveNumbered();
+    saveCards();
 
     paragraph.push(trimmed);
   });
 
-  saveParagraph();
-  saveBullets();
-  saveNumbered();
+  saveAll();
 
   return blocks;
 }
