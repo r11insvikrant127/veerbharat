@@ -67,10 +67,17 @@ interface Reference {
   };
 }
 
+interface BattleSubSection {
+  title: string;
+  content: string;
+  order?: number;
+}
+
 interface BattleSection {
   title: string;
   content: string;
   order: number;
+  subSections?: BattleSubSection[];
 }
 
 interface Battle {
@@ -531,6 +538,57 @@ function ReferenceGrid({
 }
 
 /* =========================================================
+   NESTED BATTLE SECTION CARDS
+========================================================= */
+
+function NestedSectionCards({
+  sections,
+}: {
+  sections?: BattleSubSection[];
+}) {
+  if (!sections || sections.length === 0) {
+    return null;
+  }
+
+  const sortedSections = [...sections].sort(
+    (a, b) => (a.order ?? 0) - (b.order ?? 0)
+  );
+
+  return (
+    <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {sortedSections.map((subSection, index) => (
+        <article
+          key={`${subSection.title}-${index}`}
+          className="group relative overflow-hidden rounded-2xl border border-[#D4AF37]/10 bg-[#17120F]/80 p-6 transition-all duration-300 hover:-translate-y-1 hover:border-[#D4AF37]/30 hover:bg-[#1C1410]"
+        >
+          <div className="absolute top-0 right-0 w-24 h-24 rounded-full bg-[#D4AF37]/5 blur-3xl group-hover:bg-[#D4AF37]/10 transition-colors" />
+
+          <div className="relative">
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 shrink-0 rounded-lg border border-[#D4AF37]/20 bg-[#D4AF37]/5 flex items-center justify-center font-serif text-xs font-bold text-[#D4AF37]">
+                {String(index + 1).padStart(2, "0")}
+              </div>
+
+              <div className="h-px flex-1 bg-[#D4AF37]/10" />
+            </div>
+
+            <h4 className="font-serif text-lg md:text-xl font-bold leading-snug text-[#F8F5F0] group-hover:text-[#D4AF37] transition-colors">
+              {subSection.title}
+            </h4>
+
+            <p className="mt-4 text-sm leading-7 text-[#A09682]">
+              {subSection.content}
+            </p>
+
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+/* =========================================================
    STANDARD NARRATIVE
 ========================================================= */
 
@@ -816,6 +874,9 @@ function BattleNarrative({
                       )
                     )}
                   </div>
+                  <NestedSectionCards
+                    sections={section.subSections}
+                  />
                   {sectionImages.length > 0 && (
                     <SectionImages
                       images={sectionImages}

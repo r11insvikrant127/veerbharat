@@ -29,7 +29,6 @@ interface HistoricalEvent {
   description: string;
   shortDescription?: string;
   significance?: string;
-  isOnThisDayEligible: boolean;
 
   linkedEventId?:
     | {
