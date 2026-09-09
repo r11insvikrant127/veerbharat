@@ -24,6 +24,7 @@ interface HistoricalEvent {
   name: string;
   status?: string;
   eventDate: string | null;
+  eventEndDate?: string | null;
   eventDateAccuracy: string;
   description: string;
   shortDescription?: string;
@@ -177,12 +178,20 @@ export function OnThisDay() {
             const eventDate =
               new Date(event.eventDate);
 
-            if (
-              eventDate.getDate() ===
-                today.getDate() &&
-              eventDate.getMonth() ===
-                today.getMonth()
-            ) {
+            const eventEndDate = event.eventEndDate
+              ? new Date(event.eventEndDate)
+              : null;
+
+            const isStartDate =
+              eventDate.getDate() === today.getDate() &&
+              eventDate.getMonth() === today.getMonth();
+
+            const isEndDate =
+              eventEndDate &&
+              eventEndDate.getDate() === today.getDate() &&
+              eventEndDate.getMonth() === today.getMonth();
+
+            if (isStartDate || isEndDate) {
               const relatedHero =
                 event.heroIds?.[0];
 

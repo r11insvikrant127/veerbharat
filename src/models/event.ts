@@ -28,6 +28,12 @@ const EventSchema = new Schema(
       index: true,
     },
 
+    eventEndDate: {
+      type: Date,
+      default: null,
+      index: true,
+    },
+
     eventDateAccuracy: {
       type: String,
       enum: [
