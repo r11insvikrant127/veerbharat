@@ -100,6 +100,24 @@ interface Hero {
     type?: string;
   }[];
 
+  sourceIds?: {
+    sourceId: string;
+    title: string;
+    type?: string;
+    description?: string;
+    author?: string;
+    year?: number;
+    publisher?: string;
+    edition?: string;
+    isbn?: string;
+    pages?: string;
+    volume?: string;
+    publicationYear?: number;
+    reliability?: string;
+    location?: string;
+    url?: string;
+  }[];
+
   relatedHistoricalPersonalities?: HistoricalPersonalityReference[];
   
   historicalArtifacts?: {
@@ -726,6 +744,70 @@ export default function HeroDetailPage({
                             <div className="mt-5 pt-4 border-t border-[#D4AF37]/10">
                               <span className="text-xs uppercase tracking-[0.2em] text-[#D4AF37]/60 group-hover:text-[#D4AF37] transition-colors">
                                 View Book →
+                              </span>
+                            </div>
+
+                          </article>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+            {/* SOURCES */}
+              {hero.sourceIds &&
+                hero.sourceIds.length > 0 && (
+                  <div className="section-card-hover p-8 md:p-10 mt-6">
+                    <p className="text-xs uppercase tracking-[0.25em] text-[#D4AF37]/60 mb-3">
+                      DOCUMENTATION
+                    </p>
+
+                    <h2 className="font-serif text-3xl font-bold mb-8">
+                      Sources
+                    </h2>
+
+                    <div className="grid md:grid-cols-2 gap-5">
+                      {hero.sourceIds.map((source) => (
+                        <Link
+                          key={source.sourceId}
+                          href={`/sources/${encodeURIComponent(
+                            source.sourceId
+                          )}`}
+                          className="group block"
+                        >
+                          <article className="rounded-xl border border-[#D4AF37]/15 bg-[#1C1410] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-[#D4AF37]/40 hover:bg-[#211811]">
+
+                            <div className="flex items-center justify-between gap-4 mb-4">
+                              <span className="text-xs tracking-wider text-[#D4AF37]/60">
+                                {source.sourceId}
+                              </span>
+
+                              {source.type && (
+                                <span className="px-2.5 py-1 rounded-full border border-[#D4AF37]/15 text-[10px] uppercase tracking-wider text-[#A09682]">
+                                  {source.type}
+                                </span>
+                              )}
+                            </div>
+
+                            <h3 className="font-serif text-xl font-bold text-[#F8F5F0] group-hover:text-[#D4AF37] transition-colors">
+                              {source.title}
+                            </h3>
+
+                            {source.author && (
+                              <p className="mt-2 text-sm text-[#D7C9A5]">
+                                {source.author}
+                              </p>
+                            )}
+
+                            {source.description && (
+                              <p className="mt-3 text-sm leading-7 text-[#A09682]">
+                                {source.description}
+                              </p>
+                            )}
+
+                            <div className="mt-5 pt-4 border-t border-[#D4AF37]/10">
+                              <span className="text-xs uppercase tracking-[0.2em] text-[#D4AF37]/60 group-hover:text-[#D4AF37] transition-colors">
+                                View Source →
                               </span>
                             </div>
 

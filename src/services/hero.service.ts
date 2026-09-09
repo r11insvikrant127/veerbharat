@@ -163,6 +163,27 @@ class HeroService extends BaseService {
         })
 
         .populate({
+            path: "sourceIds",
+            select: `
+                sourceId
+                title
+                type
+                description
+                author
+                year
+                publisher
+                edition
+                isbn
+                pages
+                volume
+                publicationYear
+                reliability
+                location
+                url
+            `,
+        })
+        
+        .populate({
             path: "relatedBooks",
             select: `
                 bookId
