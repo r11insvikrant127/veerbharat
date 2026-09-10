@@ -630,7 +630,48 @@ export default function HistoricalPersonalityDetailPage({
                   </div>
                 )}
               </div>
-            )}                   
+            )}         
+
+            {/* RELATED BATTLES */}
+
+            {personality.relatedBattles &&
+              personality.relatedBattles.length > 0 && (
+                <div className="section-card-hover p-7 mt-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <Swords className="w-5 h-5 text-[#D4AF37]" />
+
+                    <h2 className="font-serif text-2xl font-bold">
+                      Related Battles
+                    </h2>
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    {personality.relatedBattles.map((battle) => (
+                      <Link
+                        key={battle.battleId}
+                        href={`/battles/${battle.battleId}`}
+                        className="group block p-4 rounded-xl border border-[#D4AF37]/10 bg-[#17130F] hover:border-[#D4AF37]/40 hover:bg-[#1C1410] transition-all"
+                      >
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <p className="text-xs uppercase tracking-[0.2em] text-[#D4AF37]/60 mb-2">
+                              {battle.battleId}
+                            </p>
+
+                            <h3 className="font-serif text-lg font-semibold text-[#F8F5F0] group-hover:text-[#D4AF37] transition-colors">
+                              {battle.name}
+                            </h3>
+                          </div>
+
+                          <span className="text-[#D4AF37]/50 group-hover:text-[#D4AF37] transition-colors">
+                            →
+                          </span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}          
             {/* KNOWN FOR */}
 
             {personality.knownFor &&

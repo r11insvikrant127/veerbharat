@@ -32,6 +32,8 @@ interface HeroImage {
   imageType: string;
 }
 
+
+
 interface HistoricalPersonalityReference {
   historicalPersonalityId: string;
   name: string;
@@ -78,6 +80,13 @@ interface Hero {
     shortDescription?: string;
     locationId?: string;
   }[];
+
+  kingdomId?: {
+    kingdomId: string;
+    name: string;
+    nativeName?: string;
+    alternativeNames?: string[];
+  } | null;
 
   relatedBooks?: {
     bookId: string;
@@ -516,7 +525,7 @@ export default function HeroDetailPage({
                     label="Clan"
                     value={hero.clan}
                   />
-
+                  
                   <InfoRow
                     label="Religion"
                     value={hero.religion}
@@ -592,7 +601,51 @@ export default function HeroDetailPage({
             <HistoricalArtifacts
               artifacts={hero.historicalArtifacts}
             />
-            
+
+            {/* RELATED KINGDOM */}
+              {hero.kingdomId && (
+                <div className="section-card-hover p-8 md:p-10 mt-6">
+                  <p className="text-xs uppercase tracking-[0.25em] text-[#D4AF37]/60 mb-3">
+                    Political Connection
+                  </p>
+
+                  <h2 className="font-serif text-3xl font-bold mb-8">
+                    Related Kingdom
+                  </h2>
+
+                  <Link
+                    href={`/kingdoms/${encodeURIComponent(
+                      hero.kingdomId.kingdomId
+                    )}`}
+                    className="group block"
+                  >
+                    <article className="rounded-xl border border-[#D4AF37]/15 bg-[#1C1410] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-[#D4AF37]/40 hover:bg-[#211811]">
+                      <div className="flex items-center justify-between gap-4 mb-4">
+                        <span className="text-xs tracking-wider text-[#D4AF37]/60">
+                          {hero.kingdomId.kingdomId}
+                        </span>
+                      </div>
+
+                      <h3 className="font-serif text-2xl font-bold text-[#F8F5F0] group-hover:text-[#D4AF37] transition-colors">
+                        {hero.kingdomId.name}
+                      </h3>
+
+                      {hero.kingdomId.nativeName && (
+                        <p className="mt-2 text-sm text-[#D7C9A5]">
+                          {hero.kingdomId.nativeName}
+                        </p>
+                      )}
+
+                      <div className="mt-5 pt-4 border-t border-[#D4AF37]/10">
+                        <span className="text-xs uppercase tracking-[0.2em] text-[#D4AF37]/60 group-hover:text-[#D4AF37] transition-colors">
+                          View Kingdom →
+                        </span>
+                      </div>
+                    </article>
+                  </Link>
+                </div>
+              )}
+              
             {/* RELATED BATTLES */}
             {hero.relatedBattles &&
               hero.relatedBattles.length > 0 && (

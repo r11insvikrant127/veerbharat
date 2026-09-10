@@ -9,6 +9,7 @@ import { getPagination } from "@/helpers/pagination";
 import { getSort } from "@/helpers/sorting";
 import Event from "@/models/event";
 import HistoricalPersonality from "@/models/historicalPersonality";
+import Kingdom from "@/models/kingdom";
 
 import {
   CreateHeroInput,
@@ -144,6 +145,12 @@ class HeroService extends BaseService {
                 "imageId title url altText imageType description",
         })
 
+        .populate({
+            path: "kingdomId",
+            model: Kingdom,
+            select: "kingdomId name nativeName alternativeNames",
+        })
+        
         .populate({
             path: "relatedHeroes",
             select: "heroId name alternativeNames",
