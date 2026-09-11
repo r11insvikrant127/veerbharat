@@ -122,6 +122,8 @@ interface HistoricalEvent {
   details?: string;
   significance?: string;
 
+  eventSections?: HistoricalSection[];
+
   type?: string;
   tags?: string[];
 
@@ -143,12 +145,14 @@ interface HistoricalEvent {
 interface HistoricalSubsection {
   title: string;
   content: string;
+  order?: number;
 }
 
 interface HistoricalSection {
   title: string;
   content: string;
-  subsections: HistoricalSubsection[];
+  order?: number;
+  subSections?: HistoricalSubsection[];
 }
 
 /* =====================================================
@@ -431,11 +435,27 @@ export default function EventDetailsPage() {
     event.imageUrl || null;
 
 
-  const sections = event.details
-    ? parseHistoricalSections(
-        event.details
-      )
-    : [];
+  const sections: HistoricalSection[] =
+    Array.isArray(event.eventSections) &&
+    event.eventSections.length > 0
+      ? [...event.eventSections]
+          .sort(
+            (a, b) =>
+              (a.order ?? 0) -
+              (b.order ?? 0)
+          )
+          .map((section) => ({
+            title: section.title,
+            content: section.content,
+            order: section.order,
+            subSections:
+              section.subSections ?? [],
+          }))
+      : event.details
+        ? parseHistoricalSections(
+            event.details
+          )
+        : [];
 
   /*
     IMPORTANT:
@@ -696,7 +716,9 @@ export default function EventDetailsPage() {
                     content={section.content}
                     images={sectionImages}
                     index={index}
-                    subsections={section.subsections}
+                    subsections={
+                      section.subSections ?? []
+                    }
                     allImages={images}
                     heroes={heroes}
                     historicalPersonalities={historicalPersonalities}
@@ -1631,7 +1653,7 @@ function parseHistoricalSections(
       currentSubsection.content =
         cleanedContent;
 
-      currentSection?.subsections.push(
+      currentSection?.subSections?.push(
         currentSubsection
       );
 
@@ -1683,7 +1705,7 @@ function parseHistoricalSections(
         title:
           mainHeadingMatch[1].trim(),
         content: "",
-        subsections: [],
+        subSections: [],
       };
 
       return;

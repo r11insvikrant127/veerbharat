@@ -52,81 +52,69 @@ export function FeaturedHeroes() {
 
         const allHeroes: Hero[] = [];
 
-let page = 1;
-let totalPages = 1;
+        let page = 1;
+        let totalPages = 1;
 
-while (page <= totalPages) {
-        const response = await fetch(
-          `/api/heroes?page=${page}&limit=100&status=Published`
-        );
+        // Fetch ALL published heroes page by page.
+        while (page <= totalPages) {
+          const response = await fetch(
+            `/api/heroes?page=${page}&limit=100&status=Published`
+          );
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch heroes');
+          if (!response.ok) {
+            throw new Error("Failed to fetch heroes");
+          }
+
+          const result: HeroesResponse = await response.json();
+
+          allHeroes.push(...(result.data || []));
+
+          totalPages = result.pagination?.totalPages || 1;
+          page++;
         }
 
-        const result: HeroesResponse =
-          await response.json();
-
-        allHeroes.push(...result.data);
-
-        totalPages = result.pagination.totalPages;
-        page++;
-      }
-
         /*
-         * FEATURE HEROES BASED ON
-         * BIRTH OR DEATH/MARTYRDOM ANNIVERSARY.
-         *
-         * Only the day and month are compared.
-         * The year is intentionally ignored.
-         */
+        * FEATURE HEROES BASED ON
+        * BIRTH OR DEATH/MARTYRDOM ANNIVERSARY.
+        *
+        * Only the day and month are compared.
+        * The year is intentionally ignored.
+        */
         const todaysHeroes = allHeroes.filter((hero: Hero) => {
           const isBirthday =
             hero.birthDate &&
             (() => {
-              const birthDate =
-                new Date(hero.birthDate);
+              const birthDate = new Date(hero.birthDate);
 
               return (
-                birthDate.getDate() ===
-                  today.getDate() &&
-                birthDate.getMonth() ===
-                  today.getMonth()
+                birthDate.getDate() === today.getDate() &&
+                birthDate.getMonth() === today.getMonth()
               );
             })();
 
           const isDeathAnniversary =
             hero.deathDate &&
             (() => {
-              const deathDate =
-                new Date(hero.deathDate);
+              const deathDate = new Date(hero.deathDate);
 
               return (
-                deathDate.getDate() ===
-                  today.getDate() &&
-                deathDate.getMonth() ===
-                  today.getMonth()
+                deathDate.getDate() === today.getDate() &&
+                deathDate.getMonth() === today.getMonth()
               );
             })();
 
-          return (
-            isBirthday ||
-            isDeathAnniversary
-          );
+          return isBirthday || isDeathAnniversary;
         });
 
         const maxFeaturedHeroes = 10;
 
         setHeroes(
-          todaysHeroes.slice(
-            0,
-            maxFeaturedHeroes
-          )
+          todaysHeroes.slice(0, maxFeaturedHeroes)
         );
 
       } catch (error) {
         console.error(
-          'Failed to load featured heroes:',
+          "Failed to load featured heroes:",
           error
         );
       } finally {

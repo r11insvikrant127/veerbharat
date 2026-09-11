@@ -204,25 +204,46 @@ const BattleSchema = new Schema(
     },
 
     battleSections: [
-      {
-        title: {
-          type: String,
-          required: true,
-          trim: true,
-        },
-
-        content: {
-          type: String,
-          required: true,
-          trim: true,
-        },
-
-        order: {
-          type: Number,
-          required: true,
-        },
+    {
+      title: {
+        type: String,
+        required: true,
+        trim: true,
       },
-    ],
+
+      content: {
+        type: String,
+        required: true,
+        trim: true,
+      },
+
+      order: {
+        type: Number,
+        required: true,
+      },
+
+      subSections: [
+        {
+          title: {
+            type: String,
+            required: true,
+            trim: true,
+          },
+
+          content: {
+            type: String,
+            required: true,
+            trim: true,
+          },
+
+          order: {
+            type: Number,
+            required: true,
+          },
+        },
+      ],
+    },
+  ],
 
     aftermath: {
       type: String,

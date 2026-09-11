@@ -140,6 +140,48 @@ const EventSchema = new Schema(
       default: "",
     },
 
+        eventSections: [
+      {
+        title: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+
+        content: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+
+        order: {
+          type: Number,
+          required: true,
+        },
+
+        subSections: [
+          {
+            title: {
+              type: String,
+              required: true,
+              trim: true,
+            },
+
+            content: {
+              type: String,
+              required: true,
+              trim: true,
+            },
+
+            order: {
+              type: Number,
+              required: true,
+            },
+          },
+        ],
+      },
+    ],
+    
     significance: {
       type: String,
       trim: true,

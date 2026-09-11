@@ -434,7 +434,10 @@ const HeroSchema = new Schema(
       ref: "Kingdom",
       required: true,
     },
-
+    relatedKingdomIds: {
+      type: [{ type: Schema.Types.ObjectId, ref: "Kingdom" }],
+      default: [],
+    },
     capitalId: {
       type: Schema.Types.ObjectId,
       ref: "Place",
