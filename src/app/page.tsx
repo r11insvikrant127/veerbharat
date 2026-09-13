@@ -1,4 +1,3 @@
-// src/app/page.tsx
 'use client';
 
 import { Navbar } from '@/components/layout/Navbar';
@@ -6,6 +5,7 @@ import { Footer } from '@/components/layout/Footer';
 import { HeroSection } from '@/components/sections/HeroSection';
 import { OnThisDay } from '@/components/sections/OnThisDay';
 import { FeaturedHeroes } from '@/components/sections/FeaturedHeroes';
+import { RememberedHeroes } from '@/components/sections/RememberedHeroes';
 import { HistoryTimeline } from '@/components/sections/HistoryTimeline';
 import { InteractiveMap } from '@/components/sections/InteractiveMap';
 import { GreatBattles } from '@/components/sections/GreatBattles';
@@ -20,6 +20,7 @@ export default function HomePage() {
       <HeroSection />
       <OnThisDay />
       <FeaturedHeroes />
+      <RememberedHeroes />
       <HistoryTimeline />
       <InteractiveMap />
       <GreatBattles />
