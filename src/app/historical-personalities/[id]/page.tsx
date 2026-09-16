@@ -121,6 +121,7 @@ interface BattleReference {
 interface EventReference {
   eventId: string;
   name: string;
+  eventDate?: string;
 }
 
 interface HeroLinkCandidate {
@@ -631,7 +632,93 @@ export default function HistoricalPersonalityDetailPage({
                 )}
               </div>
             )}         
+            
+            {/* RELATED EVENTS */}
 
+            {personality.relatedEvents &&
+              personality.relatedEvents.length > 0 && (
+                <div className="section-card-hover p-7 md:p-8 mt-6">
+                  
+                  <div className="flex items-center gap-3 mb-6">
+                    <Calendar className="w-5 h-5 text-[#D4AF37]" />
+
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.25em] text-[#D4AF37]/60 mb-1">
+                        Historical Connections
+                      </p>
+
+                      <h2 className="font-serif text-2xl md:text-3xl font-bold">
+                        Related Events
+                      </h2>
+                    </div>
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    {personality.relatedEvents.map((event) => (
+                      <Link
+                        key={event.eventId}
+                        href={`/events/${encodeURIComponent(event.eventId)}`}
+                        className="
+                          group block
+                          p-5
+                          rounded-xl
+                          border border-[#D4AF37]/10
+                          bg-[#17130F]
+                          hover:border-[#D4AF37]/40
+                          hover:bg-[#1C1410]
+                          transition-all
+                        "
+                      >
+                        <div className="flex items-start justify-between gap-4">
+
+                          <div className="min-w-0">
+
+                            <p className="
+                              text-xs
+                              uppercase
+                              tracking-[0.2em]
+                              text-[#D4AF37]/60
+                              mb-2
+                            ">
+                              {event.eventId}
+                            </p>
+
+                            <h3 className="
+                              font-serif
+                              text-lg
+                              font-semibold
+                              text-[#F8F5F0]
+                              group-hover:text-[#D4AF37]
+                              transition-colors
+                            ">
+                              {event.name}
+                            </h3>
+
+                            {event.eventDate && (
+                              <p className="mt-2 text-sm text-[#A09682]">
+                                {new Date(event.eventDate).getFullYear()}
+                              </p>
+                            )}
+
+                          </div>
+
+                          <span className="
+                            shrink-0
+                            text-[#D4AF37]/50
+                            group-hover:text-[#D4AF37]
+                            transition-colors
+                            text-lg
+                          ">
+                            →
+                          </span>
+
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
             {/* RELATED BATTLES */}
 
             {personality.relatedBattles &&
