@@ -23,7 +23,7 @@ export const createBattleSchema = z.object({
   alternativeNames: stringArray,
 
   battleDate: z.coerce.date().nullable().optional(),
-
+  battleEndDate: z.coerce.date().nullable().optional(),
   battleDateAccuracy: accuracyEnum
     .optional()
     .default("Unknown"),
