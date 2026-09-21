@@ -478,6 +478,13 @@ const HeroSchema = new Schema(
       type: [{ type: Schema.Types.ObjectId, ref: "Hero" }],
       default: [],
     },
+    relatedHistoricalPersonalities: {
+      type: [{
+        type: Schema.Types.ObjectId,
+        ref: "HistoricalPersonality",
+      }],
+      default: [],
+    },
 
     relatedBattles: {
       type: [{ type: Schema.Types.ObjectId, ref: "Battle" }],

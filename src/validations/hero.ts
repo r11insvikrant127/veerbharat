@@ -148,7 +148,7 @@ export const createHeroSchema = z.object({
   /* CROSS REFERENCES */
 
   relatedHeroes: objectIdArray,
-
+  relatedHistoricalPersonalities: objectIdArray,
   relatedBattles: objectIdArray,
 
   relatedPlaces: objectIdArray,

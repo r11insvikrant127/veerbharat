@@ -155,6 +155,12 @@ class HeroService extends BaseService {
             path: "relatedHeroes",
             select: "heroId name alternativeNames",
         })
+        
+        .populate({
+            path: "relatedHistoricalPersonalities",
+            model: HistoricalPersonality,
+            select: "historicalPersonalityId name alternativeNames",
+        })
 
         .populate({
             path: "relatedBattles",
