@@ -243,6 +243,11 @@ export interface IHistoricalPersonality {
   imageIds?: Types.ObjectId[];
 
   /**
+   * Heroes directly associated with this historical personality
+   */
+  relatedHeroes?: Types.ObjectId[];
+
+  /**
    * Publication status
    */
   status?: string;
@@ -684,6 +689,16 @@ const HistoricalPersonalitySchema =
         {
           type: Schema.Types.ObjectId,
           ref: "Image",
+        },
+      ],
+
+
+      /* ------------------------- Cross References ------------------------ */
+
+      relatedHeroes: [
+        {
+          type: Schema.Types.ObjectId,
+          ref: "Hero",
         },
       ],
 
