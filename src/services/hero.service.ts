@@ -155,7 +155,7 @@ class HeroService extends BaseService {
             path: "relatedHeroes",
             select: "heroId name alternativeNames",
         })
-        
+
         .populate({
             path: "relatedHistoricalPersonalities",
             model: HistoricalPersonality,
@@ -239,17 +239,25 @@ class HeroService extends BaseService {
             })
             .lean();
 
+        const eventHistoricalPersonalities =
+            relatedEvents
+                .flatMap(
+                    (event) =>
+                        event.historicalPersonalityIds || []
+                );
+
+        const directHistoricalPersonalities =
+            hero.relatedHistoricalPersonalities || [];
+
         const relatedHistoricalPersonalities = Array.from(
             new Map(
-                relatedEvents
-                    .flatMap(
-                        (event) =>
-                            event.historicalPersonalityIds || []
-                    )
-                    .map((person: any) => [
-                        String(person._id),
-                        person,
-                    ])
+                [
+                    ...directHistoricalPersonalities,
+                    ...eventHistoricalPersonalities,
+                ].map((person: any) => [
+                    String(person._id),
+                    person,
+                ])
             ).values()
         );
 

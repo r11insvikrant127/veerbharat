@@ -174,11 +174,17 @@ class HistoricalPersonalityService extends BaseService {
     const historicalPersonality =
       await HistoricalPersonality.findOne({
         historicalPersonalityId,
-      }).populate({
-        path: "imageIds",
-        select:
-          "imageId title url altText imageType",
-      });
+      })
+        .populate({
+          path: "imageIds",
+          select:
+            "imageId title url altText imageType",
+        })
+        .populate({
+          path: "relatedHeroes",
+          model: Hero,
+          select: "heroId name alternativeNames",
+        });
 
     if (!historicalPersonality) {
       throw new ApiError(
@@ -240,17 +246,23 @@ class HistoricalPersonalityService extends BaseService {
     /*
      * Collect unique heroes from all related events.
      */
+    const eventRelatedHeroes =
+      relatedEvents.flatMap(
+        (event) => event.heroIds || []
+      );
+
+    const directRelatedHeroes =
+      historicalPersonality.relatedHeroes || [];
+
     const relatedHeroes = Array.from(
       new Map(
-        relatedEvents
-          .flatMap(
-            (event) =>
-              event.heroIds || []
-          )
-          .map((hero: any) => [
-            String(hero._id),
-            hero,
-          ])
+        [
+          ...directRelatedHeroes,
+          ...eventRelatedHeroes,
+        ].map((hero: any) => [
+          String(hero._id),
+          hero,
+        ])
       ).values()
     );
 

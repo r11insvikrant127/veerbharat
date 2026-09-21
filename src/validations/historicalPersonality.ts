@@ -232,7 +232,11 @@ export const createHistoricalPersonalitySchema =
 
     verification:
       historicalVerificationSchema.optional(),
+    
 
+    /* ----------------------- CROSS REFERENCES ----------------------- */
+
+    relatedHeroes: z.array(z.string()).optional(),
     /* ----------------------------- MEDIA ----------------------------- */
 
     imageIds: z
