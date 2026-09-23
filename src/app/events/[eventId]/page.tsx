@@ -1873,9 +1873,7 @@ function HistoricalContent({
                         {cardNumber}
                       </span>
 
-                      <span className="text-[10px] uppercase tracking-[0.25em] text-[#D4AF37]/60">
-                        Punishment and Executions
-                      </span>
+                      
                     </div>
 
                     <h3 className="font-serif text-2xl font-bold text-[#F8F5F0]">
