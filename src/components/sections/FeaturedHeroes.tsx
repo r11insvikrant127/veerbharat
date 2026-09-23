@@ -23,7 +23,7 @@ interface Hero {
   title?: string;
   shortDescription?: string;
   biography?: string;
-  status: string;
+  status?: string | null;
   birthDate?: string | null;
   deathDate?: string | null;
   imageIds?: HeroImage[];
@@ -37,6 +37,53 @@ interface HeroesResponse {
     total: number;
     totalPages: number;
   };
+}
+
+/**
+ * Checks whether a hero is considered published.
+ *
+ * Accepted examples:
+ *   Published
+ *   published
+ *   PUBLISHED
+ *   Pubished
+ *   pubished
+ *   " published "
+ */
+function isPublishedStatus(status?: string | null): boolean {
+  if (!status) return false;
+
+  const normalizedStatus = status
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '');
+
+  return (
+    normalizedStatus === 'published' ||
+    normalizedStatus === 'pubished'
+  );
+}
+
+/**
+ * Safely checks whether a date falls on today's
+ * month/day, ignoring the year.
+ */
+function isTodayDate(
+  dateValue: string | null | undefined,
+  today: Date
+): boolean {
+  if (!dateValue) return false;
+
+  const date = new Date(dateValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return false;
+  }
+
+  return (
+    date.getDate() === today.getDate() &&
+    date.getMonth() === today.getMonth()
+  );
 }
 
 export function FeaturedHeroes() {
@@ -55,14 +102,22 @@ export function FeaturedHeroes() {
         let page = 1;
         let totalPages = 1;
 
-        // Fetch ALL published heroes page by page.
+        /*
+         * IMPORTANT:
+         *
+         * Do NOT send status=Published here.
+         *
+         * The backend status validation is case-sensitive.
+         * Instead, fetch all heroes and perform a
+         * case-insensitive status check below.
+         */
         while (page <= totalPages) {
           const response = await fetch(
-            `/api/heroes?page=${page}&limit=100&status=Published`
+            `/api/heroes?page=${page}&limit=100`
           );
 
           if (!response.ok) {
-            throw new Error("Failed to fetch heroes");
+            throw new Error('Failed to fetch heroes');
           }
 
           const result: HeroesResponse = await response.json();
@@ -70,42 +125,49 @@ export function FeaturedHeroes() {
           allHeroes.push(...(result.data || []));
 
           totalPages = result.pagination?.totalPages || 1;
+
           page++;
         }
 
         /*
-        * FEATURE HEROES BASED ON
-        * BIRTH OR DEATH/MARTYRDOM ANNIVERSARY.
-        *
-        * Only the day and month are compared.
-        * The year is intentionally ignored.
-        */
-        const todaysHeroes = allHeroes.filter((hero: Hero) => {
-          const isBirthday =
-            hero.birthDate &&
-            (() => {
-              const birthDate = new Date(hero.birthDate);
+         * Only keep heroes whose status is considered published.
+         *
+         * This handles:
+         * Published
+         * published
+         * PUBLISHED
+         * Pubished
+         * pubished
+         * etc.
+         */
+        const publishedHeroes = allHeroes.filter((hero) =>
+          isPublishedStatus(hero.status)
+        );
 
-              return (
-                birthDate.getDate() === today.getDate() &&
-                birthDate.getMonth() === today.getMonth()
-              );
-            })();
+        /*
+         * FEATURE HEROES BASED ON
+         * BIRTH OR DEATH/MARTYRDOM ANNIVERSARY.
+         *
+         * Only day and month are compared.
+         * The year is intentionally ignored.
+         */
+        const todaysHeroes = publishedHeroes.filter((hero) => {
+          const isBirthday = isTodayDate(
+            hero.birthDate,
+            today
+          );
 
-          const isDeathAnniversary =
-            hero.deathDate &&
-            (() => {
-              const deathDate = new Date(hero.deathDate);
-
-              return (
-                deathDate.getDate() === today.getDate() &&
-                deathDate.getMonth() === today.getMonth()
-              );
-            })();
+          const isDeathAnniversary = isTodayDate(
+            hero.deathDate,
+            today
+          );
 
           return isBirthday || isDeathAnniversary;
         });
 
+        /*
+         * Maximum number of heroes shown
+         */
         const maxFeaturedHeroes = 10;
 
         setHeroes(
@@ -114,7 +176,7 @@ export function FeaturedHeroes() {
 
       } catch (error) {
         console.error(
-          "Failed to load featured heroes:",
+          'Failed to load featured heroes:',
           error
         );
       } finally {
@@ -163,18 +225,13 @@ export function FeaturedHeroes() {
 
         </motion.div>
 
-
         {loading && (
-
           <div className="text-center py-10 text-[#6B6258]">
             Discovering today&apos;s bravehearts...
           </div>
-
         )}
 
-
         {!loading && heroes.length > 0 && (
-
           <div className="flex flex-wrap justify-center gap-6 max-w-6xl mx-auto">
 
             {heroes.map((hero, index) => (
@@ -208,7 +265,10 @@ export function FeaturedHeroes() {
 
                         <Image
                           src={hero.imageIds[0].url}
-                          alt={hero.imageIds[0].altText}
+                          alt={
+                            hero.imageIds[0].altText ||
+                            hero.name
+                          }
                           fill
                           className="object-contain object-center p-2 group-hover:scale-105 transition-transform duration-500"
                         />
@@ -226,48 +286,34 @@ export function FeaturedHeroes() {
                       <div className="absolute bottom-4 left-4 right-4">
 
                         {hero.title && (
-
                           <p className="text-[#D4AF37] text-xs font-medium tracking-wide">
                             {hero.title}
                           </p>
-
                         )}
 
                       </div>
 
                     </div>
 
-
                     {/* Hero Information */}
 
                     <div className="p-6 flex flex-col min-h-[230px]">
 
                       <h3 className="text-xl font-serif font-bold text-[#1C1410] mb-1 group-hover:text-[#C46A00] transition-colors">
-
                         {hero.name}
-
                       </h3>
 
-
                       {hero.nativeName && (
-
                         <p className="text-sm text-[#8A7F72] mb-4">
-
                           {hero.nativeName}
-
                         </p>
-
                       )}
 
-
                       <p className="text-sm text-[#6B6258] leading-relaxed line-clamp-3 flex-grow">
-
                         {hero.shortDescription ||
                           hero.biography ||
                           'Discover the story of this remarkable figure.'}
-
                       </p>
-
 
                       <div className="mt-5 pt-4 border-t border-[#D4AF37]/10 flex items-center text-sm font-medium text-[#C46A00] group-hover:gap-2 transition-all">
 
@@ -288,9 +334,7 @@ export function FeaturedHeroes() {
             ))}
 
           </div>
-
         )}
-
 
         <div className="text-center mt-12">
 
