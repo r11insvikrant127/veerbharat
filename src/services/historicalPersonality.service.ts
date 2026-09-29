@@ -5,6 +5,7 @@ import BaseService from "./base.service";
 import Event from "@/models/event";
 import Hero from "@/models/hero";
 import Battle from "@/models/battle";
+import Source from "@/models/source";
 
 import {
   getSearchRegex,
@@ -243,6 +244,31 @@ class HistoricalPersonalityService extends BaseService {
       )
       .lean();
 
+      /*
+     * Find sources connected to this historical personality.
+     */
+    const sourceIds =
+      historicalPersonality.sources
+        ?.map((source) => source.sourceId)
+        .filter(
+          (sourceId): sourceId is string =>
+            typeof sourceId === "string" &&
+            sourceId.trim() !== ""
+        ) || [];
+
+    const relatedSources =
+      sourceIds.length > 0
+        ? await Source.find({
+            sourceId: {
+              $in: sourceIds,
+            },
+          })
+            .select(
+              "_id sourceId title type author year publisher edition isbn pages volume publicationYear description reliability location url tags"
+            )
+            .lean()
+        : [];
+
     /*
      * Collect unique heroes from all related events.
      */
@@ -268,6 +294,7 @@ class HistoricalPersonalityService extends BaseService {
 
     return {
       ...historicalPersonality.toObject(),
+      sources: relatedSources,
       relatedEvents,
       relatedBattles,
       relatedHeroes,

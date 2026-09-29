@@ -32,13 +32,34 @@ interface HeroReference {
   name: string;
 }
 
+interface SourceReference {
+  _id?: string;
+  sourceId: string;
+  title: string;
+  type?: string;
+  author?: string;
+  year?: string;
+  publisher?: string;
+  edition?: string;
+  isbn?: string;
+  pages?: number;
+  volume?: string;
+  publicationYear?: string;
+  description?: string;
+  reliability?: string;
+  location?: string;
+  url?: string;
+  tags?: string[];
+}
+
+
 interface HistoricalPersonality {
   _id: string;
 
   historicalPersonalityId: string;
 
   name: string;
-
+  sources?: SourceReference[];
   alternativeNames?: string[];
   relatedHeroes?: HeroReference[];
   relatedBattles?: BattleReference[];
@@ -880,6 +901,148 @@ export default function HistoricalPersonalityDetailPage({
                         </div>
                       )
                     )}
+                  </div>
+                </div>
+              )}
+
+            {/* SOURCES */}
+
+            {personality.sources &&
+              personality.sources.length > 0 && (
+                <div className="section-card-hover p-8 md:p-10 mt-6">
+
+                  <p className="text-xs uppercase tracking-[0.25em] text-[#D4AF37]/60 mb-3">
+                    Historical References
+                  </p>
+
+                  <div className="flex items-center gap-3 mb-8">
+                    <Landmark className="w-6 h-6 text-[#D4AF37]" />
+
+                    <h2 className="font-serif text-3xl font-bold">
+                      Sources
+                    </h2>
+                  </div>
+
+                  <div className="space-y-5">
+
+                    {personality.sources.map(
+                      (source, index) => (
+                        <Link
+                          key={
+                            source.sourceId ||
+                            `${source.title}-${index}`
+                          }
+                          href={`/sources/${encodeURIComponent(
+                            source.sourceId
+                          )}`}
+                          className="
+                            group
+                            block
+                            p-6
+                            rounded-xl
+                            bg-[#1C1410]
+                            border
+                            border-[#D4AF37]/10
+                            hover:border-[#D4AF37]/40
+                            hover:bg-[#211710]
+                            transition-all
+                          "
+                        >
+
+                          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-5">
+
+                            {/* SOURCE INFORMATION */}
+
+                            <div className="min-w-0">
+
+                              <p className="text-xs uppercase tracking-[0.2em] text-[#D4AF37]/60 mb-2">
+                                {source.sourceId}
+                              </p>
+
+                              <h3 className="
+                                font-serif
+                                text-xl
+                                font-semibold
+                                text-[#F8F5F0]
+                                group-hover:text-[#D4AF37]
+                                transition-colors
+                              ">
+                                {source.title}
+                              </h3>
+
+                              {source.author && (
+                                <p className="mt-2 text-[#D7C9A5]">
+                                  {source.author}
+                                </p>
+                              )}
+
+                              <div className="flex flex-wrap gap-x-5 gap-y-2 mt-3 text-sm text-[#A09682]">
+
+                                {source.type && (
+                                  <span>
+                                    Type: {source.type}
+                                  </span>
+                                )}
+
+                                {source.year && (
+                                  <span>
+                                    Year: {source.year}
+                                  </span>
+                                )}
+
+                                {source.publisher && (
+                                  <span>
+                                    Publisher: {source.publisher}
+                                  </span>
+                                )}
+
+                                {source.reliability && (
+                                  <span>
+                                    Reliability: {source.reliability}
+                                  </span>
+                                )}
+
+                              </div>
+
+                              {source.description && (
+                                <p className="
+                                  mt-4
+                                  text-sm
+                                  text-[#A09682]
+                                  leading-7
+                                ">
+                                  {source.description}
+                                </p>
+                              )}
+
+                            </div>
+
+                            {/* OPEN SOURCE */}
+
+                            <span className="
+                              shrink-0
+                              inline-flex
+                              items-center
+                              justify-center
+                              px-4
+                              py-2
+                              rounded-lg
+                              border
+                              border-[#D4AF37]/30
+                              text-sm
+                              text-[#D4AF37]
+                              group-hover:bg-[#D4AF37]/10
+                              transition-colors
+                            ">
+                              View Source →
+                            </span>
+
+                          </div>
+
+                        </Link>
+                      )
+                    )}
+
                   </div>
                 </div>
               )}
