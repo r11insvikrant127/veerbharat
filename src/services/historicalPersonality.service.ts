@@ -6,6 +6,7 @@ import Event from "@/models/event";
 import Hero from "@/models/hero";
 import Battle from "@/models/battle";
 import Source from "@/models/source";
+import Kingdom from "@/models/kingdom";
 
 import {
   getSearchRegex,
@@ -185,6 +186,12 @@ class HistoricalPersonalityService extends BaseService {
           path: "relatedHeroes",
           model: Hero,
           select: "heroId name alternativeNames",
+        })
+        .populate({
+          path: "kingdom",
+          model: Kingdom,
+          select:
+            "_id kingdomId name nativeName alternativeNames",
         });
 
     if (!historicalPersonality) {

@@ -31,6 +31,13 @@ interface HeroReference {
   heroId: string;
   name: string;
 }
+interface KingdomReference {
+  _id: string;
+  kingdomId: string;
+  name: string;
+  nativeName?: string;
+  alternativeNames?: string[];
+}
 
 interface SourceReference {
   _id?: string;
@@ -108,7 +115,7 @@ interface HistoricalPersonality {
 
   dynasty?: string;
 
-  kingdom?: string;
+  kingdom?: KingdomReference;
 
   allegiance?: {
     entity: string;
@@ -507,12 +514,22 @@ export default function HistoricalPersonalityDetailPage({
                     }
                   />
 
-                  <InfoRow
-                    label="Kingdom"
-                    value={
-                      personality.kingdom
-                    }
-                  />
+                  {personality.kingdom && (
+                    <div className="flex flex-col gap-1 pb-3 border-b border-[#D4AF37]/10">
+                      <span className="text-xs uppercase tracking-wider text-[#A09682]">
+                        Kingdom
+                      </span>
+
+                      <Link
+                        href={`/kingdoms/${encodeURIComponent(
+                          personality.kingdom.kingdomId
+                        )}`}
+                        className="text-[#D7C9A5] hover:text-[#D4AF37] transition-colors"
+                      >
+                        {personality.kingdom.name}
+                      </Link>
+                    </div>
+                  )}
 
                   <InfoRow
                     label="Birthplace"

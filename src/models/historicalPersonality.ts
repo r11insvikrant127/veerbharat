@@ -141,7 +141,7 @@ export interface IHistoricalPersonality {
    * Dynastic / political background
    */
   dynasty?: string;
-  kingdom?: string;
+  kingdom?: Types.ObjectId;
 
   /**
    * Political / military allegiances
@@ -573,8 +573,9 @@ const HistoricalPersonalitySchema =
       },
 
       kingdom: {
-        type: String,
-        trim: true,
+        type: Schema.Types.ObjectId,
+        ref: "Kingdom",
+        default: null,
         index: true,
       },
 
@@ -735,7 +736,6 @@ HistoricalPersonalitySchema.index({
   tags: "text",
   searchFields: "text",
   dynasty: "text",
-  kingdom: "text",
   category: "text",
 });
 
