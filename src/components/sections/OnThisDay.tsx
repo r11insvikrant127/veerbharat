@@ -47,13 +47,27 @@ export function OnThisDay() {
 
   useEffect(() => {
     let isMounted = true;
+    let timeoutId: ReturnType<typeof setTimeout>;
 
-    async function fetchTodayHistory() {
+    async function fetchTodayHistory(
+      isInitial = false
+    ) {
       try {
+        console.log(
+          `[OnThisDay] Fetching ${
+            isInitial ? 'initial' : 'poll'
+          } data...`
+        );
+
         const response = await fetch(
-          '/api/on-this-day',
+          `/api/on-this-day?_=${Date.now()}`,
           {
+            method: 'GET',
             cache: 'no-store',
+            headers: {
+              'Cache-Control': 'no-cache',
+              Pragma: 'no-cache',
+            },
           }
         );
 
@@ -66,43 +80,66 @@ export function OnThisDay() {
         const result =
           await response.json();
 
-        if (isMounted) {
+        console.log(
+          '[OnThisDay] Received:',
+          result
+        );
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (result.success) {
           setItems(
-            result.data || []
+            Array.isArray(result.data)
+              ? result.data
+              : []
           );
         }
+
       } catch (error) {
+
         console.error(
-          'Failed to load On This Day history:',
+          '[OnThisDay] Failed to load history:',
           error
         );
+
       } finally {
+
         if (isMounted) {
           setLoading(false);
         }
       }
+
+      /*
+       * Schedule the NEXT request only after
+       * the current request has completed.
+       *
+       * This is more reliable than setInterval
+       * because requests cannot overlap.
+       */
+      if (isMounted) {
+        timeoutId = setTimeout(
+          () => fetchTodayHistory(false),
+          30_000
+        );
+      }
     }
 
     /*
-     * Fetch immediately when the component loads.
+     * Initial request.
      */
-    fetchTodayHistory();
+    fetchTodayHistory(true);
 
     /*
-     * Check for newly added/updated records
-     * every 30 seconds.
-     */
-    const interval = setInterval(
-      fetchTodayHistory,
-      30_000
-    );
-
-    /*
-     * Cleanup when component unmounts.
+     * Cleanup.
      */
     return () => {
       isMounted = false;
-      clearInterval(interval);
+
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     };
   }, []);
 
