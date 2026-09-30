@@ -47,20 +47,16 @@ export function OnThisDay() {
 
   useEffect(() => {
     let isMounted = true;
-    let intervalId: ReturnType<typeof setInterval> | null = null;
-    let isFetching = false;
+    let timeoutId: ReturnType<typeof setTimeout>;
 
-    async function fetchTodayHistory() {
-      if (!isMounted || isFetching) {
-        return;
-      }
-
-      isFetching = true;
-
+    async function fetchTodayHistory(
+      isInitial = false
+    ) {
       try {
         console.log(
-          '[OnThisDay] FETCH START:',
-          new Date().toLocaleTimeString()
+          `[OnThisDay] Fetching ${
+            isInitial ? 'initial' : 'poll'
+          } data...`
         );
 
         const response = await fetch(
@@ -77,7 +73,7 @@ export function OnThisDay() {
 
         if (!response.ok) {
           throw new Error(
-            `HTTP ${response.status}`
+            `Failed to fetch On This Day history: ${response.status}`
           );
         }
 
@@ -85,8 +81,7 @@ export function OnThisDay() {
           await response.json();
 
         console.log(
-          '[OnThisDay] FETCH SUCCESS:',
-          new Date().toLocaleTimeString(),
+          '[OnThisDay] Received:',
           result
         );
 
@@ -105,96 +100,47 @@ export function OnThisDay() {
       } catch (error) {
 
         console.error(
-          '[OnThisDay] FETCH ERROR:',
+          '[OnThisDay] Failed to load history:',
           error
         );
 
       } finally {
 
-        isFetching = false;
-
         if (isMounted) {
           setLoading(false);
         }
       }
+
+      /*
+       * Schedule the NEXT request only after
+       * the current request has completed.
+       *
+       * This is more reliable than setInterval
+       * because requests cannot overlap.
+       */
+      if (isMounted) {
+        timeoutId = setTimeout(
+          () => fetchTodayHistory(false),
+          30_000
+        );
+      }
     }
 
     /*
-    * Initial request
-    */
-    fetchTodayHistory();
+     * Initial request.
+     */
+    fetchTodayHistory(true);
 
     /*
-    * Poll every 30 seconds
-    */
-    intervalId = setInterval(() => {
-      console.log(
-        '[OnThisDay] POLL TIMER:',
-        new Date().toLocaleTimeString()
-      );
-
-      fetchTodayHistory();
-    }, 30_000);
-
-    /*
-    * Fetch immediately when the user
-    * returns to the tab.
-    */
-    const handleVisibilityChange = () => {
-      if (
-        document.visibilityState === 'visible'
-      ) {
-        console.log(
-          '[OnThisDay] TAB VISIBLE - refreshing'
-        );
-
-        fetchTodayHistory();
-      }
-    };
-
-    /*
-    * Fetch immediately when the window
-    * receives focus.
-    */
-    const handleFocus = () => {
-      console.log(
-        '[OnThisDay] WINDOW FOCUS - refreshing'
-      );
-
-      fetchTodayHistory();
-    };
-
-    document.addEventListener(
-      'visibilitychange',
-      handleVisibilityChange
-    );
-
-    window.addEventListener(
-      'focus',
-      handleFocus
-    );
-
-    /*
-    * Cleanup
-    */
+     * Cleanup.
+     */
     return () => {
       isMounted = false;
 
-      if (intervalId) {
-        clearInterval(intervalId);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
       }
-
-      document.removeEventListener(
-        'visibilitychange',
-        handleVisibilityChange
-      );
-
-      window.removeEventListener(
-        'focus',
-        handleFocus
-      );
     };
-
   }, []);
 
   if (loading) {
