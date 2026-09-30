@@ -9,11 +9,28 @@ if (!process.env.MONGODB_URI) {
   );
 }
 
-// Tell TypeScript this value is definitely a string
-const MONGODB_URI = process.env.MONGODB_URI!;
+const MONGODB_URI = process.env.MONGODB_URI;
+
+const MONGOOSE_OPTIONS = {
+  dbName: "veerbharat",
+
+  // MongoDB connection pool
+  maxPoolSize: 10,
+  minPoolSize: 2,
+
+  // Connection / socket timeouts
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
+
+  // Close idle sockets after 30 seconds
+  maxIdleTimeMS: 30000,
+
+  // Fail immediately when disconnected instead of buffering queries
+  bufferCommands: false,
+} as const;
 
 declare global {
-  // Prevent multiple connections during development (Next.js hot reload)
+  // Persist connection state across Next.js hot reloads
   var mongooseCache:
     | {
         conn: typeof mongoose | null;
@@ -30,25 +47,50 @@ const cached = global.mongooseCache ?? {
 global.mongooseCache = cached;
 
 export async function connectDB(): Promise<typeof mongoose> {
-  // Return existing connection if already connected
-  if (cached.conn) {
+  // Reuse existing connected Mongoose instance
+  if (cached.conn?.connection.readyState === 1) {
     return cached.conn;
   }
 
-  // Create a new connection promise if one doesn't exist
-  if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI, {
-      dbName: "veerbharat",
-    });
+  // If a connection is already being established,
+  // wait for that same promise instead of creating another one.
+  if (cached.promise) {
+    try {
+      cached.conn = await cached.promise;
+      return cached.conn;
+    } catch (error) {
+      cached.promise = null;
+      cached.conn = null;
+      throw error;
+    }
   }
 
-  // Wait for the connection
-  cached.conn = await cached.promise;
-
-  console.log("CONNECTED DATABASE:", mongoose.connection.name);
-  console.log(
-    "CONNECTED HOST:",
-    mongoose.connection.host
+  // Create exactly one pooled connection
+  cached.promise = mongoose.connect(
+    MONGODB_URI,
+    MONGOOSE_OPTIONS
   );
-  return cached.conn;
+
+  try {
+    cached.conn = await cached.promise;
+
+    console.log(
+      "MongoDB connected:",
+      mongoose.connection.name,
+      "@",
+      mongoose.connection.host
+    );
+
+    console.log(
+      "MongoDB pool:",
+      `min=${MONGOOSE_OPTIONS.minPoolSize}`,
+      `max=${MONGOOSE_OPTIONS.maxPoolSize}`
+    );
+
+    return cached.conn;
+  } catch (error) {
+    cached.promise = null;
+    cached.conn = null;
+    throw error;
+  }
 }
