@@ -47,11 +47,20 @@ export function OnThisDay() {
 
   useEffect(() => {
     let isMounted = true;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    let isFetching = false;
 
     async function fetchTodayHistory() {
+      if (!isMounted || isFetching) {
+        return;
+      }
+
+      isFetching = true;
+
       try {
         console.log(
-          '[OnThisDay] Fetching latest data...'
+          '[OnThisDay] FETCH START:',
+          new Date().toLocaleTimeString()
         );
 
         const response = await fetch(
@@ -68,7 +77,7 @@ export function OnThisDay() {
 
         if (!response.ok) {
           throw new Error(
-            `Failed to fetch On This Day history: ${response.status}`
+            `HTTP ${response.status}`
           );
         }
 
@@ -76,7 +85,8 @@ export function OnThisDay() {
           await response.json();
 
         console.log(
-          '[OnThisDay] Received:',
+          '[OnThisDay] FETCH SUCCESS:',
+          new Date().toLocaleTimeString(),
           result
         );
 
@@ -95,11 +105,13 @@ export function OnThisDay() {
       } catch (error) {
 
         console.error(
-          '[OnThisDay] Failed to load history:',
+          '[OnThisDay] FETCH ERROR:',
           error
         );
 
       } finally {
+
+        isFetching = false;
 
         if (isMounted) {
           setLoading(false);
@@ -107,18 +119,80 @@ export function OnThisDay() {
       }
     }
 
-    // Initial fetch immediately
+    /*
+    * Initial request
+    */
     fetchTodayHistory();
 
-    // Poll every 30 seconds
-    const intervalId = setInterval(
-      fetchTodayHistory,
-      30_000
+    /*
+    * Poll every 30 seconds
+    */
+    intervalId = setInterval(() => {
+      console.log(
+        '[OnThisDay] POLL TIMER:',
+        new Date().toLocaleTimeString()
+      );
+
+      fetchTodayHistory();
+    }, 30_000);
+
+    /*
+    * Fetch immediately when the user
+    * returns to the tab.
+    */
+    const handleVisibilityChange = () => {
+      if (
+        document.visibilityState === 'visible'
+      ) {
+        console.log(
+          '[OnThisDay] TAB VISIBLE - refreshing'
+        );
+
+        fetchTodayHistory();
+      }
+    };
+
+    /*
+    * Fetch immediately when the window
+    * receives focus.
+    */
+    const handleFocus = () => {
+      console.log(
+        '[OnThisDay] WINDOW FOCUS - refreshing'
+      );
+
+      fetchTodayHistory();
+    };
+
+    document.addEventListener(
+      'visibilitychange',
+      handleVisibilityChange
     );
 
+    window.addEventListener(
+      'focus',
+      handleFocus
+    );
+
+    /*
+    * Cleanup
+    */
     return () => {
       isMounted = false;
-      clearInterval(intervalId);
+
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+
+      document.removeEventListener(
+        'visibilitychange',
+        handleVisibilityChange
+      );
+
+      window.removeEventListener(
+        'focus',
+        handleFocus
+      );
     };
 
   }, []);
