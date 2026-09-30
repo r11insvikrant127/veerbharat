@@ -47,16 +47,11 @@ export function OnThisDay() {
 
   useEffect(() => {
     let isMounted = true;
-    let timeoutId: ReturnType<typeof setTimeout>;
 
-    async function fetchTodayHistory(
-      isInitial = false
-    ) {
+    async function fetchTodayHistory() {
       try {
         console.log(
-          `[OnThisDay] Fetching ${
-            isInitial ? 'initial' : 'poll'
-          } data...`
+          '[OnThisDay] Fetching latest data...'
         );
 
         const response = await fetch(
@@ -110,37 +105,22 @@ export function OnThisDay() {
           setLoading(false);
         }
       }
-
-      /*
-       * Schedule the NEXT request only after
-       * the current request has completed.
-       *
-       * This is more reliable than setInterval
-       * because requests cannot overlap.
-       */
-      if (isMounted) {
-        timeoutId = setTimeout(
-          () => fetchTodayHistory(false),
-          30_000
-        );
-      }
     }
 
-    /*
-     * Initial request.
-     */
-    fetchTodayHistory(true);
+    // Initial fetch immediately
+    fetchTodayHistory();
 
-    /*
-     * Cleanup.
-     */
+    // Poll every 30 seconds
+    const intervalId = setInterval(
+      fetchTodayHistory,
+      30_000
+    );
+
     return () => {
       isMounted = false;
-
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
+      clearInterval(intervalId);
     };
+
   }, []);
 
   if (loading) {
