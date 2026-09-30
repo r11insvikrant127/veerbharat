@@ -10,6 +10,7 @@ import { getSort } from "@/helpers/sorting";
 import Event from "@/models/event";
 import HistoricalPersonality from "@/models/historicalPersonality";
 import Kingdom from "@/models/kingdom";
+import Place from "@/models/place";
 
 import {
   CreateHeroInput,
@@ -151,6 +152,56 @@ class HeroService extends BaseService {
             select: "kingdomId name nativeName alternativeNames",
         })
         
+        .populate({
+            path: "birthPlaceId",
+            model: Place,
+            select: `
+                placeId
+                name
+                nativeName
+                alternativeNames
+                type
+                state
+                country
+                region
+                significance
+                description
+            `,
+        })
+
+        .populate({
+            path: "deathPlaceId",
+            model: Place,
+            select: `
+                placeId
+                name
+                nativeName
+                alternativeNames
+                type
+                state
+                country
+                region
+                significance
+                description
+            `,
+        })
+
+        .populate({
+            path: "relatedPlaces",
+            model: Place,
+            select: `
+                placeId
+                name
+                nativeName
+                alternativeNames
+                type
+                state
+                country
+                region
+                significance
+                description
+            `,
+        })
         .populate({
             path: "relatedHeroes",
             select: "heroId name alternativeNames",

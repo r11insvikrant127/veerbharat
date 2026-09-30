@@ -39,6 +39,7 @@ interface HistoricalPersonalityReference {
   name: string;
   alternativeNames?: string[];
 }
+
 interface Hero {
   _id: string;
   heroId: string;
@@ -87,6 +88,45 @@ interface Hero {
     nativeName?: string;
     alternativeNames?: string[];
   } | null;
+
+  birthPlaceId?: {
+    placeId: string;
+    name: string;
+    nativeName?: string;
+    alternativeNames?: string[];
+    type?: string;
+    state?: string;
+    country?: string;
+    region?: string;
+    significance?: string;
+    description?: string;
+  } | null;
+
+  deathPlaceId?: {
+    placeId: string;
+    name: string;
+    nativeName?: string;
+    alternativeNames?: string[];
+    type?: string;
+    state?: string;
+    country?: string;
+    region?: string;
+    significance?: string;
+    description?: string;
+  } | null;
+
+  relatedPlaces?: {
+    placeId: string;
+    name: string;
+    nativeName?: string;
+    alternativeNames?: string[];
+    type?: string;
+    state?: string;
+    country?: string;
+    region?: string;
+    significance?: string;
+    description?: string;
+  }[];
 
   relatedBooks?: {
     bookId: string;
@@ -645,7 +685,184 @@ export default function HeroDetailPage({
                   </Link>
                 </div>
               )}
-              
+
+            {/* RELATED PLACES */}
+            {(hero.birthPlaceId ||
+              hero.deathPlaceId ||
+              (hero.relatedPlaces &&
+                hero.relatedPlaces.length > 0)) && (
+              <div className="section-card-hover p-8 md:p-10 mt-6">
+                <p className="text-xs uppercase tracking-[0.25em] text-[#D4AF37]/60 mb-3">
+                  Geographic Connections
+                </p>
+
+                <h2 className="font-serif text-3xl font-bold mb-8">
+                  Places
+                </h2>
+
+                <div className="grid md:grid-cols-2 gap-5">
+
+                  {/* BIRTHPLACE */}
+                  {hero.birthPlaceId && (
+                    <Link
+                      href={`/places/${encodeURIComponent(
+                        hero.birthPlaceId.placeId
+                      )}`}
+                      className="group block"
+                    >
+                      <article className="rounded-xl border border-[#D4AF37]/15 bg-[#1C1410] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-[#D4AF37]/40 hover:bg-[#211811]">
+
+                        <div className="flex items-center justify-between gap-4 mb-4">
+                          <span className="text-xs tracking-wider text-[#D4AF37]/60">
+                            {hero.birthPlaceId.placeId}
+                          </span>
+
+                          <span className="px-2.5 py-1 rounded-full border border-[#D4AF37]/15 text-[10px] uppercase tracking-wider text-[#A09682]">
+                            Birthplace
+                          </span>
+                        </div>
+
+                        <h3 className="font-serif text-2xl font-bold text-[#F8F5F0] group-hover:text-[#D4AF37] transition-colors">
+                          {hero.birthPlaceId.name}
+                        </h3>
+
+                        {hero.birthPlaceId.state && (
+                          <p className="mt-2 text-sm text-[#D7C9A5]">
+                            {hero.birthPlaceId.state}
+                            {hero.birthPlaceId.country
+                              ? `, ${hero.birthPlaceId.country}`
+                              : ""}
+                          </p>
+                        )}
+
+                        {hero.birthPlaceId.description && (
+                          <p className="mt-4 text-sm leading-7 text-[#A09682]">
+                            {hero.birthPlaceId.description}
+                          </p>
+                        )}
+
+                        <div className="mt-5 pt-4 border-t border-[#D4AF37]/10">
+                          <span className="text-xs uppercase tracking-[0.2em] text-[#D4AF37]/60 group-hover:text-[#D4AF37] transition-colors">
+                            View Place →
+                          </span>
+                        </div>
+
+                      </article>
+                    </Link>
+                  )}
+
+                  {/* DEATHPLACE */}
+                  {hero.deathPlaceId && (
+                    <Link
+                      href={`/places/${encodeURIComponent(
+                        hero.deathPlaceId.placeId
+                      )}`}
+                      className="group block"
+                    >
+                      <article className="rounded-xl border border-[#D4AF37]/15 bg-[#1C1410] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-[#D4AF37]/40 hover:bg-[#211811]">
+
+                        <div className="flex items-center justify-between gap-4 mb-4">
+                          <span className="text-xs tracking-wider text-[#D4AF37]/60">
+                            {hero.deathPlaceId.placeId}
+                          </span>
+
+                          <span className="px-2.5 py-1 rounded-full border border-[#D4AF37]/15 text-[10px] uppercase tracking-wider text-[#A09682]">
+                            Deathplace
+                          </span>
+                        </div>
+
+                        <h3 className="font-serif text-2xl font-bold text-[#F8F5F0] group-hover:text-[#D4AF37] transition-colors">
+                          {hero.deathPlaceId.name}
+                        </h3>
+
+                        {hero.deathPlaceId.state && (
+                          <p className="mt-2 text-sm text-[#D7C9A5]">
+                            {hero.deathPlaceId.state}
+                            {hero.deathPlaceId.country
+                              ? `, ${hero.deathPlaceId.country}`
+                              : ""}
+                          </p>
+                        )}
+
+                        {hero.deathPlaceId.description && (
+                          <p className="mt-4 text-sm leading-7 text-[#A09682]">
+                            {hero.deathPlaceId.description}
+                          </p>
+                        )}
+
+                        <div className="mt-5 pt-4 border-t border-[#D4AF37]/10">
+                          <span className="text-xs uppercase tracking-[0.2em] text-[#D4AF37]/60 group-hover:text-[#D4AF37] transition-colors">
+                            View Place →
+                          </span>
+                        </div>
+
+                      </article>
+                    </Link>
+                  )}
+
+                  {/* OTHER RELATED PLACES */}
+                  {hero.relatedPlaces
+                    ?.filter(
+                      (place) =>
+                        place.placeId !==
+                          hero.birthPlaceId?.placeId &&
+                        place.placeId !==
+                          hero.deathPlaceId?.placeId
+                    )
+                    .map((place) => (
+                      <Link
+                        key={place.placeId}
+                        href={`/places/${encodeURIComponent(
+                          place.placeId
+                        )}`}
+                        className="group block"
+                      >
+                        <article className="rounded-xl border border-[#D4AF37]/15 bg-[#1C1410] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-[#D4AF37]/40 hover:bg-[#211811]">
+
+                          <div className="flex items-center justify-between gap-4 mb-4">
+                            <span className="text-xs tracking-wider text-[#D4AF37]/60">
+                              {place.placeId}
+                            </span>
+
+                            {place.type && (
+                              <span className="px-2.5 py-1 rounded-full border border-[#D4AF37]/15 text-[10px] uppercase tracking-wider text-[#A09682]">
+                                {place.type}
+                              </span>
+                            )}
+                          </div>
+
+                          <h3 className="font-serif text-2xl font-bold text-[#F8F5F0] group-hover:text-[#D4AF37] transition-colors">
+                            {place.name}
+                          </h3>
+
+                          {place.state && (
+                            <p className="mt-2 text-sm text-[#D7C9A5]">
+                              {place.state}
+                              {place.country
+                                ? `, ${place.country}`
+                                : ""}
+                            </p>
+                          )}
+
+                          {place.description && (
+                            <p className="mt-4 text-sm leading-7 text-[#A09682]">
+                              {place.description}
+                            </p>
+                          )}
+
+                          <div className="mt-5 pt-4 border-t border-[#D4AF37]/10">
+                            <span className="text-xs uppercase tracking-[0.2em] text-[#D4AF37]/60 group-hover:text-[#D4AF37] transition-colors">
+                              View Place →
+                            </span>
+                          </div>
+
+                        </article>
+                      </Link>
+                    ))}
+                </div>
+              </div>
+            )}
+
             {/* RELATED BATTLES */}
             {hero.relatedBattles &&
               hero.relatedBattles.length > 0 && (
