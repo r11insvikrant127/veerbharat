@@ -121,7 +121,6 @@ class HistoricalPersonalityService extends BaseService {
         { tags: regex },
         { searchFields: regex },
         { dynasty: regex },
-        { kingdom: regex },
         { category: regex },
       ];
     }
