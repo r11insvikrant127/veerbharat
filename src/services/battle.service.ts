@@ -176,7 +176,19 @@ class BattleService extends BaseService {
       {
         path: "crossReferences.relatedHistoricalPersonalities",
         model: HistoricalPersonality,
-        select: "_id name historicalPersonalityId",
+        select: "_id name historicalPersonalityId alternativeNames",
+      },
+
+      {
+        path: "commanderPersonalityIds",
+        model: HistoricalPersonality,
+        select: "_id name historicalPersonalityId alternativeNames",
+      },
+
+      {
+        path: "opposingCommanderPersonalityIds",
+        model: HistoricalPersonality,
+        select: "_id name historicalPersonalityId alternativeNames",
       },
 
       {
@@ -264,22 +276,13 @@ class BattleService extends BaseService {
         select: "_id name heroId",
       },
 
-      {
-        path: "commanderPersonalityIds",
-        model: HistoricalPersonality,
-        select: "_id name historicalPersonalityId",
-      },
+     
     {
       path: "opposingCommanderIds",
       model: MilitaryCommander,
       select: "_id name",
     },
 
-    {
-      path: "opposingCommanderPersonalityIds",
-      model: HistoricalPersonality,
-      select: "_id name historicalPersonalityId",
-    },
 
     {
       path: "victorId",

@@ -35,7 +35,7 @@ interface Reference {
   _id?: string;
   name?: string;
   title?: string;
-
+  alternativeNames?: string[];
   heroId?: string;
   historicalPersonalityId?: string;
   kingdomId?: string;
@@ -543,8 +543,12 @@ function ReferenceGrid({
 
 function NestedSectionCards({
   sections,
+  heroes = [],
+  historicalPersonalities = [],
 }: {
   sections?: BattleSubSection[];
+  heroes?: Reference[];
+  historicalPersonalities?: Reference[];
 }) {
   if (!sections || sections.length === 0) {
     return null;
@@ -578,7 +582,13 @@ function NestedSectionCards({
             </h4>
 
             <p className="mt-4 text-sm leading-7 text-[#A09682]">
-              {subSection.content}
+              <BattleLinkedHistoricalText
+                text={subSection.content}
+                heroes={heroes}
+                historicalPersonalities={
+                  historicalPersonalities
+                }
+              />
             </p>
 
           </div>
@@ -594,8 +604,12 @@ function NestedSectionCards({
 
 function NarrativeBlock({
   text,
+  heroes = [],
+  historicalPersonalities = [],
 }: {
   text?: string;
+  heroes?: Reference[];
+  historicalPersonalities?: Reference[];
 }) {
   const paragraphs = splitParagraphs(text);
 
@@ -614,7 +628,13 @@ function NarrativeBlock({
               key={index}
               className="text-base md:text-lg leading-8 text-[#D7C9A5]"
             >
-              {paragraph}
+              <BattleLinkedHistoricalText
+                text={paragraph}
+                heroes={heroes}
+                historicalPersonalities={
+                  historicalPersonalities
+                }
+              />
             </p>
           )
         )}
@@ -693,10 +713,14 @@ function BattleNarrative({
   sections,
   fallbackDescription,
   images = [],
+  heroes = [],
+  historicalPersonalities = [],
 }: {
   sections?: BattleSection[];
   fallbackDescription?: string;
   images?: Reference[];
+  heroes?: Reference[];
+  historicalPersonalities?: Reference[];
 }) {
   const sortedSections =
     sections && sections.length > 0
@@ -709,6 +733,10 @@ function BattleNarrative({
     return (
       <NarrativeBlock
         text={fallbackDescription}
+        heroes={heroes}
+        historicalPersonalities={
+          historicalPersonalities
+        }
       />
     );
   }
@@ -807,7 +835,13 @@ function BattleNarrative({
                               className="relative pl-9 md:pl-12"
                             >
                               <p className="max-w-4xl text-base md:text-lg leading-8 text-[#D7C9A5]">
-                                {paragraph}
+                                <BattleLinkedHistoricalText
+                                  text={paragraph}
+                                  heroes={heroes}
+                                  historicalPersonalities={
+                                    historicalPersonalities
+                                  }
+                                />
                               </p>
                             </div>
                           );
@@ -862,20 +896,26 @@ function BattleNarrative({
                         paragraphIndex
                       ) => (
                         <p
-                          key={
-                            paragraphIndex
-                          }
+                          key={paragraphIndex}
                           className="text-base md:text-lg leading-8 text-[#D7C9A5]"
                         >
-                          {cleanHeading(
-                            paragraph
-                          )}
+                          <BattleLinkedHistoricalText
+                            text={cleanHeading(paragraph)}
+                            heroes={heroes}
+                            historicalPersonalities={
+                              historicalPersonalities
+                            }
+                          />
                         </p>
                       )
                     )}
                   </div>
                   <NestedSectionCards
                     sections={section.subSections}
+                    heroes={heroes}
+                    historicalPersonalities={
+                      historicalPersonalities
+                    }
                   />
                   {sectionImages.length > 0 && (
                     <SectionImages
@@ -960,6 +1000,295 @@ function PillList({
         </span>
       ))}
     </div>
+  );
+}
+
+/* =========================================================
+   DYNAMIC HISTORICAL TEXT LINKING
+========================================================= */
+
+type BattleHeroLinkCandidate = {
+  type: "hero";
+  hero: Reference;
+  name: string;
+};
+
+type BattlePersonalityLinkCandidate = {
+  type: "historicalPersonality";
+  person: Reference;
+  name: string;
+};
+
+type BattleHistoricalLinkCandidate =
+  | BattleHeroLinkCandidate
+  | BattlePersonalityLinkCandidate;
+
+function BattleLinkedHistoricalText({
+  text,
+  heroes,
+  historicalPersonalities,
+}: {
+  text: string;
+  heroes: Reference[];
+  historicalPersonalities: Reference[];
+}) {
+  if (
+    !text ||
+    (
+      heroes.length === 0 &&
+      historicalPersonalities.length === 0
+    )
+  ) {
+    return <>{text}</>;
+  }
+
+  const escapeRegExp = (value: string) =>
+    value.replace(
+      /[.*+?^${}()|[\]\\]/g,
+      "\\$&"
+    );
+
+  /*
+   * ================================================
+   * HERO CANDIDATES
+   * ================================================
+   */
+
+  const heroCandidates: BattleHeroLinkCandidate[] =
+    heroes
+      .filter(
+        (hero) =>
+          typeof hero?.heroId === "string" &&
+          hero.heroId.trim() !== "" &&
+          typeof hero?.name === "string" &&
+          hero.name.trim() !== ""
+      )
+      .flatMap((hero) => {
+        const fullName = hero.name!.trim();
+
+        /*
+         * Remove common ranks/titles.
+         *
+         * Example:
+         * "General Bipin Rawat"
+         *        ↓
+         * "Bipin Rawat"
+         */
+        const personalName = fullName
+          .replace(
+            /^(Field Marshal|General|Lieutenant General|Major General|Brigadier|Colonel|Lieutenant Colonel|Major|Captain|Commander|Lieutenant|Subedar Major|Subedar|Naik|Havildar|Mahatma|Pandit|Dr\.?|Sir)\s+/i,
+            ""
+          )
+          .trim();
+
+        const candidates: BattleHeroLinkCandidate[] = [
+          {
+            type: "hero",
+            hero,
+            name: fullName,
+          },
+        ];
+
+        if (
+          personalName &&
+          personalName.toLowerCase() !==
+            fullName.toLowerCase()
+        ) {
+          candidates.push({
+            type: "hero",
+            hero,
+            name: personalName,
+          });
+        }
+
+        return candidates;
+      });
+
+  /*
+   * ================================================
+   * HISTORICAL PERSONALITY CANDIDATES
+   * ================================================
+   */
+
+  const historicalPersonalityCandidates: BattlePersonalityLinkCandidate[] =
+    historicalPersonalities
+      .filter(
+        (person) =>
+          typeof person?.historicalPersonalityId ===
+            "string" &&
+          person.historicalPersonalityId.trim() !== "" &&
+          typeof person?.name === "string" &&
+          person.name.trim() !== ""
+      )
+      .flatMap((person) => {
+        const fullName = person.name!.trim();
+
+        const personalName = fullName
+          .replace(
+            /^(Field Marshal|General|Lieutenant General|Major General|Brigadier|Colonel|Lieutenant Colonel|Major|Captain|Commander|Lieutenant|Subedar Major|Subedar|Naik|Havildar|Mahatma|Pandit|Dr\.?|Sir)\s+/i,
+            ""
+          )
+          .trim();
+
+        const candidates: BattlePersonalityLinkCandidate[] = [
+          {
+            type: "historicalPersonality",
+            person,
+            name: fullName,
+          },
+        ];
+
+        /*
+         * Title-stripped name.
+         */
+        if (
+          personalName &&
+          personalName.toLowerCase() !==
+            fullName.toLowerCase()
+        ) {
+          candidates.push({
+            type: "historicalPersonality",
+            person,
+            name: personalName,
+          });
+        }
+
+        /*
+         * Alternative names.
+         */
+        if (
+          Array.isArray(
+            person.alternativeNames
+          )
+        ) {
+          for (
+            const alternativeName of
+              person.alternativeNames
+          ) {
+            const alias =
+              alternativeName?.trim();
+
+            if (!alias) continue;
+
+            if (
+              !candidates.some(
+                (candidate) =>
+                  candidate.name.toLowerCase() ===
+                  alias.toLowerCase()
+              )
+            ) {
+              candidates.push({
+                type: "historicalPersonality",
+                person,
+                name: alias,
+              });
+            }
+          }
+        }
+
+        return candidates;
+      });
+
+  /*
+   * ================================================
+   * COMBINE + LONGEST NAME FIRST
+   * ================================================
+   *
+   * This is important when one name is contained
+   * inside another.
+   */
+
+  const candidates: BattleHistoricalLinkCandidate[] =
+    [
+      ...heroCandidates,
+      ...historicalPersonalityCandidates,
+    ].sort(
+      (a, b) =>
+        b.name.length - a.name.length
+    );
+
+  if (candidates.length === 0) {
+    return <>{text}</>;
+  }
+
+  const pattern = candidates
+    .map((candidate) =>
+      escapeRegExp(candidate.name)
+    )
+    .join("|");
+
+  const regex = new RegExp(
+    `(${pattern})`,
+    "gi"
+  );
+
+  return (
+    <>
+      {text.split(regex).map(
+        (part, index) => {
+          const candidate =
+            candidates.find(
+              (item) =>
+                item.name.toLowerCase() ===
+                part.trim().toLowerCase()
+            );
+
+          if (!candidate) {
+            return (
+              <span key={index}>
+                {part}
+              </span>
+            );
+          }
+
+          /*
+           * HERO
+           */
+          if (
+            candidate.type === "hero"
+          ) {
+            return (
+              <Link
+                key={`hero-${candidate.hero.heroId}-${index}`}
+                href={`/heroes/${encodeURIComponent(
+                  candidate.hero.heroId!
+                )}`}
+                className="text-[#D4AF37] hover:text-[#F0D878] underline underline-offset-4 decoration-[#D4AF37]/30 hover:decoration-[#D4AF37] transition-colors"
+              >
+                {part}
+              </Link>
+            );
+          }
+
+          /*
+           * HISTORICAL PERSONALITY
+           */
+          if (
+            candidate.type ===
+            "historicalPersonality"
+          ) {
+            return (
+              <Link
+                key={`person-${candidate.person.historicalPersonalityId}-${index}`}
+                href={`/historical-personalities/${encodeURIComponent(
+                  candidate.person
+                    .historicalPersonalityId!
+                )}`}
+                className="text-[#D4AF37] hover:text-[#F0D878] underline underline-offset-4 decoration-[#D4AF37]/30 hover:decoration-[#D4AF37] transition-colors"
+              >
+                {part}
+              </Link>
+            );
+          }
+
+          return (
+            <span key={index}>
+              {part}
+            </span>
+          );
+        }
+      )}
+    </>
   );
 }
 
@@ -1210,6 +1539,47 @@ export default function BattleDetailPage() {
   ========================================================= */
 
   const refs = battle.crossReferences;
+
+  /*
+  * =========================================================
+  * PEOPLE AVAILABLE FOR DYNAMIC TEXT LINKING
+  * =========================================================
+  */
+
+  const linkedHeroes: Reference[] = Array.from(
+    new Map(
+      [
+        ...(battle.commanderIds || []),
+        ...(refs?.relatedHeroes || []),
+      ]
+        .filter(
+          (item) => item?.heroId
+        )
+        .map((item) => [
+          item.heroId,
+          item,
+        ])
+    ).values()
+  );
+
+  const linkedHistoricalPersonalities: Reference[] =
+    Array.from(
+      new Map(
+        [
+          ...(battle.commanderPersonalityIds || []),
+          ...(battle.opposingCommanderPersonalityIds || []),
+          ...(refs?.relatedHistoricalPersonalities || []),
+        ]
+          .filter(
+            (item) =>
+              item?.historicalPersonalityId
+          )
+          .map((item) => [
+            item.historicalPersonalityId,
+            item,
+          ])
+      ).values()
+    );
 
   const battleImages = [
     ...(battle.imageIds || []),
@@ -1600,6 +1970,10 @@ export default function BattleDetailPage() {
                 battle.description
               }
               images={galleryImages}
+              heroes={linkedHeroes}
+              historicalPersonalities={
+                linkedHistoricalPersonalities
+              }
             />
           </Section>
         )}
@@ -1783,6 +2157,10 @@ export default function BattleDetailPage() {
           >
             <NarrativeBlock
               text={battle.terrain}
+              heroes={linkedHeroes}
+              historicalPersonalities={
+                linkedHistoricalPersonalities
+              }
             />
           </Section>
         )}
@@ -1837,7 +2215,13 @@ export default function BattleDetailPage() {
 
                       <div className="flex-1 rounded-2xl border border-[#D4AF37]/10 bg-[#15110E]/70 p-5 md:p-6 transition-all duration-300 group-hover:border-[#D4AF37]/25">
                         <p className="text-[#D7C9A5] leading-8">
-                          {event}
+                          <BattleLinkedHistoricalText
+                            text={event}
+                            heroes={linkedHeroes}
+                            historicalPersonalities={
+                              linkedHistoricalPersonalities
+                            }
+                          />
                         </p>
                       </div>
                     </div>
@@ -1951,7 +2335,13 @@ export default function BattleDetailPage() {
                 </div>
 
                 <p className="max-w-4xl whitespace-pre-line text-lg md:text-xl leading-9 text-[#F0E7D0]">
-                  {battle.outcome}
+                  <BattleLinkedHistoricalText
+                    text={battle.outcome}
+                    heroes={linkedHeroes}
+                    historicalPersonalities={
+                      linkedHistoricalPersonalities
+                    }
+                  />
                 </p>
               </div>
             </div>
@@ -1972,6 +2362,10 @@ export default function BattleDetailPage() {
           >
             <NarrativeBlock
               text={battle.aftermath}
+              heroes={linkedHeroes}
+              historicalPersonalities={
+                linkedHistoricalPersonalities
+              }
             />
           </Section>
         )}
@@ -2003,7 +2397,13 @@ export default function BattleDetailPage() {
                       key={index}
                       className="text-base md:text-lg leading-8 text-[#D7C9A5]"
                     >
-                      {paragraph}
+                      <BattleLinkedHistoricalText
+                        text={paragraph}
+                        heroes={linkedHeroes}
+                        historicalPersonalities={
+                          linkedHistoricalPersonalities
+                        }
+                      />
                     </p>
                   )
                 )}
