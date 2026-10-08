@@ -1682,6 +1682,17 @@ export default function BattleDetailPage() {
     relatedBattles.length > 0
   );
 
+  const hasRelatedHeroes = !!(
+    refs?.relatedHeroes &&
+    refs.relatedHeroes.length > 0
+  );
+
+  const hasRelatedPersonalities = !!(
+    refs?.relatedHistoricalPersonalities &&
+    refs.relatedHistoricalPersonalities.length >
+      0
+  );
+
   const hasRelatedPlaces = !!(
     refs?.relatedPlaces &&
     refs.relatedPlaces.length > 0
@@ -2407,6 +2418,8 @@ export default function BattleDetailPage() {
 
         {(hasRelatedEvents ||
           hasRelatedBattles ||
+          hasRelatedHeroes ||
+          hasRelatedPersonalities ||
           hasRelatedPlaces ||
           hasRelatedBooks) && (
           <Section
@@ -2448,6 +2461,46 @@ export default function BattleDetailPage() {
                       item.battleId
                         ? `/battles/${encodeURIComponent(
                             item.battleId
+                          )}`
+                        : undefined
+                    }
+                  />
+                </div>
+              )}
+
+              {hasRelatedHeroes && (
+                <div>
+                  <ArchiveSubheading title="Related Heroes" />
+
+                  <ReferenceGrid
+                    items={
+                      refs?.relatedHeroes
+                    }
+                    type="Hero"
+                    hrefBuilder={(item) =>
+                      item.heroId
+                        ? `/heroes/${encodeURIComponent(
+                            item.heroId
+                          )}`
+                        : undefined
+                    }
+                  />
+                </div>
+              )}
+
+              {hasRelatedPersonalities && (
+                <div>
+                  <ArchiveSubheading title="Historical Personalities" />
+
+                  <ReferenceGrid
+                    items={
+                      refs?.relatedHistoricalPersonalities
+                    }
+                    type="Historical Personality"
+                    hrefBuilder={(item) =>
+                      item.historicalPersonalityId
+                        ? `/historical-personalities/${encodeURIComponent(
+                            item.historicalPersonalityId
                           )}`
                         : undefined
                     }
