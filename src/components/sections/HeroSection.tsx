@@ -115,7 +115,7 @@ export function HeroSection() {
               }}
             >
               <Image
-                src="/images/veer.png"
+                src="/images/Veer.png"
                 alt="Background"
                 fill
                 sizes="100vw"
