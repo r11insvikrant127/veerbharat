@@ -727,7 +727,6 @@ const HeroSchema = new Schema(
   }
 );
 
-HeroSchema.index({ heroId: 1 });
 HeroSchema.index({ name: 1 });
 HeroSchema.index({ kingdomId: 1 });
 HeroSchema.index({ historicalPeriodId: 1 });

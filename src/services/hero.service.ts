@@ -13,6 +13,7 @@ import Kingdom from "@/models/kingdom";
 import Place from "@/models/place";
 import Book from "@/models/book";
 import Source from "@/models/source";
+import Battle from "@/models/battle";
 
 import {
   CreateHeroInput,
@@ -217,6 +218,7 @@ class HeroService extends BaseService {
 
         .populate({
             path: "relatedBattles",
+            model: Battle,
             select: `
                 battleId
                 name

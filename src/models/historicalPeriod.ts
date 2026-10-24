@@ -201,9 +201,6 @@ const HistoricalPeriodSchema = new Schema(
   }
 );
 
-HistoricalPeriodSchema.index({ name: 1 });
-HistoricalPeriodSchema.index({ startYear: 1 });
-HistoricalPeriodSchema.index({ endYear: 1 });
 
 const HistoricalPeriod =
   models.HistoricalPeriod ||
