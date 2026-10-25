@@ -138,6 +138,16 @@ class HeroService extends BaseService {
     async getHeroById(heroId: string) {
         await this.connect();
 
+        // TEMPORARY DIAGNOSTICS — remove after debugging
+        console.log("========== HERO MODEL DIAGNOSTICS ==========");
+        console.log("Requested hero:", heroId);
+        console.log("Hero model:", Hero.modelName);
+        console.log("Source model:", Source.modelName);
+        console.log("Same Mongoose instance:", Hero.base === Source.base);
+        console.log("Hero registry:", Hero.base.modelNames());
+        console.log("Source registry:", Source.base.modelNames());
+        console.log("============================================");
+        
         const hero = await Hero.findOne({ heroId })
         .populate({
             path: "imageIds",
