@@ -1080,10 +1080,6 @@ const heroCandidates: BattleHeroLinkCandidate[] =
         ...(Array.isArray(hero.alternativeNames)
           ? hero.alternativeNames
           : []),
-        ...(hero.searchFields?.keywords || []),
-        ...(hero.searchFields?.nativeSpellings || []),
-        ...(hero.searchFields?.alternateSpellings || []),
-        ...(hero.searchFields?.aliases || []),
       ]);
 
       return Array.from(names)
