@@ -1054,55 +1054,51 @@ function BattleLinkedHistoricalText({
    * ================================================
    */
 
-  const heroCandidates: BattleHeroLinkCandidate[] =
-    heroes
-      .filter(
-        (hero) =>
-          typeof hero?.heroId === "string" &&
-          hero.heroId.trim() !== "" &&
-          typeof hero?.name === "string" &&
-          hero.name.trim() !== ""
-      )
-      .flatMap((hero) => {
-        const fullName = hero.name!.trim();
+  
+const heroCandidates: BattleHeroLinkCandidate[] =
+  heroes
+    .filter(
+      (hero) =>
+        typeof hero?.heroId === "string" &&
+        hero.heroId.trim() !== "" &&
+        typeof hero?.name === "string" &&
+        hero.name.trim() !== ""
+    )
+    .flatMap((hero) => {
+      const fullName = hero.name!.trim();
 
-        /*
-         * Remove common ranks/titles.
-         *
-         * Example:
-         * "General Bipin Rawat"
-         *        ↓
-         * "Bipin Rawat"
-         */
-        const personalName = fullName
-          .replace(
-            /^(Field Marshal|General|Lieutenant General|Major General|Brigadier|Colonel|Lieutenant Colonel|Major|Captain|Commander|Lieutenant|Subedar Major|Subedar|Naik|Havildar|Mahatma|Pandit|Dr\.?|Sir)\s+/i,
-            ""
-          )
-          .trim();
+      const personalName = fullName
+        .replace(
+          /^(Field Marshal|General|Lieutenant General|Major General|Brigadier|Colonel|Lieutenant Colonel|Major|Captain|Commander|Lieutenant|Subedar Major|Subedar|Naik|Havildar|Mahatma|Pandit|Dr\.?|Sir)\s+/i,
+          ""
+        )
+        .trim();
 
-        const candidates: BattleHeroLinkCandidate[] = [
-          {
-            type: "hero",
-            hero,
-            name: fullName,
-          },
-        ];
+      const names = new Set<string>([
+        fullName,
+        personalName,
+        ...(Array.isArray(hero.alternativeNames)
+          ? hero.alternativeNames
+          : []),
+        ...(hero.searchFields?.keywords || []),
+        ...(hero.searchFields?.nativeSpellings || []),
+        ...(hero.searchFields?.alternateSpellings || []),
+        ...(hero.searchFields?.aliases || []),
+      ]);
 
-        if (
-          personalName &&
-          personalName.toLowerCase() !==
-            fullName.toLowerCase()
-        ) {
-          candidates.push({
-            type: "hero",
-            hero,
-            name: personalName,
-          });
-        }
+      return Array.from(names)
+        .map((name) => name?.trim())
+        .filter(
+          (name): name is string =>
+            typeof name === "string" && name.length > 0
+        )
+        .map((name) => ({
+          type: "hero" as const,
+          hero,
+          name,
+        }));
+    });
 
-        return candidates;
-      });
 
   /*
    * ================================================
