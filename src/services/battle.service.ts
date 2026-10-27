@@ -170,7 +170,8 @@ class BattleService extends BaseService {
       {
         path: "crossReferences.relatedHeroes",
         model: Hero,
-        select: "_id name heroId",
+        select:
+          "_id name heroId alternativeNames searchFields",
       },
 
       {
@@ -273,7 +274,8 @@ class BattleService extends BaseService {
       {
         path: "commanderIds",
         model: Hero,
-        select: "_id name heroId",
+        select:
+          "_id name heroId alternativeNames searchFields",
       },
 
      
